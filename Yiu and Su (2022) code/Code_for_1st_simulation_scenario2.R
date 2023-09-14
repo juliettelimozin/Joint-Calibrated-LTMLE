@@ -142,7 +142,7 @@ library(compiler)
 enableJIT(3)
 
 library(doParallel)
-registerDoParallel(3) 
+registerDoParallel(2) 
 library(foreach)
 
 
@@ -150,284 +150,285 @@ library(foreach)
 ####################
 
 RE<-foreach (i=1:2500,.packages=c('compiler','nleqslv')) %dopar% {
-enableJIT(3)
-
-DATADROP<-DATA_GEN(1000) ##Generate data including dropout visit
-
-indR0<-which(DATADROP$R==0)
-DATA<-DATADROP[indR0,]   ##Complete data not including dropout visit
-
-##MLE method
-
-##Treatment weights
-
-Proj_A0<-glm(A0~A0P+A1P,data=DATA,binomial)                          ##fit numerator model for A0   
-
-Prob_A0<-glm(A0~A0P+A1P+X1+X2+X3+X4,data=DATA,binomial)              ##fit denominator model for A0 with correct covariates
-Prob_A0T<-glm(A0~A0P+A1P+TX1+TX2+TX3+TX4,data=DATA,binomial)         ##fit denominator model for A0 with transformed covariates
-
-weProj_A0<-fitted(Proj_A0)*DATA$A0+(1-DATA$A0)*(1-fitted(Proj_A0))      ##numerator of weight for A0
-
-weProb_A0<-fitted(Prob_A0)*DATA$A0+(1-DATA$A0)*(1-fitted(Prob_A0))      ##denominator of weight for A0 with correct covariates
-weProb_A0T<-fitted(Prob_A0T)*DATA$A0+(1-DATA$A0)*(1-fitted(Prob_A0T))   ##denominator of weight for A0 with transformed covariates
-
-indA1<-which(DATA$A0==1)
-
-Proj_A1<-glm(A1~A0P+A1P,data=DATA[indA1,],binomial)                    ##fit numerator model for A1
-
-Prob_A1<-glm(A1~A0P+A1P+X1+X2+X3+X4,data=DATA[indA1,],binomial)           ##fit denominator model for A1 with correct covariates
-Prob_A1T<-glm(A1~A0P+A1P+TX1+TX2+TX3+TX4,data=DATA[indA1,],binomial)      ##fit denominator model for A1 with transformed covariates
-
-weProj_A1<-rep(1,nrow(DATA))
-
-weProj_A1[indA1]<-fitted(Proj_A1)*DATA$A1[indA1]+(1-DATA$A1[indA1])*(1-fitted(Proj_A1))  ##numerator of weight for A1
-
-weProb_A1<-rep(1,nrow(DATA))
-weProb_A1T<-rep(1,nrow(DATA))
-
-weProb_A1[indA1]<-fitted(Prob_A1)*DATA$A1[indA1]+(1-DATA$A1[indA1])*(1-fitted(Prob_A1))     ##denominator of weight for A1 with correct covariates
-weProb_A1T[indA1]<-fitted(Prob_A1T)*DATA$A1[indA1]+(1-DATA$A1[indA1])*(1-fitted(Prob_A1T))  ##denominator of weight for A1 with transformed covariates
-
-we_Prob_AN<-weProj_A0*weProj_A1/(weProb_A0*weProb_A1)        ##MLE weights with correct covariates                         
-we_Prob_ANT<-weProj_A0*weProj_A1/(weProb_A0T*weProb_A1T)     ##MLE weights with transformed covariates
-
-weightsMLEA<-ave(we_Prob_AN,DATA$ID,FUN=cumprod)             ##MLE of cumulative weights with correct covariates
-weightsMLEAT<-ave(we_Prob_ANT,DATA$ID,FUN=cumprod)           ##MLE of cumulative weights with transformed covariates
-
-WeightsMLEA<-weightsMLEA/mean(weightsMLEA)                   ## Scaled weights with correct covariates
-WeightsMLEAT<-weightsMLEAT/mean(weightsMLEAT)                ## Scaled weights with transformed covariates
-
-##Dropout weights
-
-Prob_R<-glm((1-R)~A0P+A1P+X1+X2+X3+X4,data=DATADROP,binomial)       ##fit denominator model for 1-R (remain in the study) with correct covariates
-Prob_RT<-glm((1-R)~A0P+A1P+TX1+TX2+TX3+TX4,data=DATADROP,binomial)  ##fit denominator model for 1-R (remain in the study) with transformed covariates
-
-we_R<-1/fitted(Prob_R)       ##MLE weights for dropout with correct covariates
-we_RT<-1/fitted(Prob_RT)     ##MLE weights for dropout with transformed covariates
-
-we_Prob_RN<-we_R[indR0]
-we_Prob_RNT<-we_RT[indR0]
-
-weightsMLER<-ave(we_Prob_RN,DATA$ID,FUN=cumprod)   ##cumulative treatment and dropout weights with correct covariates
-weightsMLERT<-ave(we_Prob_RNT,DATA$ID,FUN=cumprod) ##cumulative treatment and dropout weights with transformed covariates
-
-Npop<-length(which(DATADROP$T==1)) ##Number of subjects in the study at visit 1
-
-WeightsMLEAR<-10*Npop*weightsMLER*weightsMLEA/sum(weightsMLER*weightsMLEA)      ##Scaled weights with correct covariates
-WeightsMLEART<-10*Npop*weightsMLERT*weightsMLEAT/sum(weightsMLERT*weightsMLEAT) ##Scaled weights with transformed covariates
-
-COEF_MLE<-lm(Y~CA0+CA1,data=DATA,weights=WeightsMLEAR)$coef[2:3]       ##Treatment effect with correct covariates
-COEF_MLET<-lm(Y~CA0+CA1,data=DATA,weights=WeightsMLEART)$coef[2:3]     ##Treatment effect with transformed covariates
- 
-
-###############################Calibration
-
-library(nleqslv)
-
-##construct restrictions (7) in the main text for the correct covariates
-##Construct restrictions for A0
-
-A0pi<-fitted(Proj_A0)
-
-A0kernal<-DATA$A0-A0pi
-
-DMAT<-cbind(rep(1,nrow(DATA)),DATA$X1,DATA$X2,DATA$X3,DATA$X4,DATA$A0P,DATA$A1P)
-
-DMATA0<-A0kernal*DMAT
-
-avecumsum<-function(n){ave(n,DATA$ID,FUN=cumsum)}
-
-DMATA0A<-apply(DMATA0,2,avecumsum) ##DMATA0A is a matrix containing the coefficients of the weights in the restrictions for A0
-
-
-##Construct restrictions for A1
-
-A1pi<-1/(1+exp(-Proj_A1$coef[1]-Proj_A1$coef[2]*DATA$A0P-Proj_A1$coef[3]*DATA$A1P))
-
-A1kernal<-DATA$A0*(DATA$A1-A1pi)
-
-DMATA1<-A1kernal*DMAT
-
-DMATA1A<-apply(DMATA1,2,avecumsum) ##DMATA1A is a matrix containing the coefficients of the weights in the restrictions for A1
-
-##Overall constraints
-
-DMATAO<-cbind(DMATA0A,DMATA1A)
-
-##Construct restrictions (7) in the main text for the transformed covariates
-
-DMATT<-cbind(rep(1,nrow(DATA)),DATA$TX1,DATA$TX2,DATA$TX3,DATA$TX4,DATA$A0P,DATA$A1P)
-
-DMATA0T<-A0kernal*DMATT
-
-DMATA0AT<-apply(DMATA0T,2,avecumsum)
-
-##
-
-DMATA1T<-A1kernal*DMATT
-
-DMATA1AT<-apply(DMATA1T,2,avecumsum)
-
-DMATAOT<-cbind(DMATA0AT,DMATA1AT)   
-
-
-
-##Construct restrictions (5) in the main text
-
-visit1<-as.numeric(DATA$T==1)
-visit2<-as.numeric(DATA$T==2)
-visit3<-as.numeric(DATA$T==3)
-visit4<-as.numeric(DATA$T==4)
-visit5<-as.numeric(DATA$T==5)
-visit6<-as.numeric(DATA$T==6)
-visit7<-as.numeric(DATA$T==7)
-visit8<-as.numeric(DATA$T==8)
-visit9<-as.numeric(DATA$T==9)
-visit10<-as.numeric(DATA$T==10)
-
-TEMAT<-cbind(visit1,visit2,visit3,visit4,visit5,visit6,visit7,visit8,visit9,visit10)
-EMAT<-t(TEMAT)
-
-##Dropout restrictions (15) without intercept for correct covariates
-
-lagfun1<-function(n){
-n1<-n[-1]
-c(n1,0)}
-
-lagfun2<-function(n){
-ave(n,DATADROP$ID,FUN=lagfun1)}
-
-lenID<-ave(DATADROP$ID,DATADROP$ID,FUN=length)
-lenID1<-ave(DATA$ID,DATA$ID,FUN=length)
-maxlen<-max(lenID)
-
-clen<-function(n){
-maxlen:(maxlen-n[1]+1)}
-
-lenvec<-ave(lenID,DATADROP$ID,FUN=clen)
-
-DMATR<-cbind(DATADROP$X1,DATADROP$X2,DATADROP$X3,
-DATADROP$X4,DATADROP$A0P,DATADROP$A1P)
-
-DMATRvec1<-lenvec*DMATR
-
-DMATRvec2<-apply(lenvec*DMATR,2,lagfun2)
-	
-DMATR12<-DMATRvec1-DMATRvec2
-
-DMATRO<-DMATR12[indR0,]              ##DMATRO is a matrix for the coefficients of the weights for the right hand side of the second equation in (15)
-
-indT0<-which(DATADROP$T==1)
-
-Baselinecond<-maxlen*colSums(DMATR[indT0,]) ##Baselinecond is a vector for the left hand side of the second equation in (15) 
-
-
-##Weight estimation with correct covariates
-
-TDMATAO<-t(DMATAO)
-TDMATRO<-t(DMATRO)
-
-gfunAR<-function(w){            ##Objective function
-lp1<-colSums(TDMATAO*w[1:14])           
-lp2<-colSums(EMAT*w[15:24])
-lp3<-colSums(TDMATRO*w[25:30])
-we<-weightsMLEA*weightsMLER*exp(lp1+lp2+lp3)
-m1<-colMeans(DMATAO*we)                        ##Restrictions (7)
-m2<-(colSums(TEMAT*we)-Npop)/nrow(TEMAT)      ##Restrictions (5)
-m3<-(colSums(DMATRO*we)-Baselinecond)/nrow(DMATRO) ##Restrictions (15)
-c(m1,m2,m3)}
-
-##Hessian matrix
-
-N1MATAR<-rbind(TDMATAO,EMAT,TDMATRO)
-N2MATAR<-cbind(DMATAO,TEMAT,DMATRO)
-
-DgAR<-function(w){
-lp1<-colSums(TDMATAO*w[1:14])           
-lp2<-colSums(EMAT*w[15:24])
-lp3<-colSums(TDMATRO*w[25:30])
-we<-weightsMLEA*weightsMLER*exp(lp1+lp2+lp3)
-MAT<-N2MATAR*we
-MAT1<-diag(30)
-for (k in 1:30){
-MAT1[,k]<-colMeans(N1MATAR[k,]*MAT)}
-MAT1}
-
-weioptAR<-nleqslv(rep(0,30),gfunAR,DgAR,method="Broyden",
-control=list(maxit=10000,ftol=10^(-16),xtol=10^(-16)))
-
-##Dropout restrictions (15) without intercept for transformed covariates
-
-DMATRT<-cbind(DATADROP$TX1,DATADROP$TX2,DATADROP$TX3,
-DATADROP$TX4,DATADROP$A0P,DATADROP$A1P)
-
-DMATRvec1T<-lenvec*DMATRT
-
-DMATRvec2T<-apply(lenvec*DMATRT,2,lagfun2)
-	
-DMATR12T<-DMATRvec1T-DMATRvec2T
-
-DMATROT<-DMATR12T[indR0,]  
-
-BaselinecondT<-maxlen*colSums(DMATRT[indT0,])
-
-##Weight estimation with transformed covariates
-
-TDMATAOT<-t(DMATAOT)
-TDMATROT<-t(DMATROT)
-
-gfunART<-function(w){            ##Objective function
-lp1<-colSums(TDMATAOT*w[1:14])           
-lp2<-colSums(EMAT*w[15:24])
-lp3<-colSums(TDMATROT*w[25:30])
-we<-weightsMLEAT*weightsMLERT*exp(lp1+lp2+lp3)
-m1<-colMeans(DMATAOT*we)                        ##Restrictions (7)
-m2<-(colSums(TEMAT*we)-Npop)/nrow(TEMAT)      ##Restrictions (5)
-m3<-(colSums(DMATROT*we)-Baselinecond)/nrow(DMATROT) ##Restrictions (15)
-c(m1,m2,m3)}
-
-##Hessian matrix
-
-N1MATART<-rbind(TDMATAOT,EMAT,TDMATROT)
-N2MATART<-cbind(DMATAOT,TEMAT,DMATROT)
-
-DgART<-function(w){
-lp1<-colSums(TDMATAOT*w[1:14])           
-lp2<-colSums(EMAT*w[15:24])
-lp3<-colSums(TDMATROT*w[25:30])
-we<-weightsMLEAT*weightsMLERT*exp(lp1+lp2+lp3)
-MAT<-N2MATART*we
-MAT1<-diag(30)
-for (k in 1:30){
-MAT1[,k]<-colMeans(N1MATART[k,]*MAT)}
-MAT1}
-
-weioptART<-nleqslv(rep(0,30),gfunART,DgART,method="Broyden",
-control=list(maxit=10000,ftol=10^(-16),xtol=10^(-16)))
-
-##Weight construction
-
-weconsAR<-function(w){
-lp1<-colSums(TDMATAO*w[1:14])           
-lp2<-colSums(EMAT*w[15:24])
-lp3<-colSums(TDMATRO*w[25:30])
-we<-weightsMLEA*weightsMLER*exp(lp1+lp2+lp3)}
-
-weconsART<-function(w){
-lp1<-colSums(TDMATAOT*w[1:14])           
-lp2<-colSums(EMAT*w[15:24])
-lp3<-colSums(TDMATROT*w[25:30])
-we<-weightsMLEAT*weightsMLERT*exp(lp1+lp2+lp3)}
-
-CALW<-weconsAR(weioptAR$x)
-CALWT<-weconsART(weioptART$x)
-
-COEF_CALW<-lm(Y~CA0+CA1,data=DATA,weights=CALW)$coef[2:3]
-COEF_CALWT<-lm(Y~CA0+CA1,data=DATA,weights=CALWT)$coef[2:3]
-
-
-c(cumsum(COEF_MLE),cumsum(COEF_CALW),
-cumsum(COEF_MLET),cumsum(COEF_CALWT))}
+    enableJIT(3)
+    
+    DATADROP<-DATA_GEN(1000) ##Generate data including dropout visit
+    
+    indR0<-which(DATADROP$R==0)
+    DATA<-DATADROP[indR0,]   ##Complete data not including dropout visit
+    
+    ##MLE method
+    
+    ##Treatment weights
+    
+    Proj_A0<-glm(A0~A0P+A1P,data=DATA,binomial)                          ##fit numerator model for A0   
+    
+    Prob_A0<-glm(A0~A0P+A1P+X1+X2+X3+X4,data=DATA,binomial)              ##fit denominator model for A0 with correct covariates
+    Prob_A0T<-glm(A0~A0P+A1P+TX1+TX2+TX3+TX4,data=DATA,binomial)         ##fit denominator model for A0 with transformed covariates
+    
+    weProj_A0<-fitted(Proj_A0)*DATA$A0+(1-DATA$A0)*(1-fitted(Proj_A0))      ##numerator of weight for A0
+    
+    weProb_A0<-fitted(Prob_A0)*DATA$A0+(1-DATA$A0)*(1-fitted(Prob_A0))      ##denominator of weight for A0 with correct covariates
+    weProb_A0T<-fitted(Prob_A0T)*DATA$A0+(1-DATA$A0)*(1-fitted(Prob_A0T))   ##denominator of weight for A0 with transformed covariates
+    
+    indA1<-which(DATA$A0==1)
+    
+    Proj_A1<-glm(A1~A0P+A1P,data=DATA[indA1,],binomial)                    ##fit numerator model for A1
+    
+    Prob_A1<-glm(A1~A0P+A1P+X1+X2+X3+X4,data=DATA[indA1,],binomial)           ##fit denominator model for A1 with correct covariates
+    Prob_A1T<-glm(A1~A0P+A1P+TX1+TX2+TX3+TX4,data=DATA[indA1,],binomial)      ##fit denominator model for A1 with transformed covariates
+    
+    weProj_A1<-rep(1,nrow(DATA))
+    
+    weProj_A1[indA1]<-fitted(Proj_A1)*DATA$A1[indA1]+(1-DATA$A1[indA1])*(1-fitted(Proj_A1))  ##numerator of weight for A1
+    
+    weProb_A1<-rep(1,nrow(DATA))
+    weProb_A1T<-rep(1,nrow(DATA))
+    
+    weProb_A1[indA1]<-fitted(Prob_A1)*DATA$A1[indA1]+(1-DATA$A1[indA1])*(1-fitted(Prob_A1))     ##denominator of weight for A1 with correct covariates
+    weProb_A1T[indA1]<-fitted(Prob_A1T)*DATA$A1[indA1]+(1-DATA$A1[indA1])*(1-fitted(Prob_A1T))  ##denominator of weight for A1 with transformed covariates
+    
+    we_Prob_AN<-weProj_A0*weProj_A1/(weProb_A0*weProb_A1)        ##MLE weights with correct covariates                         
+    we_Prob_ANT<-weProj_A0*weProj_A1/(weProb_A0T*weProb_A1T)     ##MLE weights with transformed covariates
+    
+    weightsMLEA<-ave(we_Prob_AN,DATA$ID,FUN=cumprod)             ##MLE of cumulative weights with correct covariates
+    weightsMLEAT<-ave(we_Prob_ANT,DATA$ID,FUN=cumprod)           ##MLE of cumulative weights with transformed covariates
+    
+    WeightsMLEA<-weightsMLEA/mean(weightsMLEA)                   ## Scaled weights with correct covariates
+    WeightsMLEAT<-weightsMLEAT/mean(weightsMLEAT)                ## Scaled weights with transformed covariates
+    
+    ##Dropout weights
+    
+    Prob_R<-glm((1-R)~A0P+A1P+X1+X2+X3+X4,data=DATADROP,binomial)       ##fit denominator model for 1-R (remain in the study) with correct covariates
+    Prob_RT<-glm((1-R)~A0P+A1P+TX1+TX2+TX3+TX4,data=DATADROP,binomial)  ##fit denominator model for 1-R (remain in the study) with transformed covariates
+    
+    we_R<-1/fitted(Prob_R)       ##MLE weights for dropout with correct covariates
+    we_RT<-1/fitted(Prob_RT)     ##MLE weights for dropout with transformed covariates
+    
+    we_Prob_RN<-we_R[indR0]
+    we_Prob_RNT<-we_RT[indR0]
+    
+    weightsMLER<-ave(we_Prob_RN,DATA$ID,FUN=cumprod)   ##cumulative treatment and dropout weights with correct covariates
+    weightsMLERT<-ave(we_Prob_RNT,DATA$ID,FUN=cumprod) ##cumulative treatment and dropout weights with transformed covariates
+    
+    Npop<-length(which(DATADROP$T==1)) ##Number of subjects in the study at visit 1
+    
+    WeightsMLEAR<-10*Npop*weightsMLER*weightsMLEA/sum(weightsMLER*weightsMLEA)      ##Scaled weights with correct covariates
+    WeightsMLEART<-10*Npop*weightsMLERT*weightsMLEAT/sum(weightsMLERT*weightsMLEAT) ##Scaled weights with transformed covariates
+    
+    COEF_MLE<-lm(Y~CA0+CA1,data=DATA,weights=WeightsMLEAR)$coef[2:3]       ##Treatment effect with correct covariates
+    COEF_MLET<-lm(Y~CA0+CA1,data=DATA,weights=WeightsMLEART)$coef[2:3]     ##Treatment effect with transformed covariates
+     
+    
+    ###############################Calibration
+    
+    library(nleqslv)
+    
+    ##construct restrictions (7) in the main text for the correct covariates
+    ##Construct restrictions for A0
+    
+    A0pi<-fitted(Proj_A0)
+    
+    A0kernal<-DATA$A0-A0pi
+    
+    DMAT<-cbind(rep(1,nrow(DATA)),DATA$X1,DATA$X2,DATA$X3,DATA$X4,DATA$A0P,DATA$A1P)
+    
+    DMATA0<-A0kernal*DMAT
+    
+    avecumsum<-function(n){ave(n,DATA$ID,FUN=cumsum)}
+    
+    DMATA0A<-apply(DMATA0,2,avecumsum) ##DMATA0A is a matrix containing the coefficients of the weights in the restrictions for A0
+    
+    
+    ##Construct restrictions for A1
+    
+    A1pi<-1/(1+exp(-Proj_A1$coef[1]-Proj_A1$coef[2]*DATA$A0P-Proj_A1$coef[3]*DATA$A1P))
+    
+    A1kernal<-DATA$A0*(DATA$A1-A1pi)
+    
+    DMATA1<-A1kernal*DMAT
+    
+    DMATA1A<-apply(DMATA1,2,avecumsum) ##DMATA1A is a matrix containing the coefficients of the weights in the restrictions for A1
+    
+    ##Overall constraints
+    
+    DMATAO<-cbind(DMATA0A,DMATA1A)
+    
+    ##Construct restrictions (7) in the main text for the transformed covariates
+    
+    DMATT<-cbind(rep(1,nrow(DATA)),DATA$TX1,DATA$TX2,DATA$TX3,DATA$TX4,DATA$A0P,DATA$A1P)
+    
+    DMATA0T<-A0kernal*DMATT
+    
+    DMATA0AT<-apply(DMATA0T,2,avecumsum)
+    
+    ##
+    
+    DMATA1T<-A1kernal*DMATT
+    
+    DMATA1AT<-apply(DMATA1T,2,avecumsum)
+    
+    DMATAOT<-cbind(DMATA0AT,DMATA1AT)   
+    
+    
+    
+    ##Construct restrictions (5) in the main text
+    
+    visit1<-as.numeric(DATA$T==1)
+    visit2<-as.numeric(DATA$T==2)
+    visit3<-as.numeric(DATA$T==3)
+    visit4<-as.numeric(DATA$T==4)
+    visit5<-as.numeric(DATA$T==5)
+    visit6<-as.numeric(DATA$T==6)
+    visit7<-as.numeric(DATA$T==7)
+    visit8<-as.numeric(DATA$T==8)
+    visit9<-as.numeric(DATA$T==9)
+    visit10<-as.numeric(DATA$T==10)
+    
+    TEMAT<-cbind(visit1,visit2,visit3,visit4,visit5,visit6,visit7,visit8,visit9,visit10)
+    EMAT<-t(TEMAT)
+    
+    ##Dropout restrictions (15) without intercept for correct covariates
+    
+    lagfun1<-function(n){
+    n1<-n[-1]
+    c(n1,0)}
+    
+    lagfun2<-function(n){
+    ave(n,DATADROP$ID,FUN=lagfun1)}
+    
+    lenID<-ave(DATADROP$ID,DATADROP$ID,FUN=length)
+    lenID1<-ave(DATA$ID,DATA$ID,FUN=length)
+    maxlen<-max(lenID)
+    
+    clen<-function(n){
+    maxlen:(maxlen-n[1]+1)}
+    
+    lenvec<-ave(lenID,DATADROP$ID,FUN=clen)
+    
+    DMATR<-cbind(DATADROP$X1,DATADROP$X2,DATADROP$X3,
+    DATADROP$X4,DATADROP$A0P,DATADROP$A1P)
+    
+    DMATRvec1<-lenvec*DMATR
+    
+    DMATRvec2<-apply(lenvec*DMATR,2,lagfun2)
+    	
+    DMATR12<-DMATRvec1-DMATRvec2
+    
+    DMATRO<-DMATR12[indR0,]              ##DMATRO is a matrix for the coefficients of the weights for the right hand side of the second equation in (15)
+    
+    indT0<-which(DATADROP$T==1)
+    
+    Baselinecond<-maxlen*colSums(DMATR[indT0,]) ##Baselinecond is a vector for the left hand side of the second equation in (15) 
+    
+    
+    ##Weight estimation with correct covariates
+    
+    TDMATAO<-t(DMATAO)
+    TDMATRO<-t(DMATRO)
+    
+    gfunAR<-function(w){            ##Objective function
+    lp1<-colSums(TDMATAO*w[1:14])           
+    lp2<-colSums(EMAT*w[15:24])
+    lp3<-colSums(TDMATRO*w[25:30])
+    we<-weightsMLEA*weightsMLER*exp(lp1+lp2+lp3)
+    m1<-colMeans(DMATAO*we)                        ##Restrictions (7)
+    m2<-(colSums(TEMAT*we)-Npop)/nrow(TEMAT)      ##Restrictions (5)
+    m3<-(colSums(DMATRO*we)-Baselinecond)/nrow(DMATRO) ##Restrictions (15)
+    c(m1,m2,m3)}
+    
+    ##Hessian matrix
+    
+    N1MATAR<-rbind(TDMATAO,EMAT,TDMATRO)
+    N2MATAR<-cbind(DMATAO,TEMAT,DMATRO)
+    
+    DgAR<-function(w){
+    lp1<-colSums(TDMATAO*w[1:14])           
+    lp2<-colSums(EMAT*w[15:24])
+    lp3<-colSums(TDMATRO*w[25:30])
+    we<-weightsMLEA*weightsMLER*exp(lp1+lp2+lp3)
+    MAT<-N2MATAR*we
+    MAT1<-diag(30)
+    for (k in 1:30){
+    MAT1[,k]<-colMeans(N1MATAR[k,]*MAT)}
+    MAT1}
+    
+    weioptAR<-nleqslv(rep(0,30),gfunAR,DgAR,method="Broyden",
+    control=list(maxit=10000,ftol=10^(-16),xtol=10^(-16)))
+    
+    ##Dropout restrictions (15) without intercept for transformed covariates
+    
+    DMATRT<-cbind(DATADROP$TX1,DATADROP$TX2,DATADROP$TX3,
+    DATADROP$TX4,DATADROP$A0P,DATADROP$A1P)
+    
+    DMATRvec1T<-lenvec*DMATRT
+    
+    DMATRvec2T<-apply(lenvec*DMATRT,2,lagfun2)
+    	
+    DMATR12T<-DMATRvec1T-DMATRvec2T
+    
+    DMATROT<-DMATR12T[indR0,]  
+    
+    BaselinecondT<-maxlen*colSums(DMATRT[indT0,])
+    
+    ##Weight estimation with transformed covariates
+    
+    TDMATAOT<-t(DMATAOT)
+    TDMATROT<-t(DMATROT)
+    
+    gfunART<-function(w){            ##Objective function
+    lp1<-colSums(TDMATAOT*w[1:14])           
+    lp2<-colSums(EMAT*w[15:24])
+    lp3<-colSums(TDMATROT*w[25:30])
+    we<-weightsMLEAT*weightsMLERT*exp(lp1+lp2+lp3)
+    m1<-colMeans(DMATAOT*we)                        ##Restrictions (7)
+    m2<-(colSums(TEMAT*we)-Npop)/nrow(TEMAT)      ##Restrictions (5)
+    m3<-(colSums(DMATROT*we)-Baselinecond)/nrow(DMATROT) ##Restrictions (15)
+    c(m1,m2,m3)}
+    
+    ##Hessian matrix
+    
+    N1MATART<-rbind(TDMATAOT,EMAT,TDMATROT)
+    N2MATART<-cbind(DMATAOT,TEMAT,DMATROT)
+    
+    DgART<-function(w){
+    lp1<-colSums(TDMATAOT*w[1:14])           
+    lp2<-colSums(EMAT*w[15:24])
+    lp3<-colSums(TDMATROT*w[25:30])
+    we<-weightsMLEAT*weightsMLERT*exp(lp1+lp2+lp3)
+    MAT<-N2MATART*we
+    MAT1<-diag(30)
+    for (k in 1:30){
+    MAT1[,k]<-colMeans(N1MATART[k,]*MAT)}
+    MAT1}
+    
+    weioptART<-nleqslv(rep(0,30),gfunART,DgART,method="Broyden",
+    control=list(maxit=10000,ftol=10^(-16),xtol=10^(-16)))
+    
+    ##Weight construction
+    
+    weconsAR<-function(w){
+    lp1<-colSums(TDMATAO*w[1:14])           
+    lp2<-colSums(EMAT*w[15:24])
+    lp3<-colSums(TDMATRO*w[25:30])
+    we<-weightsMLEA*weightsMLER*exp(lp1+lp2+lp3)}
+    
+    weconsART<-function(w){
+    lp1<-colSums(TDMATAOT*w[1:14])           
+    lp2<-colSums(EMAT*w[15:24])
+    lp3<-colSums(TDMATROT*w[25:30])
+    we<-weightsMLEAT*weightsMLERT*exp(lp1+lp2+lp3)}
+    
+    CALW<-weconsAR(weioptAR$x)
+    CALWT<-weconsART(weioptART$x)
+    
+    COEF_CALW<-lm(Y~CA0+CA1,data=DATA,weights=CALW)$coef[2:3]
+    COEF_CALWT<-lm(Y~CA0+CA1,data=DATA,weights=CALWT)$coef[2:3]
+    
+    
+    c(cumsum(COEF_MLE),cumsum(COEF_CALW),
+    cumsum(COEF_MLET),cumsum(COEF_CALWT))
+  }
 
 
 REmat<-do.call(cbind,RE)
