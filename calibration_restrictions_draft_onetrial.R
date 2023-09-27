@@ -9,7 +9,7 @@ library(sandwich)
 library(doParallel)
 library(doRNG)
 library(cobalt)
-simdata_censored<-DATA_GEN_censored_reduced(1000,5, conf = 1.5, censor = T) 
+simdata_censored<-DATA_GEN_censored_reduced(2500,5, conf = 1.5, censor = T) 
 
 PP_prep <- TrialEmulation::data_preparation(simdata_censored, id='ID', period='t', treatment='A', outcome='Y', 
                                             eligible ='eligible',
@@ -20,7 +20,7 @@ PP_prep <- TrialEmulation::data_preparation(simdata_censored, id='ID', period='t
                                             save_weight_models = T,
                                             data_dir = getwd())
 switch_data <- PP_prep$data %>% 
-  dplyr::filter(for_period == 0) %>% 
+  dplyr::filter(trial_period == 0) %>% 
   dplyr::mutate(t_1 = ifelse(followup_time == 1,1,0),
                 t_2 = ifelse(followup_time == 2,1,0),
                 t_3 = ifelse(followup_time == 3,1,0),
@@ -38,43 +38,61 @@ switch_data <- PP_prep$data %>%
                 t_3X4 = t_3*X4,
                 t_4X4 = t_4*X4)
 
+
 data_restric <- simdata_censored %>% 
   dplyr::group_by(ID) %>% 
-  dplyr::mutate(A_0 = first(A), RA = ifelse(t !=0, ifelse(A == first(A) & A==Ap, 1, 0),1), nextX2 = lead(X2)) %>% 
+  dplyr::mutate(A_0 = first(A), RA = ifelse(t !=0, ifelse(A == first(A) & A==Ap, 1, 0),1), nextX2 = lead(X2),prevX2 = lag(X2)) %>% 
   dplyr::mutate(CRA = cumsum(RA),
                 nextX2 = ifelse(is.na(nextX2), 0, nextX2),
-                RA = ifelse(CRA == t+1,1,0)) %>% 
-  dplyr::filter(RA ==1, t!= 0) %>% 
+                RA = ifelse(CRA == t+1,1,0),
+                RC = ifelse(lag(C) == 0,1,0),
+                t1 = ifelse(t == 1,1,0),
+                t2 = ifelse(t == 2, 1, 0),
+                t3 = ifelse(t ==3, 1, 0),
+                t4 = ifelse(t == 4,1,0)) %>% 
+  dplyr::filter(RA == 1,t!= 0) %>% 
   dplyr::arrange(ID, t)
   
 
 lVEC <- 4*cbind(sum(switch_data[switch_data$followup_time == 0,]$assigned_treatment),
                 sum(1-switch_data[switch_data$followup_time == 0,]$assigned_treatment),
-                sum(data_restric[data_restric$t == 1,]$A*data_restric[data_restric$t == 1,]$X4),
-                sum((1-data_restric[data_restric$t == 1,]$A)*data_restric[data_restric$t == 1,]$X4),
-                sum(data_restric[data_restric$t == 1,]$A*data_restric[data_restric$t == 1,]$X2),
-                sum((1-data_restric[data_restric$t == 1,]$A)*data_restric[data_restric$t == 1,]$X2),
+                sum(switch_data[switch_data$followup_time == 1,]$assigned_treatment*switch_data[switch_data$followup_time == 1,]$X4),
+                sum(1-switch_data[switch_data$followup_time == 1,]$assigned_treatment*switch_data[switch_data$followup_time == 1,]$X4),
+                sum(switch_data[switch_data$followup_time == 1,]$assigned_treatment*switch_data[switch_data$followup_time == 1,]$X2),
+                sum(1-switch_data[switch_data$followup_time == 1,]$assigned_treatment*switch_data[switch_data$followup_time == 1,]$X2),
                 sum(switch_data[switch_data$followup_time == 0,]$assigned_treatment),
                 sum(1-switch_data[switch_data$followup_time == 0,]$assigned_treatment),
-                sum(data_restric[data_restric$t == 1,]$A*data_restric[data_restric$t == 1,]$X4),
-                sum((1-data_restric[data_restric$t == 1,]$A)*data_restric[data_restric$t == 1,]$X4),
-                sum(data_restric[data_restric$t == 1,]$A*data_restric[data_restric$t == 1,]$X2),
-                sum((1-data_restric[data_restric$t == 1,]$A)*data_restric[data_restric$t == 1,]$X2))
+                sum(switch_data[switch_data$followup_time == 0,]$assigned_treatment*switch_data[switch_data$followup_time == 0,]$X4),
+                sum((1-switch_data[switch_data$followup_time == 0,]$assigned_treatment)*switch_data[switch_data$followup_time == 0,]$X4),
+                sum(switch_data[switch_data$followup_time == 0,]$assigned_treatment*switch_data[switch_data$followup_time == 0,]$X2),
+                sum((1-switch_data[switch_data$followup_time == 0,]$assigned_treatment)*switch_data[switch_data$followup_time == 0,]$X2))
 
 KMAT <-  cbind(data_restric$A*data_restric$RA,
-              (1-data_restric$A)*data_restric$RA,
-              data_restric$A*data_restric$RA*data_restric$X4,
-              (1-data_restric$A)*data_restric$RA*data_restric$X4,
-              data_restric$A*data_restric$RA*((4 - data_restric$t - 1)*data_restric$X2 - (4 - data_restric$t)*data_restric$nextX2),
-              (1-data_restric$A)*data_restric$RA*((4 - data_restric$t - 1)*data_restric$X2 - (4 - data_restric$t)*data_restric$nextX2),
-              data_restric$A*(1-data_restric$C),
-              (1-data_restric$A)*(1-data_restric$C),
-              data_restric$A*data_restric$X4*(1-data_restric$C),
-              (1-data_restric$A)*data_restric$X4*(1-data_restric$C),
-              data_restric$A*(1-data_restric$C)*((4 - data_restric$t - 1)*data_restric$X2 - (4 - data_restric$t)*data_restric$nextX2),
-              (1-data_restric$A)*(1-data_restric$C)*((4 - data_restric$t - 1)*data_restric$X2 - (4 - data_restric$t)*data_restric$nextX2))
+               (1-data_restric$A)*data_restric$RA,
+               data_restric$A*data_restric$RA*data_restric$X4,
+               (1-data_restric$A)*data_restric$RA*data_restric$X4,
+               data_restric$A*data_restric$RA*((4 - data_restric$t - 1)*data_restric$X2 - (4 - data_restric$t)*data_restric$nextX2),
+               (1-data_restric$A)*data_restric$RA*((4 - data_restric$t - 1)*data_restric$X2 - (4 - data_restric$t)*data_restric$nextX2),
+               data_restric$A,
+               (1-data_restric$A),
+               data_restric$A*data_restric$X4,
+               (1-data_restric$A)*data_restric$X4,
+               data_restric$A*((4 - data_restric$t - 1)*data_restric$prevX2 - (4 - data_restric$t)*data_restric$X2),
+               (1-data_restric$A)*((4 - data_restric$t - 1)*data_restric$prevX2 - (4 - data_restric$t)*data_restric$X2))
 
 
+KMAT_old <-  cbind(data_restric$A*data_restric$RA,
+               (1-data_restric$A)*data_restric$RA,
+               data_restric$A*data_restric$RA*data_restric$X4,
+               (1-data_restric$A)*data_restric$RA*data_restric$X4,
+               data_restric$A*data_restric$RA*((4 - data_restric$t - 1)*data_restric$X2 - (4 - data_restric$t)*data_restric$nextX2),
+               (1-data_restric$A)*data_restric$RA*((4 - data_restric$t - 1)*data_restric$X2 - (4 - data_restric$t)*data_restric$nextX2),
+               data_restric$A*(1-data_restric$C),
+               (1-data_restric$A)*(1-data_restric$C),
+               data_restric$A*data_restric$X4*(1-data_restric$C),
+               (1-data_restric$A)*data_restric$X4*(1-data_restric$C),
+               data_restric$A*(1-data_restric$C)*((4 - data_restric$t - 1)*data_restric$prevX2 - (4 - data_restric$t)*data_restric$X2),
+               (1-data_restric$A)*(1-data_restric$C)*((4 - data_restric$t - 1)*data_restric$prevX2 - (4 - data_restric$t)*data_restric$X2))
 
 
 constraints <- function(w){
@@ -88,8 +106,7 @@ cali_restriction_check <- function(w){
 
 library(nleqslv)
 weioptAR<-nleqslv(rep(0,12),constraints,method="Broyden",
-                  control=list(maxit=10000,ftol=10^(-16),xtol=10^(-16)))
-
+                  control=list(maxit=50000,ftol=10^(-16),xtol=10^(-16), cndtol = 10^(-15), allowSingular = TRUE))
 calibrated_weights <- cbind(data_restric$ID, data_restric$t, switch_data[switch_data$followup_time != 0,]$weight*exp(KMAT%*%weioptAR$x))
 colnames(calibrated_weights) <- c('id', 'followup_time', 'calibrated_weight')
 
@@ -113,21 +130,29 @@ print(cali_restriction_check(eligible_data[eligible_data$t != 0,]$weight))
 print(cali_restriction_check(eligible_data[eligible_data$t != 0,]$calibrated_weight))
 
 bal.plot(eligible_data[eligible_data$t == 1,],stats = c('m', 'v'),var.name = c('X2', 'X4'),
-         treat = eligible_data[eligible_data$t == 1,]$A )
+         treat = eligible_data[eligible_data$t == 1,]$A_0 )
+
 
 bal.tab(eligible_data[eligible_data$t == 1,],stats = c('m', 'v'),
-        treat = eligible_data[eligible_data$t == 1,]$A, weights = eligible_data[eligible_data$t == 1,]$weight )
+        treat = eligible_data[eligible_data$t == 1,]$A_0, weights = eligible_data[eligible_data$t == 1,]$weight )
+
 bal.plot(eligible_data[eligible_data$t == 1,],stats = c('m', 'v'),var.name = c('X2', 'X4'),
-         treat = eligible_data[eligible_data$t == 1,]$A, weights = eligible_data[eligible_data$t == 1,]$weight )
+         treat = eligible_data[eligible_data$t == 1,]$A_0, weights = eligible_data[eligible_data$t == 1,]$weight )
+
 
 bal.tab(eligible_data[eligible_data$t == 1,],stats = c('m', 'v'),
-        treat = eligible_data[eligible_data$t == 1,]$A, weights = eligible_data[eligible_data$t == 1,]$calibrated_weight )
+        treat = eligible_data[eligible_data$t == 1,]$A_0, weights = eligible_data[eligible_data$t == 1,]$calibrated_weight )
 bal.plot(eligible_data[eligible_data$t == 1,],stats = c('m', 'v'),var.name = c('X2', 'X4'),
-        treat = eligible_data[eligible_data$t == 1,]$A, weights = eligible_data[eligible_data$t == 1,]$calibrated_weight )
+        treat = eligible_data[eligible_data$t == 1,]$A_0, weights = eligible_data[eligible_data$t == 1,]$calibrated_weight )
 
 
 
-
+bal.plot(eligible_data[eligible_data$t == 1 & eligible_data$A_0 == 1,],stats = c('m', 'v'),var.name = c('X2', 'X4'),
+         treat = eligible_data[eligible_data$t == 1& eligible_data$A_0 == 1,]$C )
+bal.plot(eligible_data[eligible_data$t == 1& eligible_data$A_0 == 1,],stats = c('m', 'v'),var.name = c('X2', 'X4'),
+         treat = eligible_data[eligible_data$t == 1& eligible_data$A_0 == 1,]$C, weights = eligible_data[eligible_data$t == 1& eligible_data$A_0 == 1,]$weight )
+bal.plot(eligible_data[eligible_data$t == 1& eligible_data$A_0 == 1,],stats = c('m', 'v'),var.name = c('X2', 'X4'),
+         treat = eligible_data[eligible_data$t == 1& eligible_data$A_0 == 1,]$C, weights = eligible_data[eligible_data$t == 1& eligible_data$A_0 == 1,]$calibrated_weight )
 
 
 
@@ -151,20 +176,20 @@ bal.plot(eligible_data[eligible_data$t == 1,],stats = c('m', 'v'),var.name = c('
 # switch_n1 <- readRDS(paste(data_direction,'/weight_model_switch_n1.rds', sep = ""))
 # 
 # design_mat <- expand.grid(id = 1:as.numeric(scenarios[l,1]),
-#                           for_period = 0:4,
+#                           trial_period = 0:4,
 #                           followup_time = 0:4) 
-# design_mat <- design_mat[which(5 -design_mat$for_period > design_mat$followup_time),]
+# design_mat <- design_mat[which(5 -design_mat$trial_period > design_mat$followup_time),]
 # 
 # fitting_data_treatment <-  switch_data %>% 
 #   dplyr::mutate(assigned_treatment = followup_time*0 + 1) %>% 
-#   dplyr::select(id,for_period, followup_time, X2,  X4, assigned_treatment) %>% 
-#   merge(design_mat, by = c("id", "for_period", "followup_time"), all.y = TRUE) %>% 
+#   dplyr::select(id,trial_period, followup_time, X2,  X4, assigned_treatment) %>% 
+#   merge(design_mat, by = c("id", "trial_period", "followup_time"), all.y = TRUE) %>% 
 #   dplyr::group_by(id) %>% 
 #   tidyr::fill( X2,X4,assigned_treatment,.direction = "down") %>% 
 #   dplyr::ungroup() %>% 
-#   dplyr::select(id, for_period, followup_time, X2, X4, assigned_treatment) %>% 
-#   merge(data.frame(id = switch_data$id, for_period = switch_data$for_period), by = c("id", "for_period"), all.y = TRUE) %>% 
-#   dplyr::arrange(id, for_period, followup_time) %>% 
+#   dplyr::select(id, trial_period, followup_time, X2, X4, assigned_treatment) %>% 
+#   merge(data.frame(id = switch_data$id, trial_period = switch_data$trial_period), by = c("id", "trial_period"), all.y = TRUE) %>% 
+#   dplyr::arrange(id, trial_period, followup_time) %>% 
 #   dplyr::mutate(t_1 = ifelse(followup_time == 1,1,0),
 #                 t_2 = ifelse(followup_time == 2,1,0),
 #                 t_3 = ifelse(followup_time == 3,1,0),
@@ -181,7 +206,7 @@ bal.plot(eligible_data[eligible_data$t == 1,],stats = c('m', 'v'),var.name = c('
 #                 t_2X4 = t_2*X4,
 #                 t_3X4 = t_3*X4,
 #                 t_4X4 = t_4*X4) %>% 
-#   dplyr::filter(for_period == 0)
+#   dplyr::filter(trial_period == 0)
 # 
 # fitting_data_treatment <- fitting_data_treatment[!duplicated(fitting_data_treatment),]
 # 
@@ -201,7 +226,7 @@ bal.plot(eligible_data[eligible_data$t == 1,],stats = c('m', 'v'),var.name = c('
 # predicted_probas_PP <- fitting_data_treatment %>% 
 #   dplyr::mutate(predicted_proba_treatment = Y_pred_PP_treatment,
 #                 predicted_proba_control = Y_pred_PP_control) %>% 
-#   dplyr::group_by(id, for_period) %>% 
+#   dplyr::group_by(id, trial_period) %>% 
 #   dplyr::mutate(cum_hazard_treatment = cumprod(1-predicted_proba_treatment),
 #                 cum_hazard_control = cumprod(1-predicted_proba_control)) %>% 
 #   dplyr::ungroup() %>% 
