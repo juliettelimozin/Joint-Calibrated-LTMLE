@@ -69,19 +69,22 @@ data_restric <- simdata_censored %>%
 simdatafinal <- calibration(simdatafinal = data_restric, 
                             var = c('A1', 'A0', 'A1X4', 'A0X4', 
                                     'A1X2', 'A0X2', 'A1nextX2', 'A0nextX2'))
+simdatafinal$treat <- simdatafinal$A
+
+bal.tab(simdatafinal[simdatafinal$t == 1,c('X2', 'X4')],treat = simdatafinal[simdatafinal$t == 1,]$A,
+        stats = c('m', 'v'),var.name = c('X2', 'X4'))
 
 bal.plot(simdatafinal[simdatafinal$t == 1,],stats = c('m', 'v'),var.name = c('X2', 'X4'),
          treat = simdatafinal[simdatafinal$t == 1,]$A )
 
-
-bal.tab(simdatafinal[simdatafinal$t == 1,],stats = c('m', 'v'),
-        treat = simdatafinal[simdatafinal$t == 1,]$A, weights = simdatafinal[simdatafinal$t == 1,]$weights )
+bal.tab(simdatafinal[simdatafinal$t == 1,c('X2', 'X4')],treat = simdatafinal[simdatafinal$t == 1,]$A,
+        stats = c('m', 'v'),var.name = c('X2', 'X4'), weights = simdatafinal[simdatafinal$t == 1,]$weights )
 
 bal.plot(simdatafinal[simdatafinal$t == 1,],stats = c('m', 'v'),var.name = c('X2', 'X4'),
          treat = simdatafinal[simdatafinal$t == 1,]$A, weights = simdatafinal[simdatafinal$t == 1,]$weights )
 
-bal.tab(simdatafinal[simdatafinal$t == 1,],stats = c('m', 'v'),
-        treat = simdatafinal[simdatafinal$t == 1,]$A, weights = simdatafinal[simdatafinal$t == 1,]$Cweights )
+bal.tab(simdatafinal[simdatafinal$t == 1,c('X2', 'X4')],treat = simdatafinal[simdatafinal$t == 1,]$A,
+        stats = c('m', 'v'),var.name = c('X2', 'X4'), weights = simdatafinal[simdatafinal$t == 1,]$Cweights )
 bal.plot(simdatafinal[simdatafinal$t == 1,],stats = c('m', 'v'),var.name = c('X2', 'X4'),
          treat = simdatafinal[simdatafinal$t == 1,]$A, weights = simdatafinal[simdatafinal$t == 1,]$Cweights )
 
