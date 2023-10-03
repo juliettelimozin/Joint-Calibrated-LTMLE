@@ -125,8 +125,8 @@ calibration<-function(simdatafinal, var=c('tall', 'X1', 'X2', 'X3', 'X4'))
   DMATR<-cbind(1, simdatafinal$sub,  simdatafinal[, var] )
   DMATR2<-DMATR[,-2] ### remove the sub index
   
-  DMATRvec1<-lenvec2*DMATR2 #(T - t+1)X_t-1 
-  
+  DMATRvec1<-lenvec2*DMATR2
+  View(DMATRvec1)
   lagfun1<-function(n)
   {
     n1<-n[-1]
@@ -138,16 +138,20 @@ calibration<-function(simdatafinal, var=c('tall', 'X1', 'X2', 'X3', 'X4'))
     ave(n,DMATR[,2],FUN=lagfun1)
   }
   
-  DMATRvec2<-apply(DMATRvec1,2,lagfun2) #
+  DMATRvec2<-apply(DMATRvec1,2,lagfun2)
+  View(DMATRvec2)
   
   DMATR12<-DMATRvec1-DMATRvec2
   
-  DMATRO<-DMATR12[simdatafinal$tall+1<lenID,]  ##DMATRO is a matrix for the coefficients of the weights for the left hand side of the equation in (7)
+  DMATRO<-DMATR12[simdatafinal$tall+1<lenID,]         ##DMATRO is a matrix for the coefficients of the weights for the left hand side of the equation in (7)
+  
   DMATRO <- DMATRO[,-1] ### NEW 
-  View(DMATRO)
+  View(cbind(DMATRO, simdatafinal[simdatafinal$tall>0, c('ID', 't')]))
+  
   indT0<-which(simdatafinal$tall==0)  ### indicator for baseline measurements
   
-  Baselinecond<-(maxlen-1)*colSums(DMATR[indT0,-1:-2])## NEW ##Baselinecond is a vector for the right hand side of the  equation in (7)  
+  Baselinecond<-(maxlen-1)*colSums(DMATR[indT0,-1:-2])##Baselinecond is a vector for the right hand side of the  equation in (7)  
+  
   View(Baselinecond)
   
   

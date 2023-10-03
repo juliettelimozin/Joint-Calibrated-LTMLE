@@ -42,7 +42,7 @@ switch_data <- PP_prep$data %>%
 
 data_restric <- simdata_censored %>% 
   dplyr::group_by(ID) %>% 
-  dplyr::mutate(A_0 = first(A), RA = ifelse(t !=0, ifelse(A == first(A) & A==Ap, 1, 0),1), nextX2 = lead(X2),prevX2 = lag(X2)) %>% 
+  dplyr::mutate( nextX2 = lead(X2),A_0 = first(A), RA = ifelse(t !=0, ifelse(A == first(A) & A==Ap, 1, 0),1),prevX2 = lag(X2)) %>% 
   dplyr::mutate(CRA = cumsum(RA),
                 nextX2 = ifelse(is.na(nextX2), 0, nextX2),
                 RA = ifelse(CRA == t+1,1,0),
@@ -58,13 +58,21 @@ data_restric <- simdata_censored %>%
                 A0nextX2 = (1-A_0)*nextX2,
                 A1 = A_0,
                 A0 = 1-A_0,
+                t1A1X4 = t1*A_0*X4,
+                t1A0X4 = t1*(1-A_0)*X4,
+                t1A1X2 = t1*A_0*X2,
+                t1A0X2 = t1*(1-A_0)*X2,
+                t1A1nextX2 = t1*A_0*nextX2,
+                t1A0nextX2 = t1*(1-A_0)*nextX2,
+                t1A1 = t1*A1,
+                t1A0 = t1*A0,
                 sub = ID,
                 tall = t) %>% 
   dplyr::filter(RA == 1) %>% 
   merge(dplyr::select(switch_data,id, followup_time, weight), 
         by.x = c('ID', 't'), by.y = c('id', 'followup_time')) %>% 
   dplyr::mutate(weights = weight) %>% 
-  dplyr::arrange(ID, t) 
+  dplyr::arrange(ID, t)
   
 simdatafinal <- calibration(simdatafinal = data_restric, 
                             var = c('A1', 'A0', 'A1X4', 'A0X4', 
