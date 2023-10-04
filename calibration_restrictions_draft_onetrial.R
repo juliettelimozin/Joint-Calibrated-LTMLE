@@ -9,13 +9,13 @@ library(sandwich)
 library(doParallel)
 library(doRNG)
 library(cobalt)
+library(nleqslv)
 source('calibration_func_trials.R')
-simdata_censored<-DATA_GEN_censored_reduced(2500,5, conf = 1.5, censor = T) 
+simdata_censored<-DATA_GEN_censored_reduced(2500,5, conf = 1.5, censor = F) 
 
 PP_prep <- TrialEmulation::data_preparation(simdata_censored, id='ID', period='t', treatment='A', outcome='Y', 
                                             eligible ='eligible',
                                             switch_d_cov = ~X2 + X4,
-                                            cense_d_cov = ~X2 + X4,
                                             outcome_cov = ~X2 + X4, model_var = c('assigned_treatment'),
                                             use_weight=T, use_censor=T, quiet = T,
                                             save_weight_models = T,
@@ -42,7 +42,7 @@ switch_data <- PP_prep$data %>%
 
 data_restric <- simdata_censored %>% 
   dplyr::group_by(ID) %>% 
-  dplyr::mutate( nextX2 = lead(X2),A_0 = first(A), RA = ifelse(t !=0, ifelse(A == first(A) & A==Ap, 1, 0),1),prevX2 = lag(X2)) %>% 
+  dplyr::mutate(A_0 = first(A), RA = ifelse(t !=0, ifelse(A == first(A) & A==Ap, 1, 0),1), nextX2 = lead(X2),prevX2 = lag(X2)) %>% 
   dplyr::mutate(CRA = cumsum(RA),
                 nextX2 = ifelse(is.na(nextX2), 0, nextX2),
                 RA = ifelse(CRA == t+1,1,0),
@@ -58,36 +58,25 @@ data_restric <- simdata_censored %>%
                 A0nextX2 = (1-A_0)*nextX2,
                 A1 = A_0,
                 A0 = 1-A_0,
-                t1A1X4 = t1*A_0*X4,
-                t1A0X4 = t1*(1-A_0)*X4,
-                t1A1X2 = t1*A_0*X2,
-                t1A0X2 = t1*(1-A_0)*X2,
-                t1A1nextX2 = t1*A_0*nextX2,
-                t1A0nextX2 = t1*(1-A_0)*nextX2,
-                t1A1 = t1*A1,
-                t1A0 = t1*A0,
                 sub = ID,
                 tall = t) %>% 
   dplyr::filter(RA == 1) %>% 
   merge(dplyr::select(switch_data,id, followup_time, weight), 
         by.x = c('ID', 't'), by.y = c('id', 'followup_time')) %>% 
   dplyr::mutate(weights = weight) %>% 
-  dplyr::arrange(ID, t)
-  
+  dplyr::arrange(ID, t) 
+
 simdatafinal <- calibration(simdatafinal = data_restric, 
                             var = c('A1', 'A0', 'A1X4', 'A0X4', 
-                                    'A1X2', 'A0X2', 'A1nextX2', 'A0nextX2'))
-simdatafinal$treat <- simdatafinal$A
+                                    'A1nextX2', 'A0nextX2'))
 
 bal.tab(simdatafinal[simdatafinal$t == 1,c('X2', 'X4')],treat = simdatafinal[simdatafinal$t == 1,]$A,
         stats = c('m', 'v'),var.name = c('X2', 'X4'))
-
 bal.plot(simdatafinal[simdatafinal$t == 1,],stats = c('m', 'v'),var.name = c('X2', 'X4'),
          treat = simdatafinal[simdatafinal$t == 1,]$A )
 
 bal.tab(simdatafinal[simdatafinal$t == 1,c('X2', 'X4')],treat = simdatafinal[simdatafinal$t == 1,]$A,
         stats = c('m', 'v'),var.name = c('X2', 'X4'), weights = simdatafinal[simdatafinal$t == 1,]$weights )
-
 bal.plot(simdatafinal[simdatafinal$t == 1,],stats = c('m', 'v'),var.name = c('X2', 'X4'),
          treat = simdatafinal[simdatafinal$t == 1,]$A, weights = simdatafinal[simdatafinal$t == 1,]$weights )
 
@@ -95,9 +84,6 @@ bal.tab(simdatafinal[simdatafinal$t == 1,c('X2', 'X4')],treat = simdatafinal[sim
         stats = c('m', 'v'),var.name = c('X2', 'X4'), weights = simdatafinal[simdatafinal$t == 1,]$Cweights )
 bal.plot(simdatafinal[simdatafinal$t == 1,],stats = c('m', 'v'),var.name = c('X2', 'X4'),
          treat = simdatafinal[simdatafinal$t == 1,]$A, weights = simdatafinal[simdatafinal$t == 1,]$Cweights )
-
-
-
 
 
 
