@@ -195,6 +195,8 @@ calibration<-function(simdatafinal, var=c('tall', 'X1', 'X2', 'X3', 'X4'))
 
   simdatafinal$Cweights<-simdatafinal$weights
   simdatafinal$Cweights[simdatafinal$tall>0]<-CALW
-
-  simdatafinal
+ 
+  list(data = simdatafinal, 
+       objective.IPW =  gfunAR(rep(0,dim(DMATR2)[2]-1)), 
+       objective.Cali = weioptAR$fvec)
 }
