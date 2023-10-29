@@ -1,8 +1,9 @@
 library(modelr)
 library(tidyverse)
 library(tidyr)
+setwd("~/rds/hpc-work/Calibrated-weights-sequential-trial-emulation")
 source("simulate_MSM_simplified.R")
-set.seed(20222022)
+set.seed(NULL)
 library(MASS)
 library(survival)
 library(survminer)
@@ -11,12 +12,13 @@ library(ggplot2)
 library(pammtools)
 
 treat <- c(-1,0,1)
-conf <- c(1,3,5)
+conf <- c(0.5,1,3)
 outcome_prev <- c(-4.7,-3.8,-3)
 
 scenarios <- tidyr::crossing(conf, treat)
 
 true_HR <- array(,dim = c(9,3))
+true_MRD <- array(,dim = c(5,9,3))
 
 for (l in 1:9){
   for (j in 1:3){
@@ -61,7 +63,35 @@ for (l in 1:9){
                                     include_trial_period = ~1, include_followup_time = ~1,
                                     use_weight=T, use_censor=T, quiet = T, use_sample_weights =  F)
     true_HR[l,j] <- PP$model$coefficients[2]
+    
+    simdata_censored_treat<-DATA_GEN_censored_reduced(1000000, 5, 
+                                                      conf = as.numeric(scenarios[l,1]), 
+                                                      treat_prev = as.numeric(scenarios[l,2]),
+                                                      outcome_prev = outcome_prev[j],
+                                                      all_treat = T,
+                                                      censor = F)
+    simdata_censored_control<-DATA_GEN_censored_reduced(1000000,5, 
+                                                        conf = as.numeric(scenarios[l,1]), 
+                                                        treat_prev = as.numeric(scenarios[l,2]),
+                                                        outcome_prev = outcome_prev[j],
+                                                        all_control = T,
+                                                        censor = F)
+    
+    surv_data_treat <- simdata_censored_treat[ !duplicated(simdata_censored_treat[, c("ID")], fromLast=T),] %>% 
+      dplyr::mutate(status = Y) %>% 
+      dplyr::select(ID, t, status)
+    
+    f1 <- survfit(Surv(t, status) ~ 1, data = surv_data_treat)
+    
+    surv_data_control <- simdata_censored_control[ !duplicated(simdata_censored_control[, c("ID")], fromLast=T),] %>% 
+      dplyr::mutate(status = Y) %>% 
+      dplyr::select(ID, t, status)
+    
+    f2 <- survfit(Surv(t, status) ~ 1, data = surv_data_control)
+    
+    true_MRD[,l,j] <- f1$surv - f2$surv
   }
 }
-save(true_HR, file = "true_HR_singletrial.rda")
+save(true_HR, file = "Simulation results/true_HR_singletrial.rda")
+save(true_MRD, file = "Simulation results/true_MRD_singletrial.rda")
 
