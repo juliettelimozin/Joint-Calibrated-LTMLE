@@ -2,8 +2,8 @@ library(tidyverse)
 library(tidyr)
 library(ggplot2)
 library(ggpubr)
-load("/Users/juliette/Documents/MPhil PHS 21-22/Multiple-trial-emulation-IPTW-MSM-CIs/Code/HPC output/true_value_red_newsimus.rda")
-load('true_HR_singletrial.rda')
+load('Simulation results/true_HR_singletrial.rd')
+load('Simulation results/true_MRD_singletrial.rd')
 library(modelr)
 library(tidyverse)
 library(tidyr)
@@ -46,8 +46,8 @@ for (i in 1:19){
     objectives_all[,,,i] <- objectives
     scenario <- i%%9
     if (scenario ==0){scenario <- 9}
-    bias_mrd[1,,i] <- rowMeans(mrd_estimates[1,,], na.rm = TRUE) - true_value_red[,scenario,1]
-    bias_mrd[2,,i] <- rowMeans(mrd_estimates[2,,], na.rm = TRUE) - true_value_red[,scenario,1]
+    bias_mrd[1,,i] <- rowMeans(mrd_estimates[1,,], na.rm = TRUE) - true_MRD[,scenario,1]
+    bias_mrd[2,,i] <- rowMeans(mrd_estimates[2,,], na.rm = TRUE) - true_MRD[,scenario,1]
     sd_mrd[1,,i] <- rowSds(mrd_estimates[1,,], na.rm = TRUE)
     sd_mrd[2,,i] <- rowSds(mrd_estimates[2,,], na.rm = TRUE)
     bias_hr[,i]<- rowMeans(hr_estimates, na.rm = T) - c(true_HR[scenario,1],true_HR[scenario,1])

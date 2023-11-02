@@ -1,7 +1,7 @@
 library(modelr)
 library(tidyverse)
 library(tidyr)
-setwd("~/rds/hpc-work/Calibrated-weights-sequential-trial-emulation")
+#setwd("~/rds/hpc-work/Calibrated-weights-sequential-trial-emulation")
 source("simulate_MSM_simplified.R")
 set.seed(NULL)
 library(MASS)
@@ -12,7 +12,7 @@ library(ggplot2)
 library(pammtools)
 
 treat <- c(-1,0,1)
-conf <- c(0.5,1,3)
+conf <- c(1,3,5)
 outcome_prev <- c(-4.7,-3.8,-3)
 
 scenarios <- tidyr::crossing(conf, treat)
@@ -91,7 +91,8 @@ for (l in 1:9){
     
     true_MRD[,l,j] <- f1$surv - f2$surv
   }
+  save(true_HR, file = "Simulation results/true_HR_singletrial.rda")
+  save(true_MRD, file = "Simulation results/true_MRD_singletrial.rda")
 }
-save(true_HR, file = "Simulation results/true_HR_singletrial.rda")
-save(true_MRD, file = "Simulation results/true_MRD_singletrial.rda")
+
 

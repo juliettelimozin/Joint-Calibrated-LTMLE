@@ -2,7 +2,7 @@
 ## simulate data for testing TrialEmulation package, using the algorithm in Young and Tchetgen Tchetgen (2014) 
 
 
-DATA_GEN_censored_reduced<-function(ns, nv, conf = 0.5, treat_prev = 0, 
+DATA_GEN_treatment_switch<-function(ns, nv, conf = 0.5, treat_prev = 0, 
                                     outcome_prev = -3.8, all_treat = FALSE, 
                                     all_control = FALSE, censor = TRUE){   
   # ns= number of subjects, nv=no of visits including baseline visit
@@ -10,9 +10,9 @@ DATA_GEN_censored_reduced<-function(ns, nv, conf = 0.5, treat_prev = 0,
   
   nvisit<-nv+1
   
-  X2<-rep(0,nvisit*ns)          ## place holders for time-varying covariates
+  X1<-rep(0,nvisit*ns)          ## place holders for time-varying covariates
   Z2<-rnorm(nvisit*ns,0,1)
-  X4<-rep(rnorm(ns,0,1),each=nvisit) # baseline continuous covariate
+  X2<-rep(rnorm(ns,0,1),each=nvisit) # baseline continuous covariate
   
   A<-rep(0,nvisit*ns) ##place holders for current  treatments
   Ap<-rep(0,nvisit*ns) ##place holders for  previous treatments
@@ -27,10 +27,12 @@ DATA_GEN_censored_reduced<-function(ns, nv, conf = 0.5, treat_prev = 0,
   ##Fill in initial values
   seq1<-seq(1,nvisit*ns-nv,nvisit)
   
-  X2[seq1]<-0
+  X1[seq1]<-0
   
   P0<-list() ##list of treatment probabilities 
   P0[[1]]<-rep(0, ns) 
+  P1<-list() ##list of treatment probabilities 
+  P1[[1]]<-rep(0, ns) 
   seqlist<-list()                              
   seqlist[[1]]<-seq1
   CAp[seq1]<-rep(0, ns)
@@ -43,27 +45,33 @@ DATA_GEN_censored_reduced<-function(ns, nv, conf = 0.5, treat_prev = 0,
     Ap[seqlist[[k]]]<-A[seqlist[[k-1]]]
     CAp[seqlist[[k]]]<-CAp[seqlist[[k-1]]]+Ap[seqlist[[k]]]
     
-    X2[seqlist[[k]]]<-Z2[seqlist[[k]]]-0.3*Ap[seqlist[[k]]] ## continuous time-varying confounder 
+    X1[seqlist[[k]]]<-Z2[seqlist[[k]]]-0.3*Ap[seqlist[[k]]] ## continuous time-varying confounder 
     
     ## update treatment
     
-    ########### Old formula: lpp<- as.numeric(treat_prev) + Ap[seqlist[[k]]]+0.5*X1[seqlist[[k]]]+as.numeric(conf)*X2[seqlist[[k]]]
-    ###########                    -0.2*X3[seqlist[[k]]]+X4[seqlist[[k]]]-0.3*(age[seqlist[[k]]]-35)/12
-    lpp<- as.numeric(treat_prev) + 0.05*Ap[seqlist[[k]]] + as.numeric(conf)*X2[seqlist[[k]]] + 0.2*X4[seqlist[[k]]]
-    P0[[k]]<-1/(1+exp(-lpp))
+    ########### Old formula: lpp<- as.numeric(treat_prev) + Ap[seqlist[[k]]]+0.5*X1[seqlist[[k]]]+as.numeric(conf)*X1[seqlist[[k]]]
+    ###########                    -0.2*X3[seqlist[[k]]]+X2[seqlist[[k]]]-0.3*(age[seqlist[[k]]]-35)/12
+    lpp1<- 0.5 + as.numeric(conf)*X1[seqlist[[k]]] + 0.2*X2[seqlist[[k]]] + 0.1*X2[seqlist[[k]]]^2
+    lpp0<- 0.3 + as.numeric(conf)*X1[seqlist[[k]]] + 0.2*X2[seqlist[[k]]] + 0.1*X2[seqlist[[k]]]^2
+    P1[[k]]<-1/(1+exp(-lpp1))
+    P0[[k]]<-1/(1+exp(-lpp0))
     
     if (all_treat == TRUE){
       A[seqlist[[k]]]<- 1.0
     } else{ if (all_control == TRUE){
       A[seqlist[[k]]]<- 0.0
-    } else{
-      A[seqlist[[k]]]<-rbinom(ns,1,P0[[k]]) ##Generate treatment at current visit based on  covariates, previous treatment
+    } else{ if(k==2){
+      lpp_baseline <- as.numeric(treat_prev) + 0.1*X1[seqlist[[k]]] + 0.2*X2[seqlist[[k]]] + 0.1*X2[seqlist[[k]]]^2
+      A[seqlist[[k]]]<-rbinom(ns,1,1/(1+exp(-lpp_baseline)))
+    }else{
+      A[seqlist[[k]]]<-(rbinom(ns,1,P0[[k]]))*as.numeric(Ap[seqlist[[k]]]==0) + (rbinom(ns,1,P1[[k]]))*as.numeric(Ap[seqlist[[k]]]==1)##Generate treatment at current visit based on  covariates, previous treatment
+    }
     }
     }
     ##Generate outcome
     
     ##### Old formula: intercept was -7 -3.7
-    lp<- as.numeric(outcome_prev) -0.5*A[seqlist[[k]]]+as.numeric(conf)*X2[seqlist[[k]]]+X4[seqlist[[k]]]
+    lp<- as.numeric(outcome_prev) -0.5*A[seqlist[[k]]]+0.25*X1[seqlist[[k]]]+X2[seqlist[[k]]]
     
     Yp[seqlist[[k]]]<-Y[seqlist[[k-1]]]
     Y[seqlist[[k]]]<-(rbinom(ns,1,1/(1+exp(-lp))))*as.numeric(Yp[seqlist[[k]]]==0)+as.numeric(Yp[seqlist[[k]]]==1)
@@ -77,8 +85,8 @@ DATA_GEN_censored_reduced<-function(ns, nv, conf = 0.5, treat_prev = 0,
   ##Align data by removing values 
   NSEQ<-seq1
   
+  X1<-X1[-NSEQ]
   X2<-X2[-NSEQ]
-  X4<-X4[-NSEQ]
 
   A<-A[-NSEQ]
   Ap<-Ap[-NSEQ]
@@ -88,12 +96,12 @@ DATA_GEN_censored_reduced<-function(ns, nv, conf = 0.5, treat_prev = 0,
   
   ##Create data frame
   
-  DATA<-data.frame(ID,t=rep(c(0:(nv-1)),ns),A,Ap,CAp,X2,X4,Y,Yp)
+  DATA<-data.frame(ID,t=rep(c(0:(nv-1)),ns),A,Ap,CAp,X1,X2,Y,Yp)
   DATA$eligible<-as.numeric(CAp==0 & Yp==0)  ## eligibility criteria: age>=18, had no treatment so far, no event so far
   
   ##censoring
   if (censor == T){
-    Dprob<-1/(1+exp(2.5 + Ap-0.5*X2-0.2*X4)) ##Probability of dropout
+    Dprob<-1/(1+exp(2.5 + Ap-0.5*X1-0.2*X2)) ##Probability of dropout
     
     DATA$C<-rbinom(nv*ns,1,Dprob) ##C=0 is remain in the study
     

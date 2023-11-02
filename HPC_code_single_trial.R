@@ -299,7 +299,7 @@ for (i in 1:iters){
     #########  Misspecified ############### 
     PP_prep <- TrialEmulation::data_preparation(simdata_censored, id='ID', period='t', treatment='A', outcome='Y', 
                                                 eligible ='eligible',
-                                                switch_d_cov = ~ exp(X2) + exp(X4),
+                                                switch_d_cov = ~ X2 + X4 + X2^2,
                                                 outcome_cov = ~X2 + X4, model_var = c('assigned_treatment'),
                                                 use_weight=T, use_censor=T, quiet = T,
                                                 save_weight_models = F,
