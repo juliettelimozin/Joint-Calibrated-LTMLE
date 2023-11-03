@@ -14,7 +14,7 @@ library(nleqslv)
 source('calibration_func_trials.R')
 set.seed(NULL)
 
-iters <- 500
+iters <- 1000
 l <- as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))
 size <- c(200,1000,5000)
 treat <- c(-1,0,1)
