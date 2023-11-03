@@ -140,7 +140,7 @@ calibration<-function(simdatafinal, var=c('tall', 'X1', 'X2', 'X3', 'X4'))
 
   DMATRvec2<-apply(DMATRvec1,2,lagfun2) #
 
-  DMATR12<-DMATRvec1-DMATRvec2
+  DMATR12<-simdatafinal$RA*DMATRvec1-DMATRvec2
 
   DMATRO<-DMATR12[simdatafinal$tall+1<lenID,]  ##DMATRO is a matrix for the coefficients of the weights for the left hand side of the equation in (7)
   DMATRO <- DMATRO[,-1] ### NEW 
