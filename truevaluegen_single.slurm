@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -J singletrial-low
+#SBATCH -J trueval-single
 #SBATCH -p icelake
 #SBATCH --time=36:0:0
 #SBATCH -A mrc-bsu-sl2-cpu

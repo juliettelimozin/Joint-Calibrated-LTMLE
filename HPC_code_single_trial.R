@@ -9,12 +9,11 @@ library(MASS)
 library(sandwich)
 library(doParallel)
 library(doRNG)
-library(cobalt)
 library(nleqslv)
 source('calibration_func_trials.R')
 set.seed(NULL)
 
-iters <- 1000
+iters <- 2
 l <- as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))
 size <- c(200,1000,5000)
 treat <- c(-1,0,1)
