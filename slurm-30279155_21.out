@@ -30,3 +30,4 @@ The following objects are masked from ‘package:purrr’:
 Loading required package: iterators
 Loading required package: parallel
 Loading required package: rngtools
+There were 50 or more warnings (use warnings() to see the first 50)
