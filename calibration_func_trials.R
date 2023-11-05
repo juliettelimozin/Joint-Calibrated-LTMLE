@@ -180,7 +180,7 @@ calibration<-function(simdatafinal, var=c('tall', 'X1', 'X2', 'X3', 'X4'))
   }
 
 
-  weioptAR<-nleqslv(rep(0,dim(DMATR2)[2]-1),gfunAR,DgAR,method="Broyden",
+  weioptAR<-nleqslv::nleqslv(rep(0,dim(DMATR2)[2]-1),gfunAR,DgAR,method="Broyden",
                     control=list(maxit=10000,ftol=10^(-16),xtol=10^(-16)), jacobian=T)
 
 

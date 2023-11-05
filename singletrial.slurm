@@ -12,6 +12,6 @@
 module purge                    
 module load rhel8/default-icl    
 
-module load R/4.2.0-icelake
+module load R/4.3.1-icelake
 
 Rscript HPC_code_single_trial.R 

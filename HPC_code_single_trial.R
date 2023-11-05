@@ -13,7 +13,7 @@ library(nleqslv)
 source('calibration_func_trials.R')
 set.seed(NULL)
 
-iters <- 2
+iters <- 1000
 l <- as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))
 size <- c(200,1000,5000)
 treat <- c(-1,0,1)
@@ -98,10 +98,10 @@ for (i in 1:iters){
     objectives[2,,i] <- simdatafinal$objective.Cali
     
     meandiffs_summary <- simdatafinal$data %>% 
-      mutate(RAX2 = RA*X2,
+      dplyr::mutate(RAX2 = RA*X2,
              RAX2sq = RA*X2sq,
              RAX1 = RA*X1) %>% 
-      select(t,A1,A0,X2,X2sq,X1, RAX2, RAX2sq, RAX1, weights, Cweights)
+      dplyr::select(t,A1,A0,X2,X2sq,X1, RAX2, RAX2sq, RAX1, weights, Cweights)
     
     for (h in 1:4){
       try({
@@ -145,7 +145,7 @@ for (i in 1:iters){
                                     use_weight=T, use_censor=T, quiet = T, use_sample_weights =  F)
     hr_estimates[1,i] <- PP$model$coefficients[2]
     
-    switch_data$weight <- simdatafinal$data %>% filter(RA == 1) %>% select(Cweights)
+    switch_data$weight <- simdatafinal$data %>% dplyr::filter(RA == 1) %>% dplyr::select(Cweights)
     PP_calibrated <- TrialEmulation::trial_msm(data = switch_data,
                                                outcome_cov = ~ X1 + X2+ assigned_treatment+
                                                  t_1 + t_2 + t_3 + t_4 +
@@ -299,10 +299,10 @@ for (i in 1:iters){
     objectives[4,1:6,i] <- simdatafinal$objective.Cali
     
     meandiffs_summary <- simdatafinal$data %>% 
-      mutate(RAX2 = RA*X2,
+      dplyr::mutate(RAX2 = RA*X2,
              RAX2sq = RA*X2sq,
              RAX1 = RA*X1) %>% 
-      select(t,A1,A0,X2,X2sq,X1, RAX2, RAX2sq, RAX1, weights, Cweights)
+      dplyr::select(t,A1,A0,X2,X2sq,X1, RAX2, RAX2sq, RAX1, weights, Cweights)
     
     for (h in 1:4){
       try({
@@ -336,7 +336,7 @@ for (i in 1:iters){
                                     use_weight=T, use_censor=T, quiet = T, use_sample_weights =  F)
     hr_estimates[3,i] <- PP$model$coefficients[2]
     
-    switch_data$weight <- simdatafinal$data$Cweights
+    switch_data$weight <- simdatafinal$data %>% dplyr::filter(RA == 1) %>% dplyr::select(Cweights)
     PP_calibrated <- TrialEmulation::trial_msm(data = switch_data,
                                                outcome_cov = ~ X1 + X2+ assigned_treatment+
                                                  t_1 + t_2 + t_3 + t_4 +
