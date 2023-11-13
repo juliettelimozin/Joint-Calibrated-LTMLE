@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -J trueval-single
+#SBATCH -J trueval-sce1
 #SBATCH -p icelake
 #SBATCH --time=36:0:0
 #SBATCH -A mrc-bsu-sl2-cpu
