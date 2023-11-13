@@ -13,10 +13,10 @@ library(ggplot2)
 library(pammtools)
 
 treat <- c(-1,0,1)
-conf <- c(0.1,0.5,0.9)
+miss <- c(0.1,0.5,0.9)
 outcome_prev <- c(-4.7,-3.8,-3)
 
-scenarios <- tidyr::crossing(conf, treat)
+scenarios <- tidyr::crossing(miss, treat)
 
 true_HR <- array(,dim = c(9,3))
 true_MRD <- array(,dim = c(5,2,9,3))
@@ -24,7 +24,7 @@ true_MRD <- array(,dim = c(5,2,9,3))
 for (l in 1:9){
   for (j in 1:1){
     simdata_censored<-DATA_GEN_treatment_switch(1000000, 5, 
-                                                conf = as.numeric(scenarios[l,1]), 
+                                                miss = as.numeric(scenarios[l,1]), 
                                                 treat_prev = as.numeric(scenarios[l,2]),
                                                 outcome_prev = outcome_prev[j],
                                                 censor = F)
@@ -72,13 +72,13 @@ for (l in 1:9){
     true_HR[l,j] <- PP$model$coefficients[2]
     
     simdata_censored_treat<-DATA_GEN_treatment_switch(1000000, 5, 
-                                                      conf = as.numeric(scenarios[l,1]), 
+                                                      miss = as.numeric(scenarios[l,1]), 
                                                       treat_prev = as.numeric(scenarios[l,2]),
                                                       outcome_prev = outcome_prev[j],
                                                       all_treat = T,
                                                       censor = F)
     simdata_censored_control<-DATA_GEN_treatment_switch(1000000,5, 
-                                                        conf = as.numeric(scenarios[l,1]), 
+                                                        miss = as.numeric(scenarios[l,1]), 
                                                         treat_prev = as.numeric(scenarios[l,2]),
                                                         outcome_prev = outcome_prev[j],
                                                         all_control = T,
@@ -101,8 +101,8 @@ for (l in 1:9){
     true_MRD[,2,l,j] <- f1$surv
     
   }
-  save(true_HR, file = "Simulation results/true_HR_singletrial.rda")
-  save(true_MRD, file = "Simulation results/true_MRD_singletrial.rda")
+  save(true_HR, file = "Simulation results/true_HR_singletrial_scenario2.rda")
+  save(true_MRD, file = "Simulation results/true_MRD_singletrial_scenario2.rda")
 }
 
 
