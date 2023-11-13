@@ -2,8 +2,8 @@
 ## simulate data for testing TrialEmulation package, using the algorithm in Young and Tchetgen Tchetgen (2014) 
 
 
-DATA_GEN_treatment_switch<-function(ns, nv, conf = 0.5, treat_prev = 0, 
-                                    outcome_prev = -3.8, all_treat = FALSE, 
+DATA_GEN_treatment_switch<-function(ns, nv, conf = 0.5, treat_prev = 0, miss = 0.5,
+                                    outcome_prev = -3.8, all_treat = FALSE,
                                     all_control = FALSE, censor = TRUE){   
   # ns= number of subjects, nv=no of visits including baseline visit
   
@@ -51,8 +51,8 @@ DATA_GEN_treatment_switch<-function(ns, nv, conf = 0.5, treat_prev = 0,
     
     ########### Old formula: lpp<- as.numeric(treat_prev) + Ap[seqlist[[k]]]+0.5*X1[seqlist[[k]]]+as.numeric(conf)*X1[seqlist[[k]]]
     ###########                    -0.2*X3[seqlist[[k]]]+X2[seqlist[[k]]]-0.3*(age[seqlist[[k]]]-35)/12
-    lpp1<- 0.5 + as.numeric(conf)*X1[seqlist[[k]]] + 0.2*X2[seqlist[[k]]] + 0.1*X2[seqlist[[k]]]^2
-    lpp0<- 0.3 + as.numeric(conf)*X1[seqlist[[k]]] + 0.2*X2[seqlist[[k]]] + 0.1*X2[seqlist[[k]]]^2
+    lpp1<- 0.5 + as.numeric(conf)*X1[seqlist[[k]]] + 0.2*X2[seqlist[[k]]] + as.numeric(miss)*X2[seqlist[[k]]]^2
+    lpp0<- 0.3 + as.numeric(conf)*X1[seqlist[[k]]] + 0.2*X2[seqlist[[k]]] + as.numeric(miss)*X2[seqlist[[k]]]^2
     P1[[k]]<-1/(1+exp(-lpp1))
     P0[[k]]<-1/(1+exp(-lpp0))
     
@@ -61,7 +61,7 @@ DATA_GEN_treatment_switch<-function(ns, nv, conf = 0.5, treat_prev = 0,
     } else{ if (all_control == TRUE){
       A[seqlist[[k]]]<- 0.0
     } else{ if(k==2){
-      lpp_baseline <- as.numeric(treat_prev) + 0.1*X1[seqlist[[k]]] + 0.2*X2[seqlist[[k]]] + 0.1*X2[seqlist[[k]]]^2
+      lpp_baseline <- as.numeric(treat_prev) + 0.1*X1[seqlist[[k]]] + 0.2*X2[seqlist[[k]]] + 0.5*X2[seqlist[[k]]]^2
       A[seqlist[[k]]]<-rbinom(ns,1,1/(1+exp(-lpp_baseline)))
     }else{
       A[seqlist[[k]]]<-(rbinom(ns,1,P0[[k]]))*as.numeric(Ap[seqlist[[k]]]==0) + (rbinom(ns,1,P1[[k]]))*as.numeric(Ap[seqlist[[k]]]==1)##Generate treatment at current visit based on  covariates, previous treatment
@@ -71,7 +71,7 @@ DATA_GEN_treatment_switch<-function(ns, nv, conf = 0.5, treat_prev = 0,
     ##Generate outcome
     
     ##### Old formula: intercept was -7 -3.7
-    lp<- as.numeric(outcome_prev) -0.5*A[seqlist[[k]]]+0.25*X1[seqlist[[k]]]+X2[seqlist[[k]]]
+    lp<- as.numeric(outcome_prev) -0.5*A[seqlist[[k]]]+0.5*X1[seqlist[[k]]]+X2[seqlist[[k]]] + as.numeric(miss)*X2[seqlist[[k]]]^2
     
     Yp[seqlist[[k]]]<-Y[seqlist[[k-1]]]
     Y[seqlist[[k]]]<-(rbinom(ns,1,1/(1+exp(-lp))))*as.numeric(Yp[seqlist[[k]]]==0)+as.numeric(Yp[seqlist[[k]]]==1)

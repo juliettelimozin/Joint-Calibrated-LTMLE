@@ -1,0 +1,74 @@
+---
+title: "SM ES2"
+author: "Juliette Limozin"
+date: "2023-11-10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(MASS)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+?hills
+pairs(hills)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(hills$time ~ hills$dist)
+plot(hills$time ~ hills$climb)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+hills[hills$time > 50 & hills$dist <5,]
+hills[hills$time > 180 & hills$dist > 15,]
+```
+
+```{r}
+hills['Knock Hill', 'time'] <- hills['Knock Hill', 'time'] - 60
+```
+
+
+```{r}
+plot(log(hills$time) ~ log(hills$dist))
+plot(log(hills$time) ~ log(hills$climb))
+```
+
+
+```{r}
+lm1 <- lm(log(time) ~ log(dist), data = hills)
+summary(lm1)
+plot(lm1)
+```
+```{r}
+lm2 <- lm(log(time) ~ log(dist) + log(climb), data = hills)
+summary(lm2)
+plot(lm2)
+```
+
+```{r}
+anova(lm1, lm2)
+```
+
+```{r}
+predict.lm(lm2, data.frame(dist = 5.3,climb = 1100), interval = 'prediction', level = 0.95)
+predict.lm(lm1, data.frame(dist = 5.3,climb = 1100), interval = 'prediction', level = 0.95)
+```
+
+```{r}
+paste0('Model with climb: ',exp(3.556545),' (', exp(3.224142), ', ',exp(3.888948), ')' )
+paste0('Model without climb: ',exp(3.561158),' (', exp(3.11599), ', ',exp(4.006326), ')' )
+```
+
