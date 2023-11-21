@@ -9,44 +9,43 @@ output: html_document
 library(MASS)
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+Check for outliers:
 
 ```{r cars}
 ?hills
 pairs(hills)
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
+Knock Hill is the outlier? Maybe somne other ones?
 
 ```{r pressure, echo=FALSE}
 plot(hills$time ~ hills$dist)
 plot(hills$time ~ hills$climb)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 
 ```{r}
 hills[hills$time > 50 & hills$dist <5,]
 hills[hills$time > 180 & hills$dist > 15,]
 ```
 
+
+Knock Hill is our outlier: weirdly long time considering the distance and climb. Bens of Jura seemed like an outlier, but the long time is actually explained by the very high climb over a short distance.
+
+
 ```{r}
 hills['Knock Hill', 'time'] <- hills['Knock Hill', 'time'] - 60
 ```
 
+
+Data is right skewed (i.e. bunching towards the left). This could mean the fit of a model could be biaseCheck log transformation 
 
 ```{r}
 plot(log(hills$time) ~ log(hills$dist))
 plot(log(hills$time) ~ log(hills$climb))
 ```
 
-
+Looking more even spread now.
 ```{r}
 lm1 <- lm(log(time) ~ log(dist), data = hills)
 summary(lm1)
@@ -71,4 +70,26 @@ predict.lm(lm1, data.frame(dist = 5.3,climb = 1100), interval = 'prediction', le
 paste0('Model with climb: ',exp(3.556545),' (', exp(3.224142), ', ',exp(3.888948), ')' )
 paste0('Model without climb: ',exp(3.561158),' (', exp(3.11599), ', ',exp(4.006326), ')' )
 ```
+
+
+```{r}
+attach(cabbages)
+boxcox(lm(HeadWt ~ Date + Cult))
+plot(HeadWt ~ Date + Cult)
+```
+```{r}
+lm1 <- lm(log(HeadWt) ~ Date + Cult)
+lm2 <- lm(log(HeadWt) ~ Cult)
+anova(lm2, lm1)
+```
+
+Lm1 : $log(Y_{i,j,k}) = \mu  + \alpha_i + \beta_j + \epsilon_{i,j,k}, \space \epsilon_{i,j,k} \sim N(0,\sigma^2)$ where $Y_{i,j,k}$ is headweight of kth cabbaged planted at ith date of jth cultivar.
+
+```{r}
+lm1 <- lm(log(HeadWt) ~ Date + Cult + Date*Cult)
+lm2 <- lm(log(HeadWt) ~ Date + Cult)
+anova(lm2, lm1)
+summary(lm1)
+```
+
 

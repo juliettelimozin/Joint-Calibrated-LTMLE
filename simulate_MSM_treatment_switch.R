@@ -12,7 +12,7 @@ DATA_GEN_treatment_switch<-function(ns, nv, conf = 0.5, treat_prev = 0, miss = 0
   
   X1<-rep(0,nvisit*ns)          ## place holders for time-varying covariates
   Z2<-rnorm(nvisit*ns,0,1)
-  X2<-rep(rnorm(ns,0,1),each=nvisit) # baseline continuous covariate
+  X2<-rep(rnorm(ns,0,0.5),each=nvisit) # baseline continuous covariate
   
   A<-rep(0,nvisit*ns) ##place holders for current  treatments
   Ap<-rep(0,nvisit*ns) ##place holders for  previous treatments
@@ -71,7 +71,7 @@ DATA_GEN_treatment_switch<-function(ns, nv, conf = 0.5, treat_prev = 0, miss = 0
     ##Generate outcome
     
     ##### Old formula: intercept was -7 -3.7
-    lp<- as.numeric(outcome_prev) -0.5*A[seqlist[[k]]]+0.5*X1[seqlist[[k]]]+X2[seqlist[[k]]] + as.numeric(miss)*X2[seqlist[[k]]]^2
+    lp<- as.numeric(outcome_prev) -0.5*A[seqlist[[k]]]+0.5*X1[seqlist[[k]]]+X2[seqlist[[k]]] + 0.1*X2[seqlist[[k]]]^2
     
     Yp[seqlist[[k]]]<-Y[seqlist[[k-1]]]
     Y[seqlist[[k]]]<-(rbinom(ns,1,1/(1+exp(-lp))))*as.numeric(Yp[seqlist[[k]]]==0)+as.numeric(Yp[seqlist[[k]]]==1)

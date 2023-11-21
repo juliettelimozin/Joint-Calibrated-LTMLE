@@ -31,33 +31,34 @@ conf <- c(0.1,0.5,0.9)
 
 scenarios <- as.data.frame(tidyr::crossing(size,conf, treat))
 
-iters <- 1000
+iters <- 500
 
-bias_mrd <- array(,dim = c(4,5,27))
-bias_hr <- array(,dim = c(4,27))
-sd_hr <- array(,dim = c(4,27))
-mr_all <- array(,dim = c(4,2,5,iters,27))
-meandiffs_all <- array(, dim = c(5,4,6,iters,27))
-objectives_all <- array(0,dim = c(4,8,iters,27))
+bias_mrd <- array(,dim = c(2,5,27))
+bias_hr <- array(,dim = c(2,27))
+sd_mrd <- array(, dim = c(2,5,27))
+sd_hr <- array(,dim = c(2,27))
+mr_all <- array(,dim = c(2,2,5,iters,27))
+meandiffs_all <- array(, dim = c(3,4,6,iters,27))
+objectives_all <- array(0,dim = c(2,8,iters,27))
 
 
 for (i in 1:27){
-    load(paste0("Simulation results/meandiffs_singletrial_low_", i, ".rda"))
-    load(paste0("Simulation results/objectives_singletrial_low_", i, ".rda"))
-    load(paste0("Simulation results/hr_estimates_singletrial_low_", i, ".rda"))
-    load(paste0("Simulation results/mr_estimates_singletrial_low_", i, ".rda"))
+    load(paste0("Simulation results/meandiffs_singletrial_low_scenario1_", i, ".rda"))
+    load(paste0("Simulation results/objectives_singletrial_low_scenario1_", i, ".rda"))
+    load(paste0("Simulation results/hr_estimates_singletrial_low_scenario1_", i, ".rda"))
+    load(paste0("Simulation results/mr_estimates_singletrial_low_scenario1_", i, ".rda"))
     meandiffs_all[,,,,i] <- meandiffs
     objectives_all[1:2,,,i] <- objectives[1:2,,]
-    objectives_all[3:4,c(1,2,4,5,6,8),,i] <- objectives[3:4,1:6,]
     scenario <- i%%9
     if (scenario ==0){scenario <- 9}
     mr_all[,,,,i] <- mr_estimates
     bias_mrd[1,,i] <- rowMeans(mr_all[1,1,,,i] - mr_all[1,2,,,i], na.rm = T) - (true_MRD[,1,scenario,1] - true_MRD[,2,scenario,1])
       bias_mrd[2,,i] <- rowMeans(mr_all[2,1,,,i] - mr_all[2,2,,,i], na.rm = T) - (true_MRD[,1,scenario,1] - true_MRD[,2,scenario,1])
-      bias_mrd[3,,i] <- rowMeans(mr_all[3,1,,,i] - mr_all[3,2,,,i], na.rm = T) - (true_MRD[,1,scenario,1] - true_MRD[,2,scenario,1])
-      bias_mrd[4,,i] <- rowMeans(mr_all[4,1,,,i] - mr_all[4,2,,,i], na.rm = T) - (true_MRD[,1,scenario,1] - true_MRD[,2,scenario,1])
-    bias_hr[,i]<- rowMeans(hr_estimates, na.rm = T) - c(true_HR[scenario,1],true_HR[scenario,1])
+      bias_hr[,i]<- rowMeans(hr_estimates, na.rm = T) - c(true_HR[scenario,1],true_HR[scenario,1])
     sd_hr[,i]<- rowSds(hr_estimates, na.rm = T) 
+    sd_mrd[1,,i] <- rowSds(mr_all[1,1,,,i] - mr_all[1,2,,,i], na.rm = T) 
+    sd_mrd[2,,i] <- rowSds(mr_all[2,1,,,i] - mr_all[2,2,,,i], na.rm = T) 
+    
 }
 
 mr_plot_low <- lapply(1:27, function(i){
@@ -104,10 +105,6 @@ bias_plots_low_mrd <- lapply(1:27, function(i){
     geom_point(aes(x = 0:4, y = bias_mrd[1,,i],colour = 'MLE-IPW')) +
     geom_line(aes(x = 0:4, y = bias_mrd[2,,i], colour = 'Calibrated weights')) +
     geom_point(aes(x = 0:4, y = bias_mrd[2,,i], colour = 'Calibrated weights')) +
-    geom_line(aes(x = 0:4, y = bias_mrd[3,,i], colour = 'MLE-IPW mis.')) +
-    geom_point(aes(x = 0:4, y = bias_mrd[3,,i],colour = 'MLE-IPW mis.')) +
-    geom_line(aes(x = 0:4, y = bias_mrd[4,,i], colour = 'Calibrated weights mis.')) +
-    geom_point(aes(x = 0:4, y = bias_mrd[4,,i], colour = 'Calibrated weights mis.')) +
     scale_color_manual(name = "Weight type", values = c("MLE-IPW"= "red", "Calibrated weights" = "blue",
                                                         'MLE-IPW mis.' = 'purple', 'Calibrated weights mis.' = 'green')) +
     labs(x = paste0('N = ', scenarios[i,1], ',\nConfounding = ', scenarios[i,2], ', \nTreat. prev. = ',scenarios[i,3]),
@@ -166,17 +163,13 @@ annotate_figure(ggarrange(plotlist = meandiffsX1_treated_low[1:27], nrow = 3, nc
 
 meandiffsX1_untreated_low <- lapply(1:27, function(i){
   ggplot() +
-    geom_line(aes(x = 1:4, y = rowMeans(meandiffs_all[1,,6,,i], na.rm = T), colour = 'Unadjusted')) +
-    geom_point(aes(x = 1:4, y = rowMeans(meandiffs_all[1,,6,,i], na.rm = T), colour = 'Unadjusted')) +
-    geom_line(aes(x = 1:4, y = rowMeans(meandiffs_all[2,,6,,i], na.rm = T), colour = 'MLE-IPW')) +
-    geom_point(aes(x = 1:4, y = rowMeans(meandiffs_all[2,,6,,i], na.rm = T), colour = 'MLE-IPW')) +
-    geom_line(aes(x = 1:4, y = rowMeans(meandiffs_all[3,,6,,i], na.rm = T), colour = 'Calibrated weights')) +
-    geom_point(aes(x = 1:4, y = rowMeans(meandiffs_all[3,,6,,i], na.rm = T), colour = 'Calibrated weights')) +
-    geom_line(aes(x = 1:4, y = rowMeans(meandiffs_all[4,,6,,i], na.rm = T), colour = 'MLE-IPW mis.')) +
-    geom_point(aes(x = 1:4, y = rowMeans(meandiffs_all[4,,6,,i], na.rm = T), colour = 'MLE-IPW mis.')) +
-    geom_line(aes(x = 1:4, y = rowMeans(meandiffs_all[5,,6,,i], na.rm = T), colour = 'Calibrated weights mis.')) +
-    geom_point(aes(x = 1:4, y = rowMeans(meandiffs_all[5,,6,,i], na.rm = T), colour = 'Calibrated weights mis.')) +
-    scale_color_manual(name = "Weight type", values = c("MLE-IPW"= "red", "Calibrated weights" = "blue", 'Unadjusted' = 'grey',
+    geom_line(aes(x = 1:4, y = meandiffs_all[1,,6,30,i], colour = 'Unadjusted')) +
+    geom_point(aes(x = 1:4, y = meandiffs_all[1,,6,30,i], colour = 'Unadjusted')) +
+    geom_line(aes(x = 1:4, y = meandiffs_all[2,,6,30,i], colour = 'MLE-IPW')) +
+    geom_point(aes(x = 1:4, y = meandiffs_all[2,,6,30,i], colour = 'MLE-IPW')) +
+    geom_line(aes(x = 1:4, y =meandiffs_all[3,,6,30,i],colour = 'Calibrated weights')) +
+    geom_point(aes(x = 1:4, y = meandiffs_all[3,,6,30,i], colour = 'Calibrated weights')) +
+  scale_color_manual(name = "Weight type", values = c("MLE-IPW"= "red", "Calibrated weights" = "blue", 'Unadjusted' = 'grey',
                                                         'MLE-IPW mis.' = 'purple', 'Calibrated weights mis.' = 'green')) +
     labs(x = paste0('N = ', scenarios[i,1], ',\nConfounding = ', scenarios[i,2], ', \nTreat. prev. = ',scenarios[i,3]),
          y = "MD") + theme(aspect.ratio = 1, axis.title = element_text(size = 10)) +  
