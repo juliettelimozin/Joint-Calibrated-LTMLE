@@ -2,7 +2,7 @@
 ## simulate data for testing TrialEmulation package, using the algorithm in Young and Tchetgen Tchetgen (2014) 
 
 
-DATA_GEN_treatment_switch<-function(ns, nv, conf = 0.5, treat_prev = 0, miss = 0.5,
+DATA_GEN_treatment_switch<-function(ns, nv, conf = 0.5, treat_prev = 0,
                                     outcome_prev = -3.8, all_treat = FALSE,
                                     all_control = FALSE, censor = TRUE){   
   # ns= number of subjects, nv=no of visits including baseline visit
@@ -13,6 +13,8 @@ DATA_GEN_treatment_switch<-function(ns, nv, conf = 0.5, treat_prev = 0, miss = 0
   X1<-rep(0,nvisit*ns)          ## place holders for time-varying covariates
   Z2<-rnorm(nvisit*ns,0,1)
   X2<-rep(rnorm(ns,0,0.5),each=nvisit) # baseline continuous covariate
+  X3<-rep(0,nvisit*ns)    
+  Z3<-rnorm(nvisit*ns,0,1)
   
   A<-rep(0,nvisit*ns) ##place holders for current  treatments
   Ap<-rep(0,nvisit*ns) ##place holders for  previous treatments
@@ -46,13 +48,13 @@ DATA_GEN_treatment_switch<-function(ns, nv, conf = 0.5, treat_prev = 0, miss = 0
     CAp[seqlist[[k]]]<-CAp[seqlist[[k-1]]]+Ap[seqlist[[k]]]
     
     X1[seqlist[[k]]]<-Z2[seqlist[[k]]]-0.3*Ap[seqlist[[k]]] ## continuous time-varying confounder 
-    
+    X3[seqlist[[k]]]<-Z3[seqlist[[k]]]-0.3*Ap[seqlist[[k]]]
     ## update treatment
     
     ########### Old formula: lpp<- as.numeric(treat_prev) + Ap[seqlist[[k]]]+0.5*X1[seqlist[[k]]]+as.numeric(conf)*X1[seqlist[[k]]]
     ###########                    -0.2*X3[seqlist[[k]]]+X2[seqlist[[k]]]-0.3*(age[seqlist[[k]]]-35)/12
-    lpp1<- 0.5 + as.numeric(conf)*X1[seqlist[[k]]] + 0.2*X2[seqlist[[k]]] + as.numeric(miss)*X2[seqlist[[k]]]^2
-    lpp0<- 0.3 + as.numeric(conf)*X1[seqlist[[k]]] + 0.2*X2[seqlist[[k]]] + as.numeric(miss)*X2[seqlist[[k]]]^2
+    lpp1<- 0.5 + as.numeric(conf)*X1[seqlist[[k]]] + 0.5*X2[seqlist[[k]]] -0.2*X3[seqlist[[k]]]
+    lpp0<- 0.3 + as.numeric(conf)*X1[seqlist[[k]]] + 0.5*X2[seqlist[[k]]] -0.2*X3[seqlist[[k]]]
     P1[[k]]<-1/(1+exp(-lpp1))
     P0[[k]]<-1/(1+exp(-lpp0))
     
@@ -61,7 +63,7 @@ DATA_GEN_treatment_switch<-function(ns, nv, conf = 0.5, treat_prev = 0, miss = 0
     } else{ if (all_control == TRUE){
       A[seqlist[[k]]]<- 0.0
     } else{ if(k==2){
-      lpp_baseline <- as.numeric(treat_prev) + 0.1*X1[seqlist[[k]]] + 0.2*X2[seqlist[[k]]] + 0.5*X2[seqlist[[k]]]^2
+      lpp_baseline <- as.numeric(treat_prev) + 0.1*X1[seqlist[[k]]] + 0.2*X2[seqlist[[k]]] -0.2*X3[seqlist[[k]]]
       A[seqlist[[k]]]<-rbinom(ns,1,1/(1+exp(-lpp_baseline)))
     }else{
       A[seqlist[[k]]]<-(rbinom(ns,1,P0[[k]]))*as.numeric(Ap[seqlist[[k]]]==0) + (rbinom(ns,1,P1[[k]]))*as.numeric(Ap[seqlist[[k]]]==1)##Generate treatment at current visit based on  covariates, previous treatment
@@ -71,7 +73,7 @@ DATA_GEN_treatment_switch<-function(ns, nv, conf = 0.5, treat_prev = 0, miss = 0
     ##Generate outcome
     
     ##### Old formula: intercept was -7 -3.7
-    lp<- as.numeric(outcome_prev) -0.5*A[seqlist[[k]]]+0.5*X1[seqlist[[k]]]+X2[seqlist[[k]]] + 0.1*X2[seqlist[[k]]]^2
+    lp<- as.numeric(outcome_prev) -0.5*A[seqlist[[k]]]+0.3*X1[seqlist[[k]]]+0.3*X2[seqlist[[k]]]+0.3*X3[seqlist[[k]]]
     
     Yp[seqlist[[k]]]<-Y[seqlist[[k-1]]]
     Y[seqlist[[k]]]<-(rbinom(ns,1,1/(1+exp(-lp))))*as.numeric(Yp[seqlist[[k]]]==0)+as.numeric(Yp[seqlist[[k]]]==1)
@@ -87,7 +89,7 @@ DATA_GEN_treatment_switch<-function(ns, nv, conf = 0.5, treat_prev = 0, miss = 0
   
   X1<-X1[-NSEQ]
   X2<-X2[-NSEQ]
-
+  X3<-X3[-NSEQ]
   A<-A[-NSEQ]
   Ap<-Ap[-NSEQ]
   CAp<-CAp[-NSEQ]
@@ -96,12 +98,12 @@ DATA_GEN_treatment_switch<-function(ns, nv, conf = 0.5, treat_prev = 0, miss = 0
   
   ##Create data frame
   
-  DATA<-data.frame(ID,t=rep(c(0:(nv-1)),ns),A,Ap,CAp,X1,X2,Y,Yp)
+  DATA<-data.frame(ID,t=rep(c(0:(nv-1)),ns),A,Ap,CAp,X1,X2,X3, Y,Yp)
   DATA$eligible<-as.numeric(CAp==0 & Yp==0)  ## eligibility criteria: age>=18, had no treatment so far, no event so far
   
   ##censoring
   if (censor == T){
-    Dprob<-1/(1+exp(2.5 + Ap-0.5*X1-0.2*X2)) ##Probability of dropout
+    Dprob<-1/(1+exp(2.5 + Ap-0.5*X1-0.2*X2 -0.3*X3)) ##Probability of dropout
     
     DATA$C<-rbinom(nv*ns,1,Dprob) ##C=0 is remain in the study
     
