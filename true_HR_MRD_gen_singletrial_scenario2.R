@@ -13,26 +13,23 @@ library(ggplot2)
 library(pammtools)
 
 treat <- c(-1,0,1)
-miss <- c(0.1,0.5,0.9)
 outcome_prev <- c(-4.7,-3.8,-3)
 
-scenarios <- tidyr::crossing(miss, treat)
+scenarios <- tidyr::crossing(treat)
 
-true_HR <- array(,dim = c(9,3))
-true_MRD <- array(,dim = c(5,2,9,3))
+true_HR <- array(,dim = c(3,3))
+true_MRD <- array(,dim = c(5,2,3,3))
 
-for (l in 1:9){
-  for (j in 1:1){
+for (l in 1:3){
+  for (j in 1:2){
     simdata_censored<-DATA_GEN_treatment_switch(1000000, 5, 
-                                                miss = as.numeric(scenarios[l,1]), 
-                                                treat_prev = as.numeric(scenarios[l,2]),
+                                                treat_prev = as.numeric(scenarios[l,1]),
                                                 outcome_prev = outcome_prev[j],
                                                 censor = F)
-    simdata_censored$X2sq <-  simdata_censored$X2^2
     PP_prep <- TrialEmulation::data_preparation(simdata_censored, id='ID', period='t', treatment='A', outcome='Y', 
                                                 eligible ='eligible',
-                                                switch_d_cov = ~X1 + X2 + X2sq,
-                                                outcome_cov = ~X1 + X2 + X2sq, model_var = c('assigned_treatment'),
+                                                switch_d_cov = ~X1 + X2 + X3,
+                                                outcome_cov = ~X1 + X2 + X3, model_var = c('assigned_treatment'),
                                                 use_weight=T, use_censor=T, quiet = T,
                                                 save_weight_models = F,
                                                 data_dir = getwd())
@@ -54,17 +51,17 @@ for (l in 1:9){
                     t_2X2 = t_2*X2,
                     t_3X2 = t_3*X2,
                     t_4X2 = t_4*X2,
-                    t_1X2sq = t_1*X2sq,
-                    t_2X2sq = t_2*X2sq,
-                    t_3X2sq = t_3*X2sq,
-                    t_4X2sq = t_4*X2sq)
+                    t_1X3 = t_1*X3,
+                    t_2X3 = t_2*X3,
+                    t_3X3 = t_3*X3,
+                    t_4X3 = t_4*X3)
     PP <- TrialEmulation::trial_msm(data = switch_data,
                                     outcome_cov = ~ X1 + X2+ assigned_treatment+
                                       t_1 + t_2 + t_3 + t_4 +
                                       t_1A + t_2A + t_3A + t_4A +
                                       t_1X1 + t_2X1 + t_3X1 + t_4X1 +
                                       t_1X2 + t_2X2 + t_3X2 + t_4X2 +
-                                      t_1X2sq + t_2X2sq + t_3X2sq + t_4X2sq,
+                                      t_1X3 + t_2X3 + t_3X3 + t_4X3,
                                     model_var = c('assigned_treatment'),
                                     glm_function = 'glm',
                                     include_trial_period = ~1, include_followup_time = ~1,
@@ -72,14 +69,12 @@ for (l in 1:9){
     true_HR[l,j] <- PP$model$coefficients[2]
     
     simdata_censored_treat<-DATA_GEN_treatment_switch(1000000, 5, 
-                                                      miss = as.numeric(scenarios[l,1]), 
-                                                      treat_prev = as.numeric(scenarios[l,2]),
+                                                      treat_prev = as.numeric(scenarios[l,1]),
                                                       outcome_prev = outcome_prev[j],
                                                       all_treat = T,
                                                       censor = F)
     simdata_censored_control<-DATA_GEN_treatment_switch(1000000,5, 
-                                                        miss = as.numeric(scenarios[l,1]), 
-                                                        treat_prev = as.numeric(scenarios[l,2]),
+                                                        treat_prev = as.numeric(scenarios[l,1]),
                                                         outcome_prev = outcome_prev[j],
                                                         all_control = T,
                                                         censor = F)
