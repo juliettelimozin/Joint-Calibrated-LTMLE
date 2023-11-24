@@ -23,7 +23,7 @@ objectives <- array(,dim = c(4,8,iters))
 hr_estimates <- array(,dim = c(4,iters))
 mr_estimates <- array(,dim = c(4,2,5,iters))
 meandiffs <- array(, dim = c(5,4,6,iters))
-
+max_weight <- array(,dim = c(4,iters))
 # Set number of cores. 67 is sufficient for 200 cores.
 registerDoParallel(cores = 67)
 
@@ -145,7 +145,12 @@ for (i in 1:iters){
                                     use_weight=T, use_censor=T, quiet = T, use_sample_weights =  F)
     hr_estimates[1,i] <- PP$model$coefficients[2]
     
+    max_weight[1,i] <- max(switch_data$weight)
+    
     switch_data$weight <- simdatafinal$data %>% dplyr::filter(RA == 1) %>% dplyr::select(Cweights)
+    
+    max_weight[2,i] <- max(switch_data$weight)
+    
     PP_calibrated <- TrialEmulation::trial_msm(data = switch_data,
                                                outcome_cov = ~ X1 + X2+ + X3 + assigned_treatment+
                                                  t_1 + t_2 + t_3 + t_4 +
@@ -345,8 +350,9 @@ for (i in 1:iters){
                                     include_trial_period = ~1, include_followup_time = ~1,
                                     use_weight=T, use_censor=T, quiet = T, use_sample_weights =  F)
     hr_estimates[3,i] <- PP$model$coefficients[2]
-    
+    max_weight[3,i] <- max(switch_data$weight)
     switch_data$weight <- simdatafinal$data %>% dplyr::filter(RA == 1) %>% dplyr::select(Cweights)
+    max_weight[4,i] <- max(switch_data$weight)
     PP_calibrated <- TrialEmulation::trial_msm(data = switch_data,
                                                outcome_cov = ~ Z1 + Z2 + Z3+ assigned_treatment+
                                                  t_1 + t_2 + t_3 + t_4 +
