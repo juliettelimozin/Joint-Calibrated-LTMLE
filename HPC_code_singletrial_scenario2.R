@@ -162,7 +162,7 @@ for (i in 1:iters){
                                                glm_function = 'glm',
                                                include_trial_period = ~1, include_followup_time = ~1,
                                                use_weight=T, use_censor=T, quiet = T, use_sample_weights =  F)
-    hr_estimates[2,i] <- PP_calibrated$model$coefficients[2]
+    hr_estimates[2,i] <- PP_calibrated$model$coefficients['assigned_treatment']
     
     design_mat <- expand.grid(id = 1:as.numeric(dim(switch_data)[1]),
                               trial_period = 0:4,
@@ -349,7 +349,7 @@ for (i in 1:iters){
                                     glm_function = 'glm',
                                     include_trial_period = ~1, include_followup_time = ~1,
                                     use_weight=T, use_censor=T, quiet = T, use_sample_weights =  F)
-    hr_estimates[3,i] <- PP$model$coefficients[2]
+    hr_estimates[3,i] <- PP$model$coefficients['assigned_treatment']
     max_weight[3,i] <- max(switch_data$weight)
     switch_data$weight <- simdatafinal$data %>% dplyr::filter(RA == 1) %>% dplyr::select(Cweights)
     max_weight[4,i] <- max(switch_data$weight)
@@ -449,7 +449,7 @@ for (i in 1:iters){
     
   }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
 }
-save(meandiffs, file = paste("Simulation results/meandiffs_singletrial_med_scneario2_",as.character(l),".rda", sep = ""))
-save(objectives, file = paste("Simulation results/objectives_singletrial_med_scneario2_",as.character(l),".rda", sep = ""))
-save(hr_estimates, file = paste("Simulation results/hr_estimates_singletrial_med_scneario2_",as.character(l),".rda", sep = ""))
-save(mr_estimates, file = paste("Simulation results/mr_estimates_singletrial_med_scneario2_",as.character(l),".rda", sep = ""))
+save(meandiffs, file = paste("Simulation results/meandiffs_singletrial_med_scenario2_",as.character(l),".rda", sep = ""))
+save(objectives, file = paste("Simulation results/objectives_singletrial_med_scenario2_",as.character(l),".rda", sep = ""))
+save(hr_estimates, file = paste("Simulation results/hr_estimates_singletrial_med_scenario2_",as.character(l),".rda", sep = ""))
+save(mr_estimates, file = paste("Simulation results/mr_estimates_singletrial_med_scenario2_",as.character(l),".rda", sep = ""))
