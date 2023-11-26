@@ -25,37 +25,36 @@ treat_pos <- c(-1,-0.8,-0.5,-0.2,0,0.2,0.5,0.8,1)
 outcomes <- c("low", 'med', 'high')
 
 
-size <- c(200,1000,5000)
+size <- c(500,1000,5000)
 treat <- c(-1,0,1)
-miss <- c(0.1,0.5,0.9)
 
-scenarios <- as.data.frame(tidyr::crossing(size,miss, treat))
+scenarios <- as.data.frame(tidyr::crossing(size, treat))
 
-iters <- 500
+iters <- 200
 
-bias_mrd <- array(,dim = c(4,5,27))
-bias_hr <- array(,dim = c(4,27))
-sd_mrd <- array(, dim = c(4,5,27))
-sd_hr <- array(,dim = c(4,27))
-mr_all <- array(,dim = c(4,2,5,iters,27))
-meandiffs_all <- array(, dim = c(5,4,6,iters,27))
-objectives_all <- array(0,dim = c(4,8,iters,27))
+bias_mrd <- array(,dim = c(4,5,9))
+bias_hr <- array(,dim = c(4,9))
+sd_mrd <- array(, dim = c(4,5,9))
+sd_hr <- array(,dim = c(4,9))
+mr_all <- array(,dim = c(4,2,5,iters,9))
+meandiffs_all <- array(, dim = c(5,4,6,iters,9))
+objectives_all <- array(0,dim = c(4,8,iters,9))
 
 
-for (i in 1:27){
-  load(paste0("Simulation results/meandiffs_singletrial_low_scneario2_", i, ".rda"))
-  load(paste0("Simulation results/objectives_singletrial_low_scneario2_", i, ".rda"))
-  load(paste0("Simulation results/hr_estimates_singletrial_low_scneario2_", i, ".rda"))
-  load(paste0("Simulation results/mr_estimates_singletrial_low_scneario2_", i, ".rda"))
+for (i in 1:9){
+  load(paste0("Simulation results/meandiffs_singletrial_med_scneario2_", i, ".rda"))
+  load(paste0("Simulation results/objectives_singletrial_med_scneario2_", i, ".rda"))
+  load(paste0("Simulation results/hr_estimates_singletrial_med_scneario2_", i, ".rda"))
+  load(paste0("Simulation results/mr_estimates_singletrial_med_scneario2_", i, ".rda"))
   meandiffs_all[,,,,i] <- meandiffs
   objectives_all[1:2,,,i] <- objectives[1:2,,]
-  scenario <- i%%9
-  if (scenario ==0){scenario <- 9}
+  scenario <- i%%3
+  if (scenario ==0){scenario <- 3}
   mr_all[,,,,i] <- mr_estimates
-  bias_mrd[1,,i] <- rowMeans(mr_all[1,1,,,i] - mr_all[1,2,,,i], na.rm = T) - (true_MRD[,1,scenario,1] - true_MRD[,2,scenario,1])
-  bias_mrd[2,,i] <- rowMeans(mr_all[2,1,,,i] - mr_all[2,2,,,i], na.rm = T) - (true_MRD[,1,scenario,1] - true_MRD[,2,scenario,1])
-  bias_mrd[3,,i] <- rowMeans(mr_all[3,1,,,i] - mr_all[3,2,,,i], na.rm = T) - (true_MRD[,1,scenario,1] - true_MRD[,2,scenario,1])
-  bias_mrd[4,,i] <- rowMeans(mr_all[4,1,,,i] - mr_all[4,2,,,i], na.rm = T) - (true_MRD[,1,scenario,1] - true_MRD[,2,scenario,1])
+  bias_mrd[1,,i] <- rowMeans(mr_all[1,1,,,i] - mr_all[1,2,,,i], na.rm = T) - (true_MRD[,1,scenario,2] - true_MRD[,2,scenario,2])
+  bias_mrd[2,,i] <- rowMeans(mr_all[2,1,,,i] - mr_all[2,2,,,i], na.rm = T) - (true_MRD[,1,scenario,2] - true_MRD[,2,scenario,2])
+  bias_mrd[3,,i] <- rowMeans(mr_all[3,1,,,i] - mr_all[3,2,,,i], na.rm = T) - (true_MRD[,1,scenario,2] - true_MRD[,2,scenario,2])
+  bias_mrd[4,,i] <- rowMeans(mr_all[4,1,,,i] - mr_all[4,2,,,i], na.rm = T) - (true_MRD[,1,scenario,2] - true_MRD[,2,scenario,2])
   sd_mrd[1,,i] <- rowSds(mr_all[1,1,,,i] - mr_all[1,2,,,i], na.rm = T) 
   sd_mrd[2,,i] <- rowSds(mr_all[2,1,,,i] - mr_all[2,2,,,i], na.rm = T) 
   sd_mrd[3,,i] <- rowSds(mr_all[3,1,,,i] - mr_all[3,2,,,i], na.rm = T) 
@@ -64,7 +63,7 @@ for (i in 1:27){
   sd_hr[,i]<- rowSds(hr_estimates, na.rm = T) 
 }
 
-mr_plot_low <- lapply(1:27, function(i){
+mr_plot_low <- lapply(1:9, function(i){
   scenario <- i%%9
   if (scenario ==0){scenario <- 9}
   plot <- ggplot() +
@@ -95,14 +94,14 @@ mr_plot_low <- lapply(1:27, function(i){
               size=0.1, alpha=0.05 ) +
     geom_line(aes(x=mdat1$time-1, y=mdat1$value, group=mdat1$simu, colour = 'Estimated: always treated'),
               size=0.1, alpha=0.05) +
-    geom_line(aes(x = 0:4, y = true_MRD[,1,scenario,1], colour = 'True: never treated'), linetype = 1,size=0.5) +
-    geom_line(aes(x = 0:4, y = true_MRD[,2,scenario,1], colour = 'True: always treated'), linetype = 2,size=0.5) 
+    geom_line(aes(x = 0:4, y = true_MRD[,1,scenario,2], colour = 'True: never treated'), linetype = 1,size=0.5) +
+    geom_line(aes(x = 0:4, y = true_MRD[,2,scenario,2], colour = 'True: always treated'), linetype = 2,size=0.5) 
   
 })
-annotate_figure(ggarrange(plotlist = mr_plot_low[1:27], nrow = 3, ncol = 9,common.legend = T , legend = 'bottom'),top = 'Low event rate')
+annotate_figure(ggarrange(plotlist = mr_plot_low[1:9], nrow = 3, ncol = 9,common.legend = T , legend = 'bottom'),top = 'Low event rate')
 
 ################BIAS, SD, MSE PLOTS ###################
-bias_plots_low_mrd <- lapply(1:27, function(i){
+bias_plots_med_mrd <- lapply(1:9, function(i){
   ggplot() +
     geom_line(aes(x = 0:4, y = bias_mrd[1,,i], colour = 'MLE-IPW')) +
     geom_point(aes(x = 0:4, y = bias_mrd[1,,i],colour = 'MLE-IPW')) +
@@ -118,9 +117,9 @@ bias_plots_low_mrd <- lapply(1:27, function(i){
          y = "Bias") + theme(aspect.ratio = 1, axis.title = element_text(size = 10)) +  
     ylim(-0.06,0.02)
 })
-annotate_figure(ggarrange(plotlist = bias_plots_low_mrd[1:27], nrow = 3, ncol = 9,common.legend = T , legend = 'bottom'),top = 'MRD bias, Low event rate')
+annotate_figure(ggarrange(plotlist = bias_plots_med_mrd[1:9], nrow = 3, ncol = 9,common.legend = T , legend = 'bottom'),top = 'MRD bias, Low event rate')
 
-sd_plots_low <- lapply(1:27, function(i){
+sd_plots_low <- lapply(1:9, function(i){
   ggplot() +
     geom_line(aes(x = 0:4, y = sd_mrd[1,,i], colour = 'MLE-IPW')) +
     geom_point(aes(x = 0:4, y = sd_mrd[1,,i],colour = 'MLE-IPW')) +
@@ -136,10 +135,10 @@ sd_plots_low <- lapply(1:27, function(i){
          y = "SD") + theme(aspect.ratio = 1, axis.title = element_text(size = 10)) +  
     ylim(0,0.5)
 })
-annotate_figure(ggarrange(plotlist = sd_plots_low[1:27], nrow = 3, ncol = 9,common.legend = T , legend = 'bottom'), top = 'MRD SD, Low event rate')
+annotate_figure(ggarrange(plotlist = sd_plots_low[1:9], nrow = 3, ncol = 9,common.legend = T , legend = 'bottom'), top = 'MRD SD, Low event rate')
 
 
-mse_plots_low <- lapply(1:27, function(i){
+mse_plots_low <- lapply(1:9, function(i){
   ggplot() +
     geom_line(aes(x = 0:4, y = bias_mrd[1,,i]^2 + sd_mrd[1,,i]^2, colour = 'MLE-IPW')) +
     geom_point(aes(x = 0:4, y = bias_mrd[1,,i]^2 + sd_mrd[1,,i]^2,colour = 'MLE-IPW')) +
@@ -151,11 +150,11 @@ mse_plots_low <- lapply(1:27, function(i){
          y = "Empirical MSE of MRD estimation") + theme(aspect.ratio = 1, axis.title = element_text(size = 10)) +  
     ylim(-0.1,0.5)
 })
-annotate_figure(ggarrange(plotlist = mse_plots_low[1:27], nrow = 3, ncol = 9,common.legend = T , legend = 'bottom'), top = 'Low event rate')
+annotate_figure(ggarrange(plotlist = mse_plots_low[1:9], nrow = 3, ncol = 9,common.legend = T , legend = 'bottom'), top = 'Low event rate')
 
 randomiter <- sample(1:500,1)
 
-meandiffsX1_treated_low <- lapply(1:27, function(i){
+meandiffsX1_treated_low <- lapply(1:9, function(i){
   ggplot() +
     geom_line(aes(x = 1:4, y = meandiffs_all[1,,3,randomiter,i], colour = 'Unadjusted')) +
     geom_point(aes(x = 1:4, y = meandiffs_all[1,,3,randomiter,i], colour = 'Unadjusted')) +
@@ -174,9 +173,9 @@ meandiffsX1_treated_low <- lapply(1:27, function(i){
     ylim(-1,1) +
     geom_hline(yintercept = 0,linetype = 'dashed')
 })
-annotate_figure(ggarrange(plotlist = meandiffsX1_treated_low[1:27], nrow = 3, ncol = 9,common.legend = T , legend = 'bottom'), top = 'Mean difference of X1 in treated')
+annotate_figure(ggarrange(plotlist = meandiffsX1_treated_low[1:9], nrow = 3, ncol = 9,common.legend = T , legend = 'bottom'), top = 'Mean difference of X1 in treated')
 
-meandiffsX1_untreated_low <- lapply(1:27, function(i){
+meandiffsX1_untreated_low <- lapply(1:9, function(i){
   ggplot() +
     geom_line(aes(x = 1:4, y = meandiffs_all[1,,6,randomiter,i], colour = 'Unadjusted')) +
     geom_point(aes(x = 1:4, y = meandiffs_all[1,,6,randomiter,i], colour = 'Unadjusted')) +
@@ -196,9 +195,9 @@ meandiffsX1_untreated_low <- lapply(1:27, function(i){
     geom_hline(yintercept = 0,linetype = 'dashed')
   
 })
-annotate_figure(ggarrange(plotlist = meandiffsX1_untreated_low[1:27], nrow = 3, ncol = 9,common.legend = T , legend = 'bottom'), top = 'Mean difference of X1 in untreated')
+annotate_figure(ggarrange(plotlist = meandiffsX1_untreated_low[1:9], nrow = 3, ncol = 9,common.legend = T , legend = 'bottom'), top = 'Mean difference of X1 in untreated')
 
-objectives_low <- lapply(1:27, function(i){
+objectives_low <- lapply(1:9, function(i){
   ggplot() +
     geom_point(aes(x = objectives_all[1,,randomiter,i], 
                    y = 1:8, colour = 'MLE-IPW')) +
@@ -212,7 +211,7 @@ objectives_low <- lapply(1:27, function(i){
     geom_hline(yintercept = 0,linetype = 'dashed')
   
 })
-annotate_figure(ggarrange(plotlist = objectives_low[1:27], nrow = 3, ncol = 9,common.legend = T , legend = 'bottom'), top = 'Calibration restriction objectives')
+annotate_figure(ggarrange(plotlist = objectives_low[1:9], nrow = 3, ncol = 9,common.legend = T , legend = 'bottom'), top = 'Calibration restriction objectives')
 
 
 

@@ -24,7 +24,7 @@ for (l in 1:3){
   for (j in 1:2){
     simdata_censored<-DATA_GEN_treatment_switch(1000000, 5, 
                                                 treat_prev = as.numeric(scenarios[l,1]),
-                                                outcome_prev = outcome_prev[j],
+                                                outcome_prev = as.numeric(outcome_prev[j]),
                                                 censor = F)
     PP_prep <- TrialEmulation::data_preparation(simdata_censored, id='ID', period='t', treatment='A', outcome='Y', 
                                                 eligible ='eligible',
@@ -66,7 +66,7 @@ for (l in 1:3){
                                     glm_function = 'glm',
                                     include_trial_period = ~1, include_followup_time = ~1,
                                     use_weight=T, use_censor=T, quiet = T, use_sample_weights =  F)
-    true_HR[l,j] <- PP$model$coefficients[2]
+    true_HR[l,j] <- PP$model$coefficients['assigned_treatment']
     
     simdata_censored_treat<-DATA_GEN_treatment_switch(1000000, 5, 
                                                       treat_prev = as.numeric(scenarios[l,1]),

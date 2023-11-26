@@ -309,10 +309,10 @@ for (i in 1:iters){
     simdatafinal <- calibration(simdatafinal = data_restric, 
                                 var = c('A1', 'A1nextZ1', 'A1nextZ2','A1nextZ3',
                                         'A0','A0nextZ1', 'A0nextZ2','A0nextZ3'))
-    objectives[3,1:6,i] <- simdatafinal$objective.IPW
-    objectives[4,1:6,i] <- simdatafinal$objective.Cali
+    objectives[3,,i] <- simdatafinal$objective.IPW
+    objectives[4,,i] <- simdatafinal$objective.Cali
     
-    meandiffs_summary <- simdatafinal$data %>% 
+    meandiffs_summary <- simdatafinal$data %>%  
       dplyr::mutate(RAX2 = RA*X2,
                     RAX3 = RA*X3,
                     RAX1 = RA*X1) %>% 
