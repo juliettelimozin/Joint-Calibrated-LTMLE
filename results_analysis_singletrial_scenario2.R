@@ -115,7 +115,7 @@ bias_plots_med_mrd <- lapply(1:9, function(i){
                                                         'MLE-IPW mis.' = 'purple', 'Calibrated weights mis.' = 'green')) +
     labs(x = paste0('N = ', scenarios[i,1], ', \nTreat. prev. = ',scenarios[i,2]),
          y = "Bias") + theme(aspect.ratio = 1, axis.title = element_text(size = 10)) +  
-    ylim(-0.06,0.02)
+    ylim(-0.03,0.01)
 })
 annotate_figure(ggarrange(plotlist = bias_plots_med_mrd[1:9], nrow = 3, ncol = 3,common.legend = T , legend = 'bottom'),top = 'MRD bias, Medium event rate')
 
@@ -152,20 +152,20 @@ mse_plots_low <- lapply(1:9, function(i){
 })
 annotate_figure(ggarrange(plotlist = mse_plots_low[1:9], nrow = 3, ncol = 9,common.legend = T , legend = 'bottom'), top = 'Low event rate')
 
-randomiter <- sample(1:500,1)
+randomiter <- sample(1:200,1)
 
 meandiffsX1_treated_low <- lapply(1:9, function(i){
   ggplot() +
-    geom_line(aes(x = 1:4, y = meandiffs_all[1,,3,randomiter,i], colour = 'Unadjusted')) +
-    geom_point(aes(x = 1:4, y = meandiffs_all[1,,3,randomiter,i], colour = 'Unadjusted')) +
-    geom_line(aes(x = 1:4, y = meandiffs_all[2,,3,randomiter,i], colour = 'MLE-IPW')) +
-    geom_point(aes(x = 1:4, y = meandiffs_all[2,,3,randomiter,i], colour = 'MLE-IPW')) +
-    geom_line(aes(x = 1:4, y = meandiffs_all[3,,3,randomiter,i], colour = 'Calibrated weights')) +
-    geom_point(aes(x = 1:4, y = meandiffs_all[3,,3,randomiter,i], colour = 'Calibrated weights')) +
-    geom_line(aes(x = 1:4, y = meandiffs_all[4,,3,randomiter,i], colour = 'MLE-IPW mis.')) +
-    geom_point(aes(x = 1:4, y = meandiffs_all[4,,3,randomiter,i], colour = 'MLE-IPW mis.')) +
-    geom_line(aes(x = 1:4, y = meandiffs_all[5,,3,randomiter,i], colour = 'Calibrated weights mis.')) +
-    geom_point(aes(x = 1:4, y = meandiffs_all[5,,3,randomiter,i], colour = 'Calibrated weights mis.')) +
+    geom_line(aes(x = 1:4, y = meandiffs_all[1,,1,randomiter,i], colour = 'Unadjusted')) +
+    geom_point(aes(x = 1:4, y = meandiffs_all[1,,1,randomiter,i], colour = 'Unadjusted')) +
+    geom_line(aes(x = 1:4, y = meandiffs_all[2,,1,randomiter,i], colour = 'MLE-IPW')) +
+    geom_point(aes(x = 1:4, y = meandiffs_all[2,,1,randomiter,i], colour = 'MLE-IPW')) +
+    geom_line(aes(x = 1:4, y = meandiffs_all[3,,1,randomiter,i], colour = 'Calibrated weights')) +
+    geom_point(aes(x = 1:4, y = meandiffs_all[3,,1,randomiter,i], colour = 'Calibrated weights')) +
+    geom_line(aes(x = 1:4, y = meandiffs_all[4,,1,randomiter,i], colour = 'MLE-IPW mis.')) +
+    geom_point(aes(x = 1:4, y = meandiffs_all[4,,1,randomiter,i], colour = 'MLE-IPW mis.')) +
+    geom_line(aes(x = 1:4, y = meandiffs_all[5,,1,randomiter,i], colour = 'Calibrated weights mis.')) +
+    geom_point(aes(x = 1:4, y = meandiffs_all[5,,1,randomiter,i], colour = 'Calibrated weights mis.')) +
     scale_color_manual(name = "Weight type", values = c("MLE-IPW"= "red", "Calibrated weights" = "blue", 'Unadjusted' = 'grey',
                                                         'MLE-IPW mis.' = 'purple', 'Calibrated weights mis.' = 'green')) +
     labs(x = paste0('N = ', scenarios[i,1], ',\nMisspecification = ', scenarios[i,2], ', \nTreat. prev. = ',scenarios[i,3]),
@@ -173,29 +173,29 @@ meandiffsX1_treated_low <- lapply(1:9, function(i){
     ylim(-1,1) +
     geom_hline(yintercept = 0,linetype = 'dashed')
 })
-annotate_figure(ggarrange(plotlist = meandiffsX1_treated_low[1:9], nrow = 3, ncol = 9,common.legend = T , legend = 'bottom'), top = 'Mean difference of X1 in treated')
+annotate_figure(ggarrange(plotlist = meandiffsX1_treated_low[1:9], nrow = 3, ncol = 3,common.legend = T , legend = 'bottom'), top = 'Mean difference of X1 in treated')
 
 meandiffsX1_untreated_low <- lapply(1:9, function(i){
   ggplot() +
-    geom_line(aes(x = 1:4, y = meandiffs_all[1,,6,randomiter,i], colour = 'Unadjusted')) +
-    geom_point(aes(x = 1:4, y = meandiffs_all[1,,6,randomiter,i], colour = 'Unadjusted')) +
-    geom_line(aes(x = 1:4, y = meandiffs_all[2,,6,randomiter,i], colour = 'MLE-IPW')) +
-    geom_point(aes(x = 1:4, y = meandiffs_all[2,,6,randomiter,i], colour = 'MLE-IPW')) +
-    geom_line(aes(x = 1:4, y = meandiffs_all[3,,6,randomiter,i], colour = 'Calibrated weights')) +
-    geom_point(aes(x = 1:4, y = meandiffs_all[3,,6,randomiter,i], colour = 'Calibrated weights')) +
-    geom_line(aes(x = 1:4, y = meandiffs_all[4,,6,randomiter,i], colour = 'MLE-IPW mis.')) +
-    geom_point(aes(x = 1:4, y = meandiffs_all[4,,6,randomiter,i], colour = 'MLE-IPW mis.')) +
-    geom_line(aes(x = 1:4, y = meandiffs_all[5,,6,randomiter,i], colour = 'Calibrated weights mis.')) +
-    geom_point(aes(x = 1:4, y = meandiffs_all[5,,6,randomiter,i], colour = 'Calibrated weights mis.')) +
+    geom_line(aes(x = 1:4, y = meandiffs_all[1,,4,randomiter,i], colour = 'Unadjusted')) +
+    geom_point(aes(x = 1:4, y = meandiffs_all[1,,4,randomiter,i], colour = 'Unadjusted')) +
+    geom_line(aes(x = 1:4, y = meandiffs_all[2,,4,randomiter,i], colour = 'MLE-IPW')) +
+    geom_point(aes(x = 1:4, y = meandiffs_all[2,,4,randomiter,i], colour = 'MLE-IPW')) +
+    geom_line(aes(x = 1:4, y = meandiffs_all[3,,4,randomiter,i], colour = 'Calibrated weights')) +
+    geom_point(aes(x = 1:4, y = meandiffs_all[3,,4,randomiter,i], colour = 'Calibrated weights')) +
+    geom_line(aes(x = 1:4, y = meandiffs_all[4,,4,randomiter,i], colour = 'MLE-IPW mis.')) +
+    geom_point(aes(x = 1:4, y = meandiffs_all[4,,4,randomiter,i], colour = 'MLE-IPW mis.')) +
+    geom_line(aes(x = 1:4, y = meandiffs_all[5,,4,randomiter,i], colour = 'Calibrated weights mis.')) +
+    geom_point(aes(x = 1:4, y = meandiffs_all[5,,4,randomiter,i], colour = 'Calibrated weights mis.')) +
     scale_color_manual(name = "Weight type", values = c("MLE-IPW"= "red", "Calibrated weights" = "blue", 'Unadjusted' = 'grey',
                                                         'MLE-IPW mis.' = 'purple', 'Calibrated weights mis.' = 'green')) +
     labs(x = paste0('N = ', scenarios[i,1], ',\nMisspecification = ', scenarios[i,2], ', \nTreat. prev. = ',scenarios[i,3]),
          y = "MD") + theme(aspect.ratio = 1, axis.title = element_text(size = 10)) +  
-    ylim(-1,1) +
+    ylim(-1.1,1.2) +
     geom_hline(yintercept = 0,linetype = 'dashed')
   
 })
-annotate_figure(ggarrange(plotlist = meandiffsX1_untreated_low[1:9], nrow = 3, ncol = 9,common.legend = T , legend = 'bottom'), top = 'Mean difference of X1 in untreated')
+annotate_figure(ggarrange(plotlist = meandiffsX1_untreated_low[1:9], nrow = 3, ncol = 3,common.legend = T , legend = 'bottom'), top = 'Mean difference of X1 in untreated')
 
 objectives_low <- lapply(1:9, function(i){
   ggplot() +
