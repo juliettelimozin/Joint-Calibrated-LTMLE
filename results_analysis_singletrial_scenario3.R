@@ -38,16 +38,16 @@ sd_mrd <- array(, dim = c(4,5,9))
 sd_hr <- array(,dim = c(4,9))
 mr_all <- array(,dim = c(4,2,5,iters,9))
 meandiffs_all <- array(, dim = c(5,4,6,iters,9))
-objectives_all <- array(0,dim = c(4,8,iters,9))
+objectives_all <- array(0,dim = c(4,14,iters,9))
 
 
 for (i in 1:9){
-  load(paste0("Simulation results/meandiffs_singletrial_med_scenario2_", i, ".rda"))
-  load(paste0("Simulation results/objectives_singletrial_med_scenario2_", i, ".rda"))
-  load(paste0("Simulation results/hr_estimates_singletrial_med_scenario2_", i, ".rda"))
-  load(paste0("Simulation results/mr_estimates_singletrial_med_scenario2_", i, ".rda"))
+  load(paste0("Simulation results/meandiffs_singletrial_med_scenario3_", i, ".rda"))
+  load(paste0("Simulation results/objectives_singletrial_med_scenario3_", i, ".rda"))
+  load(paste0("Simulation results/hr_estimates_singletrial_med_scenario3_", i, ".rda"))
+  load(paste0("Simulation results/mr_estimates_singletrial_med_scenario3_", i, ".rda"))
   meandiffs_all[,,,,i] <- meandiffs
-  objectives_all[1:2,,,i] <- objectives[1:2,,]
+  #objectives_all[1:2,,,i] <- objectives[1:2,,]
   scenario <- i%%3
   if (scenario ==0){scenario <- 3}
   mr_all[,,,,i] <- mr_estimates
@@ -119,7 +119,7 @@ bias_plots_med_mrd <- lapply(1:9, function(i){
 })
 annotate_figure(ggarrange(plotlist = bias_plots_med_mrd[1:9], nrow = 3, ncol = 3,common.legend = T , legend = 'bottom'),top = 'MRD bias, Medium event rate')
 
-sd_plots_med <- lapply(1:9, function(i){
+sd_plots_low <- lapply(1:9, function(i){
   ggplot() +
     geom_line(aes(x = 0:4, y = sd_mrd[1,,i], colour = 'MLE-IPW')) +
     geom_point(aes(x = 0:4, y = sd_mrd[1,,i],colour = 'MLE-IPW')) +
@@ -131,14 +131,14 @@ sd_plots_med <- lapply(1:9, function(i){
     geom_point(aes(x = 0:4, y = sd_mrd[4,,i], colour = 'Calibrated weights mis.')) +
     scale_color_manual(name = "Weight type", values = c("MLE-IPW"= "red", "Calibrated weights" = "blue",
                                                         'MLE-IPW mis.' = 'purple', 'Calibrated weights mis.' = 'green')) +
-    labs(x = paste0('N = ', scenarios[i,1], ', \nTreat. prev. = ',scenarios[i,2]),
+    labs(x = paste0('N = ', scenarios[i,1], ',\nMisspecification = ', scenarios[i,2], ', \nTreat. prev. = ',scenarios[i,3]),
          y = "SD") + theme(aspect.ratio = 1, axis.title = element_text(size = 10)) +  
     ylim(0,0.5)
 })
-annotate_figure(ggarrange(plotlist = sd_plots_med[1:9], nrow = 3, ncol = 3,common.legend = T , legend = 'bottom'), top = 'MRD SD, Medium event rate')
+annotate_figure(ggarrange(plotlist = sd_plots_low[1:9], nrow = 3, ncol = 9,common.legend = T , legend = 'bottom'), top = 'MRD SD, Low event rate')
 
 
-mse_plots_med <- lapply(1:9, function(i){
+mse_plots_low <- lapply(1:9, function(i){
   ggplot() +
     geom_line(aes(x = 0:4, y = bias_mrd[1,,i]^2 + sd_mrd[1,,i]^2, colour = 'MLE-IPW')) +
     geom_point(aes(x = 0:4, y = bias_mrd[1,,i]^2 + sd_mrd[1,,i]^2,colour = 'MLE-IPW')) +
@@ -146,11 +146,11 @@ mse_plots_med <- lapply(1:9, function(i){
     geom_point(aes(x = 0:4, y = bias_mrd[2,,i]^2 + sd_mrd[2,,i]^2, colour = 'Calibrated weights')) +
     scale_color_manual(name = "Weight type", values = c("MLE-IPW"= "red", "Calibrated weights" = "blue",
                                                         'MLE-IPW mis.' = 'purple', 'Calibrated weights mis.' = 'green')) +
-    labs(x = paste0('N = ', scenarios[i,1], ', \nTreat. prev. = ',scenarios[i,2]),
-         y = "MSE") + theme(aspect.ratio = 1, axis.title = element_text(size = 10)) +   
-    ylim(0,0.5)
+    labs(x = paste0('N = ', scenarios[i,1], ',\nMisspecification = ', scenarios[i,2], ', \nTreat. prev. = ',scenarios[i,3]),
+         y = "Empirical MSE of MRD estimation") + theme(aspect.ratio = 1, axis.title = element_text(size = 10)) +  
+    ylim(-0.1,0.5)
 })
-annotate_figure(ggarrange(plotlist = mse_plots_med[1:9], nrow = 3, ncol = 3,common.legend = T , legend = 'bottom'), top = 'Low event rate')
+annotate_figure(ggarrange(plotlist = mse_plots_low[1:9], nrow = 3, ncol = 9,common.legend = T , legend = 'bottom'), top = 'Low event rate')
 
 randomiter <- sample(1:200,1)
 

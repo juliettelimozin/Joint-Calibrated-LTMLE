@@ -140,7 +140,7 @@ calibration<-function(simdatafinal, var=c('tall', 'X1', 'X2', 'X3', 'X4'))
 
   DMATRvec2<-apply(DMATRvec1,2,lagfun2) #
 
-  DMATR12<-simdatafinal$RA*DMATRvec1-DMATRvec2
+  DMATR12<-simdatafinal$RA*(DMATRvec1-DMATRvec2)
 
   DMATRO<-DMATR12[simdatafinal$tall+1<lenID,]  ##DMATRO is a matrix for the coefficients of the weights for the left hand side of the equation in (7)
   DMATRO <- DMATRO[,-1] ### NEW 
@@ -199,4 +199,103 @@ calibration<-function(simdatafinal, var=c('tall', 'X1', 'X2', 'X3', 'X4'))
   list(data = simdatafinal, 
        objective.IPW =  gfunAR(rep(0,dim(DMATR2)[2]-1)), 
        objective.Cali = weioptAR$fvec)
+}
+
+
+calibration_by_time<-function(simdatafinal, var=c('A1', 'A1X1')){
+  T <- max(simdatafinal$tall)
+  data1 <- simdatafinal[simdatafinal$tall == 1,]
+  data1 <- T*data1$RA*data1[, var]
+  Tdata1<- t(data1)
+  
+  data0 <- simdatafinal[simdatafinal$tall == 0,]
+  data0 <- T*data0$RA*data0[, var]
+  RHS <- colSums(data0)
+  
+  restrictions_weight1 <- function(w){
+    ##Objective function
+    lp3<-colSums(Tdata1*w)
+    we<-simdatafinal$weights[simdatafinal$tall == 1]*exp(lp3)
+    m3<-(colSums(data1*we) - RHS)/nrow(data1) ##Restrictions (6)
+    c(m3)
+  }
+  
+  ##Hessian matrix
+  
+  N1MATAR<-Tdata1
+  N2MATAR<-data1
+  
+  DgAR1<-function(w){
+    
+    lp3<-colSums(Tdata1*w)
+    we<-simdatafinal$weights[simdatafinal$tall == 1]*exp(lp3)
+    MAT<-N2MATAR*we
+    MAT1<-diag(length(w))
+    for (k in 1:length(w)){
+      MAT1[,k]<-colMeans(N1MATAR[k,]*MAT)}
+    MAT1
+  }
+  
+  wei1optAR<-nleqslv::nleqslv(rep(0,dim(data1)[2]),restrictions_weight1,DgAR1,method="Broyden",
+                              control=list(maxit=10000,ftol=10^(-16),xtol=10^(-16)), jacobian=T)
+  
+  weconsAR<-function(w){
+    lp3<-colSums(Tdata1*w)
+    we<-simdatafinal$weights[simdatafinal$tall==1]*exp(lp3)
+  }
+  
+  CALW1<-weconsAR(wei1optAR$x)
+  
+  simdatafinal$Cweights<-simdatafinal$weights
+  simdatafinal$Cweights[simdatafinal$tall == 1]<-CALW1
+  
+  
+  for (k in 2:T){
+    data1 <- simdatafinal[simdatafinal$tall == k,]
+    data1 <- (T - k+ 1)*data1$RA*data1[, var]
+    data0 <- simdatafinal[simdatafinal$tall == k-1,]
+    data0 <- (T - k+ 1)*data0$RA*data0$Cweights*data0[, var]
+    Tdata1<- t(data1)
+    
+    RHS <- colSums(data0)
+    restrictions_weightk <- function(w){
+      ##Objective function
+      lp3<-colSums(Tdata1*w)
+      we<-simdatafinal$weights[simdatafinal$tall == k]*exp(lp3)
+      m3<-(colSums(data1*we) - RHS)/nrow(data1) ##Restrictions (6)
+      c(m3)
+    }
+    
+    ##Hessian matrix
+    
+    N1MATAR<-Tdata1
+    N2MATAR<-data1
+    
+    DgARk<-function(w){
+      
+      lp3<-colSums(Tdata1*w)
+      we<-simdatafinal$weights[simdatafinal$tall == k]*exp(lp3)
+      MAT<-N2MATAR*we
+      MAT1<-diag(length(w))
+      for (j in 1:length(w)){
+        MAT1[,j]<-colMeans(N1MATAR[j,]*MAT)}
+      MAT1
+    }
+    
+    weikoptAR<-nleqslv::nleqslv(rep(0,dim(data1)[2]),restrictions_weightk,DgARk,method="Broyden",
+                                control=list(maxit=10000,ftol=10^(-16),xtol=10^(-16)), jacobian=T)
+    
+    weconsAR<-function(w){
+      lp3<-colSums(Tdata1*w)
+      we<-simdatafinal$weights[simdatafinal$tall==k]*exp(lp3)
+    }
+    
+    CALW1<-weconsAR(weikoptAR$x)
+    
+    simdatafinal$Cweights[simdatafinal$tall == k]<-CALW1
+    
+  }
+  list(data = simdatafinal, 
+       objective.IPW =  restrictions_weight1(rep(0,dim(data1)[2])), 
+       objective.Cali = wei1optAR$fvec)
 }

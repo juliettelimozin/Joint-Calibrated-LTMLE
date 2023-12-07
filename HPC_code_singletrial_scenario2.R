@@ -22,7 +22,7 @@ scenarios <- tidyr::crossing(size, treat)
 objectives <- array(,dim = c(4,8,iters))
 hr_estimates <- array(,dim = c(4,iters))
 mr_estimates <- array(,dim = c(4,2,5,iters))
-meandiffs <- array(, dim = c(5,4,6,iters))
+meandiffs <- array(, dim = c(5,5,6,iters))
 max_weight <- array(,dim = c(4,iters))
 # Set number of cores. 67 is sufficient for 200 cores.
 registerDoParallel(cores = 67)
@@ -100,32 +100,31 @@ for (i in 1:iters){
       dplyr::mutate(RAX2 = RA*X2,
                     RAX3 = RA*X3,
                     RAX1 = RA*X1) %>% 
-      dplyr::select(t,A1,A0,X2,X3,X1, RAX2, RAX3, RAX1, weights, Cweights)
+      dplyr::select(t,RA, A1,A0,X2,X3,X1, RAX2, RAX3, RAX1, weights, Cweights)
     
-    for (h in 1:4){
+    for (h in 1:5){
       try({
-        meandiffs[1,h,1:3,i] <-colMeans(meandiffs_summary[meandiffs_summary$t == h & meandiffs_summary$A1 == 1 ,c('RAX1', 'RAX2', 'RAX3')]) - colMeans(meandiffs_summary[meandiffs_summary$t == 1 & meandiffs_summary$A1 == 1 ,c('X1', 'X2', 'X3')])
+        meandiffs[1,h,1:3,i] <-colMeans(meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA == 1 &meandiffs_summary$A1 == 1 ,c('RAX1', 'RAX2', 'RAX3')]) },
+      silent = T)
+      try({
+        meandiffs[2,h,1:3,i] <-colMeans(meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA == 1 &meandiffs_summary$A1 == 1 ,c('RAX1', 'RAX2', 'RAX3')]*meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA == 1 &meandiffs_summary$A1 == 1,c('weights')]) 
       },
       silent = T)
       try({
-        meandiffs[2,h,1:3,i] <-colMeans(meandiffs_summary[meandiffs_summary$t == h & meandiffs_summary$A1 == 1 ,c('RAX1', 'RAX2', 'RAX3')]*meandiffs_summary[meandiffs_summary$t == h & meandiffs_summary$A1 == 1,c('weights')]) - colMeans(meandiffs_summary[meandiffs_summary$t == 1 & meandiffs_summary$A1 == 1 ,c('X1', 'X2', 'X3')])
-      },
-      silent = T)
-      try({
-        meandiffs[3,h,1:3,i] <-colMeans(meandiffs_summary[meandiffs_summary$t == h & meandiffs_summary$A1 == 1 ,c('RAX1', 'RAX2', 'RAX3')]*meandiffs_summary[meandiffs_summary$t == h & meandiffs_summary$A1 == 1,c('Cweights')]) - colMeans(meandiffs_summary[meandiffs_summary$t == 1 & meandiffs_summary$A1 == 1 ,c('X1', 'X2', 'X3')])
+        meandiffs[3,h,1:3,i] <-colMeans(meandiffs_summary[meandiffs_summary$t == h-1 &meandiffs_summary$RA == 1 & meandiffs_summary$A1 == 1 ,c('RAX1', 'RAX2', 'RAX3')]*meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA == 1 &meandiffs_summary$A1 == 1,c('Cweights')]) 
       },
       silent = T)
       
       try({
-        meandiffs[1,h,4:6,i] <-colMeans(meandiffs_summary[meandiffs_summary$t == h & meandiffs_summary$A1 == 0 ,c('RAX1', 'RAX2', 'RAX3')]) - colMeans(meandiffs_summary[meandiffs_summary$t == 1 & meandiffs_summary$A1 == 0 ,c('X1', 'X2', 'X3')])
+        meandiffs[1,h,4:6,i] <-colMeans(meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA == 1 &meandiffs_summary$A1 == 0 ,c('RAX1', 'RAX2', 'RAX3')]) 
+        },
+      silent = T)
+      try({
+        meandiffs[2,h,4:6,i] <-colMeans(meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA == 1 &meandiffs_summary$A1 == 0 ,c('RAX1', 'RAX2', 'RAX3')]*meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA == 1 &meandiffs_summary$A1 == 0,c('weights')]) 
       },
       silent = T)
       try({
-        meandiffs[2,h,4:6,i] <-colMeans(meandiffs_summary[meandiffs_summary$t == h & meandiffs_summary$A1 == 0 ,c('RAX1', 'RAX2', 'RAX3')]*meandiffs_summary[meandiffs_summary$t == h & meandiffs_summary$A1 == 0,c('weights')]) - colMeans(meandiffs_summary[meandiffs_summary$t == 1 & meandiffs_summary$A1 == 0 ,c('X1', 'X2', 'X3')])
-      },
-      silent = T)
-      try({
-        meandiffs[3,h,4:6,i] <-colMeans(meandiffs_summary[meandiffs_summary$t == h & meandiffs_summary$A1 == 0 ,c('RAX1', 'RAX2', 'RAX3')]*meandiffs_summary[meandiffs_summary$t == h & meandiffs_summary$A1 == 0,c('Cweights')]) - colMeans(meandiffs_summary[meandiffs_summary$t == 1 & meandiffs_summary$A1 == 0 ,c('X1', 'X2', 'X3')])
+        meandiffs[3,h,4:6,i] <-colMeans(meandiffs_summary[meandiffs_summary$t == h &meandiffs_summary$RA == 1 & meandiffs_summary$A1 == 0 ,c('RAX1', 'RAX2', 'RAX3')]*meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA == 1 &meandiffs_summary$A1 == 0,c('Cweights')]) 
       },
       silent = T)
     }
@@ -291,12 +290,12 @@ for (i in 1:iters){
                     nextZ3 = ifelse(is.na(nextZ3), 0, nextZ3),
                     RA = ifelse(CRA == t+1,1,0),
                     RC = ifelse(lag(C) == 0,1,0),
-                    A1nextZ1 = A_0*exp(nextZ1),
-                    A0nextZ1 = (1-A_0)*exp(nextZ1),
-                    A1nextZ2 = A_0*exp(nextZ2),
-                    A0nextZ2 = (1-A_0)*exp(nextZ2),
-                    A1nextZ3 = A_0*exp(nextZ3),
-                    A0nextZ3 = (1-A_0)*exp(nextZ3),
+                    A1nextZ1 = A_0*nextZ1,
+                    A0nextZ1 = (1-A_0)*nextZ1,
+                    A1nextZ2 = A_0*nextZ2,
+                    A0nextZ2 = (1-A_0)*nextZ2,
+                    A1nextZ3 = A_0*nextZ3,
+                    A0nextZ3 = (1-A_0)*nextZ3,
                     A1 = A_0,
                     A0 = 1-A_0,
                     sub = ID,
@@ -316,23 +315,23 @@ for (i in 1:iters){
       dplyr::mutate(RAX2 = RA*X2,
                     RAX3 = RA*X3,
                     RAX1 = RA*X1) %>% 
-      dplyr::select(t,A1,A0,X2,X3,X1, RAX2, RAX3, RAX1, weights, Cweights)
+      dplyr::select(t,RA,A1,A0,X2,X3,X1, RAX2, RAX3, RAX1, weights, Cweights)
     
-    for (h in 1:4){
+    for (h in 1:5){
       try({
-        meandiffs[4,h,1:3,i] <-colMeans(meandiffs_summary[meandiffs_summary$t == h & meandiffs_summary$A1 == 1 ,c('RAX1', 'RAX2', 'RAX3')]*meandiffs_summary[meandiffs_summary$t == h & meandiffs_summary$A1 == 1,c('weights')]) - colMeans(meandiffs_summary[meandiffs_summary$t == 1 & meandiffs_summary$A1 == 1 ,c('X1', 'X2', 'X3')])
+        meandiffs[4,h,1:3,i] <-colMeans(meandiffs_summary[meandiffs_summary$t == h-1 &meandiffs_summary$RA == 1 & meandiffs_summary$A1 == 1 ,c('RAX1', 'RAX2', 'RAX3')]*meandiffs_summary[meandiffs_summary$t == h-1 &meandiffs_summary$RA == 1 & meandiffs_summary$A1 == 1,c('weights')]) 
       },
       silent = T)
       try({
-        meandiffs[5,h,1:3,i] <-colMeans(meandiffs_summary[meandiffs_summary$t == h & meandiffs_summary$A1 == 1 ,c('RAX1', 'RAX2', 'RAX3')]*meandiffs_summary[meandiffs_summary$t == h & meandiffs_summary$A1 == 1,c('Cweights')]) - colMeans(meandiffs_summary[meandiffs_summary$t == 1 & meandiffs_summary$A1 == 1 ,c('X1', 'X2', 'X3')])
+        meandiffs[5,h,1:3,i] <-colMeans(meandiffs_summary[meandiffs_summary$t == h-1 &meandiffs_summary$RA == 1 & meandiffs_summary$A1 == 1 ,c('RAX1', 'RAX2', 'RAX3')]*meandiffs_summary[meandiffs_summary$t == h-1 &meandiffs_summary$RA == 1 & meandiffs_summary$A1 == 1,c('Cweights')]) 
       },
       silent = T)
       try({
-        meandiffs[4,h,4:6,i] <-colMeans(meandiffs_summary[meandiffs_summary$t == h & meandiffs_summary$A1 == 0 ,c('RAX1', 'RAX2', 'RAX3')]*meandiffs_summary[meandiffs_summary$t == h & meandiffs_summary$A1 == 0,c('weights')]) - colMeans(meandiffs_summary[meandiffs_summary$t == 1 & meandiffs_summary$A1 == 0 ,c('X1', 'X2', 'X3')])
+        meandiffs[4,h,4:6,i] <-colMeans(meandiffs_summary[meandiffs_summary$t == h-1 &meandiffs_summary$RA == 1 & meandiffs_summary$A1 == 0 ,c('RAX1', 'RAX2', 'RAX3')]*meandiffs_summary[meandiffs_summary$t == h-1 &meandiffs_summary$RA == 1 & meandiffs_summary$A1 == 0,c('weights')]) 
       },
       silent = T)
       try({
-        meandiffs[5,h,4:6,i] <-colMeans(meandiffs_summary[meandiffs_summary$t == h & meandiffs_summary$A1 == 0 ,c('RAX1', 'RAX2', 'RAX3')]*meandiffs_summary[meandiffs_summary$t == h & meandiffs_summary$A1 == 0,c('Cweights')]) - colMeans(meandiffs_summary[meandiffs_summary$t == 1 & meandiffs_summary$A1 == 0 ,c('X1', 'X2', 'X3')])
+        meandiffs[5,h,4:6,i] <-colMeans(meandiffs_summary[meandiffs_summary$t == h-1 &meandiffs_summary$RA == 1 & meandiffs_summary$A1 == 0 ,c('RAX1', 'RAX2', 'RAX3')]*meandiffs_summary[meandiffs_summary$t == h-1 &meandiffs_summary$RA == 1 & meandiffs_summary$A1 == 0,c('Cweights')]) 
       },
       silent = T)
     }
