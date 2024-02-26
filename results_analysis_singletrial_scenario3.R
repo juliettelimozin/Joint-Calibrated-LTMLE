@@ -33,12 +33,15 @@ scenarios <- as.data.frame(tidyr::crossing(size, treat))
 iters <- 200
 
 bias_mrd <- array(,dim = c(4,5,9))
+bias_treated <- array(,dim = c(4,5,9))
+bias_control <- array(,dim = c(4,5,9))
+point_bias_mrd<- array(,dim = c(4,5,9))
 bias_hr <- array(,dim = c(4,9))
 sd_mrd <- array(, dim = c(4,5,9))
 sd_hr <- array(,dim = c(4,9))
 mr_all <- array(,dim = c(4,2,5,iters,9))
-meandiffs_all <- array(, dim = c(5,4,6,iters,9))
-objectives_all <- array(0,dim = c(4,14,iters,9))
+meandiffs_all <- array(, dim = c(5,5,6,iters,9))
+objectives_all <- array(0,dim = c(4,8,iters,9))
 
 
 for (i in 1:9){
@@ -47,7 +50,7 @@ for (i in 1:9){
   load(paste0("Simulation results/hr_estimates_singletrial_med_scenario3_", i, ".rda"))
   load(paste0("Simulation results/mr_estimates_singletrial_med_scenario3_", i, ".rda"))
   meandiffs_all[,,,,i] <- meandiffs
-  #objectives_all[1:2,,,i] <- objectives[1:2,,]
+  objectives_all[,,,i] <- objectives
   scenario <- i%%3
   if (scenario ==0){scenario <- 3}
   mr_all[,,,,i] <- mr_estimates
@@ -55,6 +58,18 @@ for (i in 1:9){
   bias_mrd[2,,i] <- rowMeans(mr_all[2,1,,,i] - mr_all[2,2,,,i], na.rm = T) - (true_MRD[,1,scenario,2] - true_MRD[,2,scenario,2])
   bias_mrd[3,,i] <- rowMeans(mr_all[3,1,,,i] - mr_all[3,2,,,i], na.rm = T) - (true_MRD[,1,scenario,2] - true_MRD[,2,scenario,2])
   bias_mrd[4,,i] <- rowMeans(mr_all[4,1,,,i] - mr_all[4,2,,,i], na.rm = T) - (true_MRD[,1,scenario,2] - true_MRD[,2,scenario,2])
+  bias_treated[1,,i] <- rowMeans(mr_all[1,2,,,i], na.rm = T) - (true_MRD[,2,scenario,2])
+  bias_treated[2,,i] <- rowMeans(mr_all[2,2,,,i], na.rm = T) - (true_MRD[,2,scenario,2])
+  bias_treated[3,,i] <- rowMeans(mr_all[3,2,,,i], na.rm = T) - (true_MRD[,2,scenario,2])
+  bias_treated[4,,i] <- rowMeans(mr_all[4,2,,,i], na.rm = T) - (true_MRD[,2,scenario,2])
+  bias_control[1,,i] <- rowMeans(mr_all[1,1,,,i], na.rm = T) - (true_MRD[,1,scenario,2])
+  bias_control[2,,i] <- rowMeans(mr_all[2,1,,,i] , na.rm = T) - (true_MRD[,1,scenario,2])
+  bias_control[3,,i] <- rowMeans(mr_all[3,1,,,i], na.rm = T) - (true_MRD[,1,scenario,2])
+  bias_control[4,,i] <- rowMeans(mr_all[4,1,,,i] , na.rm = T) - (true_MRD[,1,scenario,2])
+  point_bias_mrd[1,,i] <- rowMeans(mr_all[1,1,,,i] - mr_all[1,2,,,i], na.rm = T) / (true_MRD[,1,scenario,2] - true_MRD[,2,scenario,2])
+  point_bias_mrd[2,,i] <- rowMeans(mr_all[2,1,,,i] - mr_all[2,2,,,i], na.rm = T) / (true_MRD[,1,scenario,2] - true_MRD[,2,scenario,2])
+  point_bias_mrd[3,,i] <- rowMeans(mr_all[3,1,,,i] - mr_all[3,2,,,i], na.rm = T) / (true_MRD[,1,scenario,2] - true_MRD[,2,scenario,2])
+  point_bias_mrd[4,,i] <- rowMeans(mr_all[4,1,,,i] - mr_all[4,2,,,i], na.rm = T) / (true_MRD[,1,scenario,2] - true_MRD[,2,scenario,2])
   sd_mrd[1,,i] <- rowSds(mr_all[1,1,,,i] - mr_all[1,2,,,i], na.rm = T) 
   sd_mrd[2,,i] <- rowSds(mr_all[2,1,,,i] - mr_all[2,2,,,i], na.rm = T) 
   sd_mrd[3,,i] <- rowSds(mr_all[3,1,,,i] - mr_all[3,2,,,i], na.rm = T) 
@@ -63,42 +78,42 @@ for (i in 1:9){
   sd_hr[,i]<- rowSds(hr_estimates, na.rm = T) 
 }
 
-mr_plot_low <- lapply(1:9, function(i){
-  scenario <- i%%9
-  if (scenario ==0){scenario <- 9}
-  plot <- ggplot() +
-    scale_color_manual(name = "Weight type", 
-                       values = c("True: never treated"= "black", "True: always treated" = "black",
-                                  'Estimated: never treated' = 'red', 'Estimated: always treated' = 'blue')) +
-    labs(x = paste0('N = ', scenarios[i,1], ',\nMisspecification = ', scenarios[i,2], ', \nTreat. prev. = ',scenarios[i,3]),
-         y = "Empirical SD of MRD estimation") + theme(aspect.ratio = 1, axis.title = element_text(size = 10)) +  
-    ylim(0.5,1)
-  cmat0 = t(mr_all[1,1,,,i])
-  rownames(cmat0) = paste("simu", seq(1000), sep="")
-  colnames(cmat0) = paste("time", seq(5), sep="")
-  dat0 = as.data.frame(cmat0)
-  dat0$simu = rownames(dat0)
-  mdat0 = melt(dat0, id.vars="simu")
-  mdat0$time = as.numeric(gsub("time", "", mdat0$variable))
-  
-  cmat1 = t(mr_all[1,2,,,i])
-  rownames(cmat1) = paste("simu", seq(1000), sep="")
-  colnames(cmat1) = paste("time", seq(5), sep="")
-  dat1 = as.data.frame(cmat1)
-  dat1$simu = rownames(dat1)
-  mdat1 = melt(dat1, id.vars="simu")
-  mdat1$time = as.numeric(gsub("time", "", mdat1$variable))
-  
-  plot+
-    geom_line(aes(x=mdat0$time-1, y=mdat0$value, group=mdat0$simu, colour = 'Estimated: never treated'),
-              size=0.1, alpha=0.05 ) +
-    geom_line(aes(x=mdat1$time-1, y=mdat1$value, group=mdat1$simu, colour = 'Estimated: always treated'),
-              size=0.1, alpha=0.05) +
-    geom_line(aes(x = 0:4, y = true_MRD[,1,scenario,2], colour = 'True: never treated'), linetype = 1,size=0.5) +
-    geom_line(aes(x = 0:4, y = true_MRD[,2,scenario,2], colour = 'True: always treated'), linetype = 2,size=0.5) 
-  
-})
-annotate_figure(ggarrange(plotlist = mr_plot_low[1:9], nrow = 3, ncol = 9,common.legend = T , legend = 'bottom'),top = 'Low event rate')
+# mr_plot_low <- lapply(1:9, function(i){
+#   scenario <- i%%9
+#   if (scenario ==0){scenario <- 9}
+#   plot <- ggplot() +
+#     scale_color_manual(name = "Weight type", 
+#                        values = c("True: never treated"= "black", "True: always treated" = "black",
+#                                   'Estimated: never treated' = 'red', 'Estimated: always treated' = 'blue')) +
+#     labs(x = paste0('N = ', scenarios[i,1], ',\nMisspecification = ', scenarios[i,2], ', \nTreat. prev. = ',scenarios[i,3]),
+#          y = "Empirical SD of MRD estimation") + theme(aspect.ratio = 1, axis.title = element_text(size = 10)) +  
+#     ylim(0.5,1)
+#   cmat0 = t(mr_all[1,1,,,i])
+#   rownames(cmat0) = paste("simu", seq(1000), sep="")
+#   colnames(cmat0) = paste("time", seq(5), sep="")
+#   dat0 = as.data.frame(cmat0)
+#   dat0$simu = rownames(dat0)
+#   mdat0 = melt(dat0, id.vars="simu")
+#   mdat0$time = as.numeric(gsub("time", "", mdat0$variable))
+#   
+#   cmat1 = t(mr_all[1,2,,,i])
+#   rownames(cmat1) = paste("simu", seq(1000), sep="")
+#   colnames(cmat1) = paste("time", seq(5), sep="")
+#   dat1 = as.data.frame(cmat1)
+#   dat1$simu = rownames(dat1)
+#   mdat1 = melt(dat1, id.vars="simu")
+#   mdat1$time = as.numeric(gsub("time", "", mdat1$variable))
+#   
+#   plot+
+#     geom_line(aes(x=mdat0$time-1, y=mdat0$value, group=mdat0$simu, colour = 'Estimated: never treated'),
+#               size=0.1, alpha=0.05 ) +
+#     geom_line(aes(x=mdat1$time-1, y=mdat1$value, group=mdat1$simu, colour = 'Estimated: always treated'),
+#               size=0.1, alpha=0.05) +
+#     geom_line(aes(x = 0:4, y = true_MRD[,1,scenario,2], colour = 'True: never treated'), linetype = 1,size=0.5) +
+#     geom_line(aes(x = 0:4, y = true_MRD[,2,scenario,2], colour = 'True: always treated'), linetype = 2,size=0.5) 
+#   
+# })
+# annotate_figure(ggarrange(plotlist = mr_plot_low[1:9], nrow = 3, ncol = 9,common.legend = T , legend = 'bottom'),top = 'Low event rate')
 
 ################BIAS, SD, MSE PLOTS ###################
 bias_plots_med_mrd <- lapply(1:9, function(i){
@@ -115,11 +130,57 @@ bias_plots_med_mrd <- lapply(1:9, function(i){
                                                         'MLE-IPW mis.' = 'purple', 'Calibrated weights mis.' = 'green')) +
     labs(x = paste0('N = ', scenarios[i,1], ', \nTreat. prev. = ',scenarios[i,2]),
          y = "Bias") + theme(aspect.ratio = 1, axis.title = element_text(size = 10)) +  
-    ylim(-0.03,0.01)
+    ylim(-0.03,0.02)
 })
 annotate_figure(ggarrange(plotlist = bias_plots_med_mrd[1:9], nrow = 3, ncol = 3,common.legend = T , legend = 'bottom'),top = 'MRD bias, Medium event rate')
 
-sd_plots_low <- lapply(1:9, function(i){
+bias_plots_med_mrd <- lapply(1:9, function(i){
+  ggplot() +
+    geom_line(aes(x = 0:4, y = point_bias_mrd[1,,i], colour = 'MLE-IPW')) +
+    geom_point(aes(x = 0:4, y = point_bias_mrd[1,,i],colour = 'MLE-IPW')) +
+    geom_line(aes(x = 0:4, y = point_bias_mrd[2,,i], colour = 'Calibrated weights')) +
+    geom_point(aes(x = 0:4, y = point_bias_mrd[2,,i], colour = 'Calibrated weights')) +
+    geom_line(aes(x = 0:4, y = point_bias_mrd[3,,i], colour = 'MLE-IPW mis.')) +
+    geom_point(aes(x = 0:4, y = point_bias_mrd[3,,i],colour = 'MLE-IPW mis.')) +
+    geom_line(aes(x = 0:4, y = point_bias_mrd[4,,i], colour = 'Calibrated weights mis.')) +
+    geom_point(aes(x = 0:4, y = point_bias_mrd[4,,i], colour = 'Calibrated weights mis.')) +
+    scale_color_manual(name = "Weight type", values = c("MLE-IPW"= "red", "Calibrated weights" = "blue",
+                                                        'MLE-IPW mis.' = 'purple', 'Calibrated weights mis.' = 'green')) +
+    labs(x = paste0('N = ', scenarios[i,1], ', \nTreat. prev. = ',scenarios[i,2]),
+         y = "Point Bias") + theme(aspect.ratio = 1, axis.title = element_text(size = 10)) +  
+    ylim(0.6,1.4)
+})
+annotate_figure(ggarrange(plotlist = bias_plots_med_mrd[1:9], nrow = 3, ncol = 3,common.legend = T , legend = 'bottom'),top = 'MRD point-bias, Medium event rate')
+
+bias_plots_med_mrd <- lapply(1:9, function(i){
+  ggplot() +
+    geom_line(aes(x = 0:4, y = bias_treated[1,,i], colour = 'MLE-IPW', linetype = 'Always treated')) +
+    geom_point(aes(x = 0:4, y = bias_treated[1,,i],colour = 'MLE-IPW', linetype = 'Always treated')) +
+    geom_line(aes(x = 0:4, y = bias_treated[2,,i], colour = 'Calibrated weights', linetype = 'Always treated')) +
+    geom_point(aes(x = 0:4, y = bias_treated[2,,i], colour = 'Calibrated weights', linetype = 'Always treated')) +
+    geom_line(aes(x = 0:4, y = bias_treated[3,,i], colour = 'MLE-IPW mis.', linetype = 'Always treated')) +
+    geom_point(aes(x = 0:4, y = bias_treated[3,,i],colour = 'MLE-IPW mis.', linetype = 'Always treated')) +
+    geom_line(aes(x = 0:4, y = bias_treated[4,,i], colour = 'Calibrated weights mis.', linetype = 'Always treated')) +
+    geom_point(aes(x = 0:4, y = bias_treated[4,,i], colour = 'Calibrated weights mis.', linetype = 'Always treated')) +
+    geom_line(aes(x = 0:4, y = bias_control[1,,i], colour = 'MLE-IPW', linetype = 'Never treated')) +
+    geom_point(aes(x = 0:4, y = bias_control[1,,i],colour = 'MLE-IPW', linetype = 'Never treated')) +
+    geom_line(aes(x = 0:4, y = bias_control[2,,i], colour = 'Calibrated weights', linetype = 'Never treated')) +
+    geom_point(aes(x = 0:4, y = bias_control[2,,i], colour = 'Calibrated weights', linetype = 'Never treated')) +
+    geom_line(aes(x = 0:4, y = bias_control[3,,i], colour = 'MLE-IPW mis.', linetype = 'Never treated')) +
+    geom_point(aes(x = 0:4, y = bias_control[3,,i],colour = 'MLE-IPW mis.', linetype = 'Never treated')) +
+    geom_line(aes(x = 0:4, y = bias_control[4,,i], colour = 'Calibrated weights mis.', linetype = 'Never treated')) +
+    geom_point(aes(x = 0:4, y = bias_control[4,,i], colour = 'Calibrated weights mis.', linetype = 'Never treated')) +
+    scale_linetype_manual(name = 'Treatment protocol', values = c("Always treated" = 1, 'Never treated' = 2)) +
+    scale_color_manual(name = "Weight type", values = c("MLE-IPW"= "red", "Calibrated weights" = "blue",
+                                                        'MLE-IPW mis.' = 'purple', 'Calibrated weights mis.' = 'green')) +
+    labs(x = paste0('N = ', scenarios[i,1], ', \nTreat. prev. = ',scenarios[i,2]),
+         y = "Point Bias") + theme(aspect.ratio = 1, axis.title = element_text(size = 10)) +
+    ylim(-0.04,0.01)
+
+})
+annotate_figure(ggarrange(plotlist = bias_plots_med_mrd[1:9], nrow = 3, ncol = 3,common.legend = T , legend = 'bottom'),top = 'MRD point-bias, Medium event rate')
+
+sd_plots_med <- lapply(1:9, function(i){
   ggplot() +
     geom_line(aes(x = 0:4, y = sd_mrd[1,,i], colour = 'MLE-IPW')) +
     geom_point(aes(x = 0:4, y = sd_mrd[1,,i],colour = 'MLE-IPW')) +
@@ -131,11 +192,29 @@ sd_plots_low <- lapply(1:9, function(i){
     geom_point(aes(x = 0:4, y = sd_mrd[4,,i], colour = 'Calibrated weights mis.')) +
     scale_color_manual(name = "Weight type", values = c("MLE-IPW"= "red", "Calibrated weights" = "blue",
                                                         'MLE-IPW mis.' = 'purple', 'Calibrated weights mis.' = 'green')) +
-    labs(x = paste0('N = ', scenarios[i,1], ',\nMisspecification = ', scenarios[i,2], ', \nTreat. prev. = ',scenarios[i,3]),
+    labs(x = paste0('N = ', scenarios[i,1], ', \nTreat. prev. = ',scenarios[i,2]),
          y = "SD") + theme(aspect.ratio = 1, axis.title = element_text(size = 10)) +  
-    ylim(0,0.5)
+    ylim(0,0.2)
 })
-annotate_figure(ggarrange(plotlist = sd_plots_low[1:9], nrow = 3, ncol = 9,common.legend = T , legend = 'bottom'), top = 'MRD SD, Low event rate')
+annotate_figure(ggarrange(plotlist = sd_plots_med[1:9], nrow = 3, ncol = 3,common.legend = T , legend = 'bottom'), top = 'MRD SD, medium event rate')
+
+bias.sd_plots_med <- lapply(1:9, function(i){
+  ggplot() +
+    geom_line(aes(x = 0:4, y = bias_mrd[1,,i]/sd_mrd[1,,i], colour = 'MLE-IPW')) +
+    geom_point(aes(x = 0:4, y = bias_mrd[1,,i]/sd_mrd[1,,i],colour = 'MLE-IPW')) +
+    geom_line(aes(x = 0:4, y = bias_mrd[2,,i]/sd_mrd[2,,i], colour = 'Calibrated weights')) +
+    geom_point(aes(x = 0:4, y = bias_mrd[2,,i]/sd_mrd[2,,i], colour = 'Calibrated weights')) +
+    geom_line(aes(x = 0:4, y = bias_mrd[3,,i]/sd_mrd[3,,i], colour = 'MLE-IPW mis.')) +
+    geom_point(aes(x = 0:4, y = bias_mrd[3,,i]/sd_mrd[3,,i],colour = 'MLE-IPW mis.')) +
+    geom_line(aes(x = 0:4, y = bias_mrd[4,,i]/sd_mrd[4,,i], colour = 'Calibrated weights mis.')) +
+    geom_point(aes(x = 0:4, y = bias_mrd[4,,i]/sd_mrd[4,,i], colour = 'Calibrated weights mis.')) +
+    scale_color_manual(name = "Weight type", values = c("MLE-IPW"= "red", "Calibrated weights" = "blue",
+                                                        'MLE-IPW mis.' = 'purple', 'Calibrated weights mis.' = 'green')) +
+    labs(x = paste0('N = ', scenarios[i,1], ', \nTreat. prev. = ',scenarios[i,2]),
+         y = "SD") + theme(aspect.ratio = 1, axis.title = element_text(size = 10)) +  
+    ylim(-0.5,0.5)
+})
+annotate_figure(ggarrange(plotlist = bias.sd_plots_med[1:9], nrow = 3, ncol = 3,common.legend = T , legend = 'bottom'), top = 'MRD SD, medium event rate')
 
 
 mse_plots_low <- lapply(1:9, function(i){
@@ -144,64 +223,71 @@ mse_plots_low <- lapply(1:9, function(i){
     geom_point(aes(x = 0:4, y = bias_mrd[1,,i]^2 + sd_mrd[1,,i]^2,colour = 'MLE-IPW')) +
     geom_line(aes(x = 0:4, y = bias_mrd[2,,i]^2 + sd_mrd[2,,i]^2, colour = 'Calibrated weights')) +
     geom_point(aes(x = 0:4, y = bias_mrd[2,,i]^2 + sd_mrd[2,,i]^2, colour = 'Calibrated weights')) +
+    geom_line(aes(x = 0:4, y = bias_mrd[3,,i]^2 + sd_mrd[3,,i]^2, colour = 'MLE-IPW mis.')) +
+    geom_point(aes(x = 0:4, y = bias_mrd[3,,i]^2 + sd_mrd[3,,i]^2,colour = 'MLE-IPW mis.')) +
+    geom_line(aes(x = 0:4, y = bias_mrd[4,,i]^2 + sd_mrd[4,,i]^2, colour = 'Calibrated weights mis.')) +
+    geom_point(aes(x = 0:4, y = bias_mrd[4,,i]^2 + sd_mrd[4,,i]^2, colour = 'Calibrated weights mis.')) +
     scale_color_manual(name = "Weight type", values = c("MLE-IPW"= "red", "Calibrated weights" = "blue",
                                                         'MLE-IPW mis.' = 'purple', 'Calibrated weights mis.' = 'green')) +
-    labs(x = paste0('N = ', scenarios[i,1], ',\nMisspecification = ', scenarios[i,2], ', \nTreat. prev. = ',scenarios[i,3]),
-         y = "Empirical MSE of MRD estimation") + theme(aspect.ratio = 1, axis.title = element_text(size = 10)) +  
-    ylim(-0.1,0.5)
+    labs(x = paste0('N = ', scenarios[i,1], ', \nTreat. prev. = ',scenarios[i,2]),
+         y = "Empirical MSE") + theme(aspect.ratio = 1, axis.title = element_text(size = 10)) +  
+    ylim(0,0.1)
 })
-annotate_figure(ggarrange(plotlist = mse_plots_low[1:9], nrow = 3, ncol = 9,common.legend = T , legend = 'bottom'), top = 'Low event rate')
+annotate_figure(ggarrange(plotlist = mse_plots_low[1:9], nrow = 3, ncol = 3,common.legend = T , legend = 'bottom'), top = 'MRD MSE, Medium event rate')
 
 randomiter <- sample(1:200,1)
 
 meandiffsX1_treated_low <- lapply(1:9, function(i){
   ggplot() +
-    geom_line(aes(x = 1:4, y = meandiffs_all[1,,1,randomiter,i], colour = 'Unadjusted')) +
-    geom_point(aes(x = 1:4, y = meandiffs_all[1,,1,randomiter,i], colour = 'Unadjusted')) +
-    geom_line(aes(x = 1:4, y = meandiffs_all[2,,1,randomiter,i], colour = 'MLE-IPW')) +
-    geom_point(aes(x = 1:4, y = meandiffs_all[2,,1,randomiter,i], colour = 'MLE-IPW')) +
-    geom_line(aes(x = 1:4, y = meandiffs_all[3,,1,randomiter,i], colour = 'Calibrated weights')) +
-    geom_point(aes(x = 1:4, y = meandiffs_all[3,,1,randomiter,i], colour = 'Calibrated weights')) +
-    geom_line(aes(x = 1:4, y = meandiffs_all[4,,1,randomiter,i], colour = 'MLE-IPW mis.')) +
-    geom_point(aes(x = 1:4, y = meandiffs_all[4,,1,randomiter,i], colour = 'MLE-IPW mis.')) +
-    geom_line(aes(x = 1:4, y = meandiffs_all[5,,1,randomiter,i], colour = 'Calibrated weights mis.')) +
-    geom_point(aes(x = 1:4, y = meandiffs_all[5,,1,randomiter,i], colour = 'Calibrated weights mis.')) +
+    geom_line(aes(x = 0:4, y = meandiffs_all[1,,1,randomiter,i], colour = 'Unadjusted')) +
+    geom_point(aes(x = 0:4, y = meandiffs_all[1,,1,randomiter,i], colour = 'Unadjusted')) +
+    geom_line(aes(x = 0:4, y = meandiffs_all[2,,1,randomiter,i], colour = 'MLE-IPW')) +
+    geom_point(aes(x = 0:4, y = meandiffs_all[2,,1,randomiter,i], colour = 'MLE-IPW')) +
+    geom_line(aes(x = 0:4, y = meandiffs_all[3,,1,randomiter,i], colour = 'Calibrated weights')) +
+    geom_point(aes(x = 0:4, y = meandiffs_all[3,,1,randomiter,i], colour = 'Calibrated weights')) +
+    geom_line(aes(x = 0:4, y = meandiffs_all[4,,1,randomiter,i], colour = 'MLE-IPW mis.')) +
+    geom_point(aes(x = 0:4, y = meandiffs_all[4,,1,randomiter,i], colour = 'MLE-IPW mis.')) +
+    geom_line(aes(x = 0:4, y = meandiffs_all[5,,1,randomiter,i], colour = 'Calibrated weights mis.')) +
+    geom_point(aes(x = 0:4, y = meandiffs_all[5,,1,randomiter,i], colour = 'Calibrated weights mis.')) +
     scale_color_manual(name = "Weight type", values = c("MLE-IPW"= "red", "Calibrated weights" = "blue", 'Unadjusted' = 'grey',
                                                         'MLE-IPW mis.' = 'purple', 'Calibrated weights mis.' = 'green')) +
-    labs(x = paste0('N = ', scenarios[i,1], ',\nMisspecification = ', scenarios[i,2], ', \nTreat. prev. = ',scenarios[i,3]),
-         y = "MD") + theme(aspect.ratio = 1, axis.title = element_text(size = 10)) +  
-    ylim(-1,1) +
-    geom_hline(yintercept = 0,linetype = 'dashed')
+    labs(x = paste0('N = ', scenarios[i,1], ', \nTreat. prev. = ',scenarios[i,2]),
+          y = "Mean") + theme(aspect.ratio = 1, axis.title = element_text(size = 10)) +  
+    
+    geom_hline(yintercept = meandiffs_all[1,1,1,randomiter,i],linetype = 'dashed')
 })
-annotate_figure(ggarrange(plotlist = meandiffsX1_treated_low[1:9], nrow = 3, ncol = 3,common.legend = T , legend = 'bottom'), top = 'Mean difference of X1 in treated')
+annotate_figure(ggarrange(plotlist = meandiffsX1_treated_low[1:9], nrow = 3, ncol = 3,common.legend = T , legend = 'bottom'), top = 'Mean of X1 in treated')
 
 meandiffsX1_untreated_low <- lapply(1:9, function(i){
   ggplot() +
-    geom_line(aes(x = 1:4, y = meandiffs_all[1,,4,randomiter,i], colour = 'Unadjusted')) +
-    geom_point(aes(x = 1:4, y = meandiffs_all[1,,4,randomiter,i], colour = 'Unadjusted')) +
-    geom_line(aes(x = 1:4, y = meandiffs_all[2,,4,randomiter,i], colour = 'MLE-IPW')) +
-    geom_point(aes(x = 1:4, y = meandiffs_all[2,,4,randomiter,i], colour = 'MLE-IPW')) +
-    geom_line(aes(x = 1:4, y = meandiffs_all[3,,4,randomiter,i], colour = 'Calibrated weights')) +
-    geom_point(aes(x = 1:4, y = meandiffs_all[3,,4,randomiter,i], colour = 'Calibrated weights')) +
-    geom_line(aes(x = 1:4, y = meandiffs_all[4,,4,randomiter,i], colour = 'MLE-IPW mis.')) +
-    geom_point(aes(x = 1:4, y = meandiffs_all[4,,4,randomiter,i], colour = 'MLE-IPW mis.')) +
-    geom_line(aes(x = 1:4, y = meandiffs_all[5,,4,randomiter,i], colour = 'Calibrated weights mis.')) +
-    geom_point(aes(x = 1:4, y = meandiffs_all[5,,4,randomiter,i], colour = 'Calibrated weights mis.')) +
+    geom_line(aes(x = 0:4, y = meandiffs_all[1,,4,randomiter,i], colour = 'Unadjusted')) +
+    geom_point(aes(x = 0:4, y = meandiffs_all[1,,4,randomiter,i], colour = 'Unadjusted')) +
+    geom_line(aes(x = 0:4, y = meandiffs_all[2,,4,randomiter,i], colour = 'MLE-IPW')) +
+    geom_point(aes(x = 0:4, y = meandiffs_all[2,,4,randomiter,i], colour = 'MLE-IPW')) +
+    geom_line(aes(x = 0:4, y = meandiffs_all[3,,4,randomiter,i], colour = 'Calibrated weights')) +
+    geom_point(aes(x = 0:4, y = meandiffs_all[3,,4,randomiter,i], colour = 'Calibrated weights')) +
+    geom_line(aes(x = 0:4, y = meandiffs_all[4,,4,randomiter,i], colour = 'MLE-IPW mis.')) +
+    geom_point(aes(x = 0:4, y = meandiffs_all[4,,4,randomiter,i], colour = 'MLE-IPW mis.')) +
+    geom_line(aes(x = 0:4, y = meandiffs_all[5,,4,randomiter,i], colour = 'Calibrated weights mis.')) +
+    geom_point(aes(x = 0:4, y = meandiffs_all[5,,4,randomiter,i], colour = 'Calibrated weights mis.')) +
     scale_color_manual(name = "Weight type", values = c("MLE-IPW"= "red", "Calibrated weights" = "blue", 'Unadjusted' = 'grey',
                                                         'MLE-IPW mis.' = 'purple', 'Calibrated weights mis.' = 'green')) +
-    labs(x = paste0('N = ', scenarios[i,1], ',\nMisspecification = ', scenarios[i,2], ', \nTreat. prev. = ',scenarios[i,3]),
-         y = "MD") + theme(aspect.ratio = 1, axis.title = element_text(size = 10)) +  
-    ylim(-1.1,1.2) +
+    labs(x = paste0('N = ', scenarios[i,1], ', \nTreat. prev. = ',scenarios[i,2]),
+         y = "Mean") + theme(aspect.ratio = 1, axis.title = element_text(size = 10)) +  
     geom_hline(yintercept = 0,linetype = 'dashed')
   
 })
-annotate_figure(ggarrange(plotlist = meandiffsX1_untreated_low[1:9], nrow = 3, ncol = 3,common.legend = T , legend = 'bottom'), top = 'Mean difference of X1 in untreated')
+annotate_figure(ggarrange(plotlist = meandiffsX1_untreated_low[1:9], nrow = 3, ncol = 3,common.legend = T , legend = 'bottom'), top = 'Mean of X1 in untreated')
 
 objectives_low <- lapply(1:9, function(i){
   ggplot() +
     geom_point(aes(x = objectives_all[1,,randomiter,i], 
                    y = 1:8, colour = 'MLE-IPW')) +
     geom_point(aes(x = objectives_all[2,,randomiter,i], 
+                   y = 1:8, colour = "Calibrated weights")) +
+    geom_point(aes(x = objectives_all[3,,randomiter,i], 
+                   y = 1:8, colour = 'MLE-IPW')) +
+    geom_point(aes(x = objectives_all[4,,randomiter,i], 
                    y = 1:8, colour = "Calibrated weights")) +
     scale_color_manual(name = "Weight type", values = c("MLE-IPW"= "red", "Calibrated weights" = "blue", 'Unadjusted' = 'grey',
                                                         'MLE-IPW mis.' = 'purple', 'Calibrated weights mis.' = 'green')) +
