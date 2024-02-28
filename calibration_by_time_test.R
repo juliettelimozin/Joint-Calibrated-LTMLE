@@ -11,18 +11,21 @@ library(nleqslv)
 source('calibration_func_trials.R')
 set.seed(NULL)
 library(ggplot2)
+library(ggpubr)
 
 simdata_censored<-DATA_GEN_treatment_switch(1000, 5, 
                                             treat_prev = -1,
-                                            outcome_prev = -3.8,
+                                            outcome_prev = -3,
                                             censor = F)
+simdata_censored$C <- 0
 
 ######### Correctly specified ############### 
-PP_prep <- TrialEmulation::data_preparation(simdata_censored, id='ID', period='t', treatment='A', outcome='Y', 
+PP_prep <- TrialEmulation::data_preparation(simdata_censored, id='ID', period='t', treatment='A', outcome='Y', cense = 'C',
                                             eligible ='eligible',
+                                            estimand_type = 'PP',
                                             switch_d_cov = ~X1 + X2 + X3,
                                             outcome_cov = ~X1 + X2 + X3, model_var = c('assigned_treatment'),
-                                            use_weight=T, use_censor=T, quiet = T,
+                                            quiet = T,
                                             save_weight_models = F,
                                             data_dir = getwd())
 switch_data <- PP_prep$data %>% 
@@ -73,39 +76,92 @@ data_restric <- simdata_censored %>%
 simdatafinal <- calibration_by_time(simdatafinal = data_restric, 
             var = c('A1','A1X1', 'A1X2','A1X3',
                     'A0','A0X1','A0X2','A0X3'))
+simdatafinal2 <- calibration(simdatafinal = data_restric, 
+                                    var = c('A1','A1X1', 'A1X2','A1X3',
+                                            'A0','A0X1','A0X2','A0X3'))
 
 meandiffs_summary <- simdatafinal$data %>% 
   dplyr::mutate(RAX2 = RA*X2,
                 RAX3 = RA*X3,
-                RAX1 = RA*X1) %>% 
-  dplyr::select(t,RA,A1,A0,X2,X3,X1, RAX2, RAX3, RAX1, weights, Cweights)
+                RAX1 = RA*X1,
+                RAA1 = RA*A1,
+                RAA0 = RA*A0,
+                Cweights_sequential = Cweights,
+                Cweights = simdatafinal2$data$Cweights) %>% 
+  dplyr::select(t,RA,A1,A0,X2,X3,X1,RAA1,RAA0, RAX2, RAX3, RAX1, weights, Cweights,Cweights_sequential)
+
+
+treatment_numbers <- meandiffs_summary %>% 
+  dplyr::group_by(t) %>% 
+  dplyr::summarise(Treated_unadjusted = sum(RAA1),
+                   Control_unadjusted = sum(RAA0),
+                   Treated_IPW = sum(RAA1*weights),
+                   Control_IPW = sum(RAA0*weights),
+                   Treated_Cali = sum(RAA1 * Cweights),
+                   Control_Cali = sum(RAA0*Cweights),
+                   X1_treated = sum(RAX1*A1)/sum(RAA1),
+                   X1_control = sum(RAX1*A0)/sum(RAA0),
+                   X1_treated_IPW = sum(RAX1*weights*A1)/sum(RAA1*weights),
+                   X1_control_IPW = sum(RAX1*weights*A0)/sum(RAA0*weights),
+                   X1_treated_Cali_sequential = sum(RAX1*Cweights_sequential*A1)/sum(RAA1*Cweights_sequential),
+                   X1_control_Cali_sequential = sum(RAX1*Cweights_sequential*A0)/sum(RAA0*Cweights_sequential),
+                   X1_treated_Cali = sum(RAX1*Cweights*A1)/sum(RAA1*Cweights),
+                   X1_control_Cali = sum(RAX1*Cweights*A0)/sum(RAA0*Cweights),
+                   X2_treated = sum(RAX2*A1)/sum(RAA1),
+                   X2_control = sum(RAX2*A0)/sum(RAA0),
+                   X2_treated_IPW = sum(RAX2*weights*A1)/sum(RAA1*weights),
+                   X2_control_IPW = sum(RAX2*weights*A0)/sum(RAA0*weights),
+                   X2_treated_Cali_sequential = sum(RAX2*Cweights_sequential*A1)/sum(RAA1*Cweights_sequential),
+                   X2_control_Cali_sequential = sum(RAX2*Cweights_sequential*A0)/sum(RAA0*Cweights_sequential),
+                   X2_treated_Cali = sum(RAX2*Cweights*A1)/sum(RAA1*Cweights),
+                   X2_control_Cali = sum(RAX2*Cweights*A0)/sum(RAA0*Cweights),
+                   min_IPW = min(weights),
+                   min_Cali = min(Cweights),
+                   min_Cali_sequential = min(Cweights_sequential),
+                   max_IPW = max(weights),
+                   max_Cali = max(Cweights),
+                   max_Cali_sequential = max(Cweights_sequential))
+
+ggplot(data = meandiffs_summary[meandiffs_summary$t == 0,]) +
+  geom_histogram(aes(x = RAX1, fill="High"), binwidth = .1)+
+  geom_histogram(aes(x = RAX1*weights, fill="Medium"), binwidth = .1 )+
+  geom_histogram(aes(x = RAX1*Cweights, fill="Low"),binwidth = 0.1)+
+  theme(title=element_text(size=15), axis.text = element_text(size=10), legend.text = element_text(size=14)) +  
+  scale_fill_manual(name = "Event rate", values = c("Low"= "red", "Medium" = "blue",
+                                                    "High" = "green"))
+ggplot(data = meandiffs_summary[meandiffs_summary$t == 1,]) +
+  geom_histogram(aes(x = RAX1, fill="High"), binwidth = .1)+
+  geom_histogram(aes(x = RAX1*weights, fill="Medium"), binwidth = .1 )+
+  geom_histogram(aes(x = RAX1*Cweights, fill="Low"),binwidth = 0.1)+
+  theme(title=element_text(size=15), axis.text = element_text(size=10), legend.text = element_text(size=14)) +  
+  scale_fill_manual(name = "Event rate", values = c("Low"= "red", "Medium" = "blue",
+                                                    "High" = "green"))
 
 meandiffs <- array(, dim = c(5,5,6,1))
-
 for (h in 1:5){
   try({
-    meandiffs[1,h,1:3,1] <-colMeans(meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA!=0 &meandiffs_summary$A1 == 1 ,c('RAX1', 'RAX2', 'RAX3')])
+    meandiffs[1,h,1:3,1] <-colSums(meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA!=0 &meandiffs_summary$A1 == 1 ,c('RAX1', 'RAX2', 'RAX3')])
   },
   silent = T)
   try({
-    meandiffs[2,h,1:3,1] <-colMeans(meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA!=0 & meandiffs_summary$A1 == 1 ,c('RAX1', 'RAX2', 'RAX3')]*meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA!=0 &meandiffs_summary$A1 == 1,c('weights')]) 
+    meandiffs[2,h,1:3,1] <-colSums(meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA!=0 & meandiffs_summary$A1 == 1 ,c('RAX1', 'RAX2', 'RAX3')]*meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA!=0 &meandiffs_summary$A1 == 1,c('weights')]) 
   },
   silent = T)
   try({
-    meandiffs[3,h,1:3,1] <-colMeans(meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA!=0 &meandiffs_summary$A1 == 1 ,c('RAX1', 'RAX2', 'RAX3')]*meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA!=0 &meandiffs_summary$A1 == 1,c('Cweights')]) 
+    meandiffs[3,h,1:3,1] <-colSums(meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA!=0 &meandiffs_summary$A1 == 1 ,c('RAX1', 'RAX2', 'RAX3')]*meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA!=0 &meandiffs_summary$A1 == 1,c('Cweights')]) 
   },
   silent = T)
   
   try({
-    meandiffs[1,h,4:6,1] <-colMeans(meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA!=0 &meandiffs_summary$A1 == 0 ,c('RAX1', 'RAX2', 'RAX3')]) 
+    meandiffs[1,h,4:6,1] <-colSums(meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA!=0 &meandiffs_summary$A1 == 0 ,c('RAX1', 'RAX2', 'RAX3')]) 
   },
   silent = T)
   try({
-    meandiffs[2,h,4:6,1] <-colMeans(meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA!=0 &meandiffs_summary$A1 == 0 ,c('RAX1', 'RAX2', 'RAX3')]*meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA!=0 &meandiffs_summary$A1 == 0,c('weights')]) 
+    meandiffs[2,h,4:6,1] <-colSums(meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA!=0 &meandiffs_summary$A1 == 0 ,c('RAX1', 'RAX2', 'RAX3')]*meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA!=0 &meandiffs_summary$A1 == 0,c('weights')]) 
   },
   silent = T)
   try({
-    meandiffs[3,h,4:6,1] <-colMeans(meandiffs_summary[meandiffs_summary$t == h-1 &meandiffs_summary$RA!=0 & meandiffs_summary$A1 == 0 ,c('RAX1', 'RAX2', 'RAX3')]*meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA!=0 &meandiffs_summary$A1 == 0,c('Cweights')]) 
+    meandiffs[3,h,4:6,1] <-colSums(meandiffs_summary[meandiffs_summary$t == h-1 &meandiffs_summary$RA!=0 & meandiffs_summary$A1 == 0 ,c('RAX1', 'RAX2', 'RAX3')]*meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA!=0 &meandiffs_summary$A1 == 0,c('Cweights')]) 
   },
   silent = T)
 }
@@ -117,9 +173,10 @@ PP <- TrialEmulation::trial_msm(data = switch_data,
                                   t_1X2 + t_2X2 + t_3X2 + t_4X2 +
                                   t_1X3 + t_2X3 + t_3X3 + t_4X3,
                                 model_var = c('assigned_treatment'),
+                                estimand_type = 'PP',
                                 glm_function = 'glm',
                                 include_trial_period = ~1, include_followup_time = ~1,
-                                use_weight=T, use_censor=T, quiet = T, use_sample_weights =  F)
+                                quiet = T, use_sample_weights =  F)
 
 switch_data$weight <- simdatafinal$data %>% dplyr::filter(RA == 1) %>% dplyr::select(Cweights)
 
@@ -134,7 +191,8 @@ PP_calibrated <- TrialEmulation::trial_msm(data = switch_data,
                                            model_var = c('assigned_treatment'),
                                            glm_function = 'glm',
                                            include_trial_period = ~1, include_followup_time = ~1,
-                                           use_weight=T, use_censor=T, quiet = T, use_sample_weights =  F)
+                                           estimand_type = 'PP',
+                                           quiet = T, use_sample_weights =  F)
 
 design_mat <- expand.grid(id = 1:as.numeric(dim(switch_data)[1]),
                           trial_period = 0:4,
@@ -216,11 +274,11 @@ predicted_probas_PP <- fitting_data_treatment %>%
 #########  Misspecified ############### 
 simdata_censored <- simdata_censored %>% 
   mutate(Z1 = X1^3/9,Z2 = X1*X2, Z3 = log(abs(X3))+4)
-PP_prep <- TrialEmulation::data_preparation(simdata_censored, id='ID', period='t', treatment='A', outcome='Y', 
+PP_prep <- TrialEmulation::data_preparation(simdata_censored, id='ID', period='t', treatment='A', outcome='Y', cense = 'C',
                                             eligible ='eligible',
                                             switch_d_cov = ~ Z1 + Z2 + Z3,
                                             outcome_cov = ~Z1 + Z2 + Z3, model_var = c('assigned_treatment'),
-                                            use_weight=T, use_censor=T, quiet = T,
+                                            estimand_type = 'PP', quiet = T,
                                             save_weight_models = F,
                                             data_dir = getwd())
 switch_data <- PP_prep$data %>% 
@@ -280,19 +338,19 @@ meandiffs_summary <- simdatafinal$data %>%
 
 for (h in 1:5){
   try({
-    meandiffs[4,h,1:3,1] <-colMeans(meandiffs_summary[meandiffs_summary$t == h-1 &  meandiffs_summary$RA == 1 & meandiffs_summary$A1 == 1 ,c('RAX1', 'RAX2', 'RAX3')]*meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA == 1 &meandiffs_summary$A1 == 1,c('weights')]) 
+    meandiffs[4,h,1:3,1] <-colSums(meandiffs_summary[meandiffs_summary$t == h-1 &  meandiffs_summary$RA == 1 & meandiffs_summary$A1 == 1 ,c('RAX1', 'RAX2', 'RAX3')]*meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA == 1 &meandiffs_summary$A1 == 1,c('weights')]) 
   },
   silent = T)
   try({
-    meandiffs[5,h,1:3,1] <-colMeans(meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA == 1 &meandiffs_summary$A1 == 1 ,c('RAX1', 'RAX2', 'RAX3')]*meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA == 1 &meandiffs_summary$A1 == 1,c('Cweights')]) 
+    meandiffs[5,h,1:3,1] <-colSums(meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA == 1 &meandiffs_summary$A1 == 1 ,c('RAX1', 'RAX2', 'RAX3')]*meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA == 1 &meandiffs_summary$A1 == 1,c('Cweights')]) 
   },
   silent = T)
   try({
-    meandiffs[4,h,4:6,1] <-colMeans(meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA == 1 &meandiffs_summary$A1 == 0 ,c('RAX1', 'RAX2', 'RAX3')]*meandiffs_summary[meandiffs_summary$t == h-1 &meandiffs_summary$RA == 1 & meandiffs_summary$A1 == 0,c('weights')]) 
+    meandiffs[4,h,4:6,1] <-colSums(meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA == 1 &meandiffs_summary$A1 == 0 ,c('RAX1', 'RAX2', 'RAX3')]*meandiffs_summary[meandiffs_summary$t == h-1 &meandiffs_summary$RA == 1 & meandiffs_summary$A1 == 0,c('weights')]) 
   },
   silent = T)
   try({
-    meandiffs[5,h,4:6,1] <-colMeans(meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA == 1 &meandiffs_summary$A1 == 0 ,c('RAX1', 'RAX2', 'RAX3')]*meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA == 1 &meandiffs_summary$A1 == 0,c('Cweights')]) 
+    meandiffs[5,h,4:6,1] <-colSums(meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA == 1 &meandiffs_summary$A1 == 0 ,c('RAX1', 'RAX2', 'RAX3')]*meandiffs_summary[meandiffs_summary$t == h-1 & meandiffs_summary$RA == 1 &meandiffs_summary$A1 == 0,c('Cweights')]) 
   },
   silent = T)
 }
@@ -308,7 +366,7 @@ PP <- TrialEmulation::trial_msm(data = switch_data,
                                 model_var = c('assigned_treatment'),
                                 glm_function = 'glm',
                                 include_trial_period = ~1, include_followup_time = ~1,
-                                use_weight=T, use_censor=T, quiet = T, use_sample_weights =  F)
+                                estimand_type = 'PP', quiet = T, use_sample_weights =  F)
 
 switch_data$weight <- simdatafinal$data %>% dplyr::filter(RA == 1) %>% dplyr::select(Cweights)
 PP_calibrated <- TrialEmulation::trial_msm(data = switch_data,
@@ -321,7 +379,7 @@ PP_calibrated <- TrialEmulation::trial_msm(data = switch_data,
                                            model_var = c('assigned_treatment'),
                                            glm_function = 'glm',
                                            include_trial_period = ~1, include_followup_time = ~1,
-                                           use_weight=T, use_censor=T, quiet = T, use_sample_weights =  F)
+                                           estimand_type = 'PP', quiet = T, use_sample_weights =  F)
 
 design_mat <- expand.grid(id = 1:as.numeric(dim(switch_data)[1]),
                           trial_period = 0:4,
