@@ -17,20 +17,21 @@ outcome_prev <- c(-4.7,-3.8,-3)
 
 scenarios <- tidyr::crossing(treat)
 
-true_HR <- array(,dim = c(3,3))
+true_HR <- array(,dim = c(20,3,3))
 true_MRD <- array(,dim = c(5,2,3,3))
 
-for (l in 1:3){
-  for (j in 1:2){
+for (l in 1){
+  for (j in 3){
     simdata_censored<-DATA_GEN_treatment_switch(1000000, 5, 
                                                 treat_prev = as.numeric(scenarios[l,1]),
                                                 outcome_prev = as.numeric(outcome_prev[j]),
                                                 censor = F)
+    simdata_censored$C <- 0.0
     PP_prep <- TrialEmulation::data_preparation(simdata_censored, id='ID', period='t', treatment='A', outcome='Y', 
-                                                eligible ='eligible',
+                                                eligible ='eligible', cense = 'C',
                                                 switch_d_cov = ~X1 + X2 + X3,
                                                 outcome_cov = ~X1 + X2 + X3, model_var = c('assigned_treatment'),
-                                                use_weight=T, use_censor=T, quiet = T,
+                                                estimand_type = 'PP', quiet = T,
                                                 save_weight_models = F,
                                                 data_dir = getwd())
     switch_data <- PP_prep$data %>% 
@@ -56,7 +57,7 @@ for (l in 1:3){
                     t_3X3 = t_3*X3,
                     t_4X3 = t_4*X3)
     PP <- TrialEmulation::trial_msm(data = switch_data,
-                                    outcome_cov = ~ X1 + X2+ assigned_treatment+
+                                    outcome_cov = ~ X1 + X2+ X3+ assigned_treatment+
                                       t_1 + t_2 + t_3 + t_4 +
                                       t_1A + t_2A + t_3A + t_4A +
                                       t_1X1 + t_2X1 + t_3X1 + t_4X1 +
@@ -65,8 +66,8 @@ for (l in 1:3){
                                     model_var = c('assigned_treatment'),
                                     glm_function = 'glm',
                                     include_trial_period = ~1, include_followup_time = ~1,
-                                    use_weight=T, use_censor=T, quiet = T, use_sample_weights =  F)
-    true_HR[l,j] <- PP$model$coefficients['assigned_treatment']
+                                    estimand_type = 'PP',, quiet = T, use_sample_weights =  F)
+    true_HR[,l,j] <- PP$model$coefficients
     
     simdata_censored_treat<-DATA_GEN_treatment_switch(1000000, 5, 
                                                       treat_prev = as.numeric(scenarios[l,1]),
@@ -96,8 +97,8 @@ for (l in 1:3){
     true_MRD[,2,l,j] <- f1$surv
     
   }
-  save(true_HR, file = "Simulation results/true_HR_singletrial_scenario2.rda")
-  save(true_MRD, file = "Simulation results/true_MRD_singletrial_scenario2.rda")
+  save(true_HR, file = "Simulation results/true_HR_singletrial.rda")
+  save(true_MRD, file = "Simulation results/true_MRD_singletrial.rda")
 }
 
 

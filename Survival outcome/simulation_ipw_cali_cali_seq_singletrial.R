@@ -21,7 +21,7 @@ treat <- c(-1,0,1)
 
 scenarios <- tidyr::crossing(size, treat)
 # Set number of cores. 67 is sufficient for 200 cores.
-registerDoParallel(cores = 4)
+registerDoParallel(cores = 2)
 multiResultClass <- function(objectiveIPW = NULL,
                              objectiveCali = NULL,
                              objectiveIPWseq = NULL,
@@ -51,7 +51,7 @@ multiResultClass <- function(objectiveIPW = NULL,
   class(me) <- append(class(me),"multiResultClass")
   return(me)
 }
-oper <- foreach(i = 1:iters) %dopar% {
+oper <- foreach(i = 1:iters,.combine=cbind) %dopar% {
   tryCatch({
     result <- multiResultClass()
     simdata_censored<-DATA_GEN_treatment_switch(as.numeric(scenarios[l,1]), 5, 
@@ -148,6 +148,8 @@ oper <- foreach(i = 1:iters) %dopar% {
                        Control_IPW = sum(RAA0*weights),
                        Treated_Cali = sum(RAA1 * Cweights),
                        Control_Cali = sum(RAA0*Cweights),
+                       Treated_Cali_sequential = sum(RAA1 * Cweights_sequential),
+                       Control_Cali_sequential = sum(RAA0*Cweights_sequential),
                        X1_treated = sum(RAX1*A1)/sum(RAA1),
                        X1_control = sum(RAX1*A0)/sum(RAA0),
                        X1_treated_IPW = sum(RAX1*weights*A1)/sum(RAA1*weights),
@@ -164,6 +166,14 @@ oper <- foreach(i = 1:iters) %dopar% {
                        X2_control_Cali_sequential = sum(RAX2*Cweights_sequential*A0)/sum(RAA0*Cweights_sequential),
                        X2_treated_Cali = sum(RAX2*Cweights*A1)/sum(RAA1*Cweights),
                        X2_control_Cali = sum(RAX2*Cweights*A0)/sum(RAA0*Cweights),
+                       X3_treated = sum(RAX3*A1)/sum(RAA1),
+                       X3_control = sum(RAX3*A0)/sum(RAA0),
+                       X3_treated_IPW = sum(RAX3*weights*A1)/sum(RAA1*weights),
+                       X3_control_IPW = sum(RAX3*weights*A0)/sum(RAA0*weights),
+                       X3_treated_Cali_sequential = sum(RAX3*Cweights_sequential*A1)/sum(RAA1*Cweights_sequential),
+                       X3_control_Cali_sequential = sum(RAX3*Cweights_sequential*A0)/sum(RAA0*Cweights_sequential),
+                       X3_treated_Cali = sum(RAX3*Cweights*A1)/sum(RAA1*Cweights),
+                       X3_control_Cali = sum(RAX3*Cweights*A0)/sum(RAA0*Cweights),
                        min_IPW = min(weights),
                        min_Cali = min(Cweights),
                        min_Cali_sequential = min(Cweights_sequential),
@@ -397,8 +407,8 @@ oper <- foreach(i = 1:iters) %dopar% {
                                          'A0','A0Z1','A0Z2','A0Z3'))
     
     
-    result$objectiveIPW <- simdatafinal1$objective.IPW
-    result$objectiveCali <- simdatafinal1$objective.Cali
+    result$objectiveIPWmis <- simdatafinal1$objective.IPW
+    result$objectiveCalimis <- simdatafinal1$objective.Cali
     
     ################### Calibration by time #######################
     simdatafinal2 <- calibration_by_time(simdatafinal = data_restric, 
@@ -406,50 +416,61 @@ oper <- foreach(i = 1:iters) %dopar% {
                                                  'A0','A0Z1','A0Z2','A0Z3'))
     
     
-    result$objectiveIPWseq <- simdatafinal2$objective.IPW
-    result$objectiveCaliseq <- simdatafinal2$objective.Cali
+    result$objectiveIPWseqmis <- simdatafinal2$objective.IPW
+    result$objectiveCaliseqmis <- simdatafinal2$objective.Cali
     
     meandiffs_summary <- simdatafinal2$data %>% 
-      dplyr::mutate(RAZ2 = RA*Z2,
-                    RAZ3 = RA*Z3,
-                    RAZ1 = RA*Z1,
+      dplyr::mutate(RAX2 = RA*X2,
+                    RAX3 = RA*X3,
+                    RAX1 = RA*X1,
                     RAA1 = RA*A1,
                     RAA0 = RA*A0,
                     Cweights_sequential = Cweights,
                     Cweights = simdatafinal1$data$Cweights) %>% 
-      dplyr::select(t,RA,A1,A0,Z2,Z3,Z1, RAZ2, RAZ3, RAZ1,RAA1, RAA0, weights, Cweights,Cweights_sequential)
+      dplyr::select(t,RA,A1,A0,X2,X3,X1, RAX2, RAX3, RAX1,RAA1, RAA0, weights, Cweights,Cweights_sequential)
     
-    treatment_numbers <- meandiffs_summary %>% 
+    treatment_numbers2 <- meandiffs_summary %>% 
       dplyr::group_by(t) %>% 
-      dplyr::summarise(Treated_unadjusted = sum(RAA1),
-                       Control_unadjusted = sum(RAA0),
-                       Treated_IPW = sum(RAA1*weights),
-                       Control_IPW = sum(RAA0*weights),
-                       Treated_Cali = sum(RAA1 * Cweights),
-                       Control_Cali = sum(RAA0*Cweights),
-                       Z1_treated = sum(RAZ1*A1)/sum(RAA1),
-                       Z1_control = sum(RAZ1*A0)/sum(RAA0),
-                       Z1_treated_IPW = sum(RAZ1*weights*A1)/sum(RAA1*weights),
-                       Z1_control_IPW = sum(RAZ1*weights*A0)/sum(RAA0*weights),
-                       Z1_treated_Cali_sequential = sum(RAZ1*Cweights_sequential*A1)/sum(RAA1*Cweights_sequential),
-                       Z1_control_Cali_sequential = sum(RAZ1*Cweights_sequential*A0)/sum(RAA0*Cweights_sequential),
-                       Z1_treated_Cali = sum(RAZ1*Cweights*A1)/sum(RAA1*Cweights),
-                       Z1_control_Cali = sum(RAZ1*Cweights*A0)/sum(RAA0*Cweights),
-                       Z2_treated = sum(RAZ2*A1)/sum(RAA1),
-                       Z2_control = sum(RAZ2*A0)/sum(RAA0),
-                       Z2_treated_IPW = sum(RAZ2*weights*A1)/sum(RAA1*weights),
-                       Z2_control_IPW = sum(RAZ2*weights*A0)/sum(RAA0*weights),
-                       Z2_treated_Cali_sequential = sum(RAZ2*Cweights_sequential*A1)/sum(RAA1*Cweights_sequential),
-                       Z2_control_Cali_sequential = sum(RAZ2*Cweights_sequential*A0)/sum(RAA0*Cweights_sequential),
-                       Z2_treated_Cali = sum(RAZ2*Cweights*A1)/sum(RAA1*Cweights),
-                       Z2_control_Cali = sum(RAZ2*Cweights*A0)/sum(RAA0*Cweights),
-                       min_IPW = min(weights),
-                       min_Cali = min(Cweights),
-                       min_Cali_sequential = min(Cweights_sequential),
-                       max_IPW = max(weights),
-                       max_Cali = max(Cweights),
-                       max_Cali_sequential = max(Cweights_sequential))
+      dplyr::summarise(Treated_unadjusted_mis = sum(RAA1),
+                       Control_unadjusted_mis = sum(RAA0),
+                       Treated_IPW_mis = sum(RAA1*weights),
+                       Control_IPW_mis = sum(RAA0*weights),
+                       Treated_Cali_mis = sum(RAA1 * Cweights),
+                       Control_Cali_mis = sum(RAA0*Cweights),
+                       Treated_Cali_sequential_mis = sum(RAA1 * Cweights_sequential),
+                       Control_Cali_sequential_mis = sum(RAA0*Cweights_sequential),
+                       X1_treated_mis = sum(RAX1*A1)/sum(RAA1),
+                       X1_control_mis = sum(RAX1*A0)/sum(RAA0),
+                       X1_treated_IPW_mis = sum(RAX1*weights*A1)/sum(RAA1*weights),
+                       X1_control_IPW_mis = sum(RAX1*weights*A0)/sum(RAA0*weights),
+                       X1_treated_Cali_sequential_mis = sum(RAX1*Cweights_sequential*A1)/sum(RAA1*Cweights_sequential),
+                       X1_control_Cali_sequential_mis = sum(RAX1*Cweights_sequential*A0)/sum(RAA0*Cweights_sequential),
+                       X1_treated_Cali_mis = sum(RAX1*Cweights*A1)/sum(RAA1*Cweights),
+                       X1_control_Cali_mis = sum(RAX1*Cweights*A0)/sum(RAA0*Cweights),
+                       X2_treated_mis = sum(RAX2*A1)/sum(RAA1),
+                       X2_control_mis = sum(RAX2*A0)/sum(RAA0),
+                       X2_treated_IPW_mis = sum(RAX2*weights*A1)/sum(RAA1*weights),
+                       X2_control_IPW_mis = sum(RAX2*weights*A0)/sum(RAA0*weights),
+                       X2_treated_Cali_sequential_mis = sum(RAX2*Cweights_sequential*A1)/sum(RAA1*Cweights_sequential),
+                       X2_control_Cali_sequential_mis = sum(RAX2*Cweights_sequential*A0)/sum(RAA0*Cweights_sequential),
+                       X2_treated_Cali_mis = sum(RAX2*Cweights*A1)/sum(RAA1*Cweights),
+                       X2_control_Cali_mis = sum(RAX2*Cweights*A0)/sum(RAA0*Cweights),
+                       X3_treated = sum(RAX3*A1)/sum(RAA1),
+                       X3_control = sum(RAX3*A0)/sum(RAA0),
+                       X3_treated_IPW = sum(RAX3*weights*A1)/sum(RAA1*weights),
+                       X3_control_IPW = sum(RAX3*weights*A0)/sum(RAA0*weights),
+                       X3_treated_Cali_sequential = sum(RAX3*Cweights_sequential*A1)/sum(RAA1*Cweights_sequential),
+                       X3_control_Cali_sequential = sum(RAX3*Cweights_sequential*A0)/sum(RAA0*Cweights_sequential),
+                       X3_treated_Cali = sum(RAX3*Cweights*A1)/sum(RAA1*Cweights),
+                       X3_control_Cali = sum(RAX3*Cweights*A0)/sum(RAA0*Cweights),
+                       min_IPW_mis = min(weights),
+                       min_Cali_mis = min(Cweights),
+                       min_Cali_sequential_mis = min(Cweights_sequential),
+                       max_IPW_mis = max(weights),
+                       max_Cali_mis = max(Cweights),
+                       max_Cali_sequential_mis = max(Cweights_sequential))
     
+    result$balance_summary <- cbind(treatment_numbers, treatment_numbers2)
     PP_IPW <- TrialEmulation::trial_msm(data = switch_data,
                                         outcome_cov = ~ Z1 + Z2+ Z3 + assigned_treatment+
                                           t_1 + t_2 + t_3 + t_4 +
@@ -461,7 +482,7 @@ oper <- foreach(i = 1:iters) %dopar% {
                                         glm_function = 'glm',
                                         include_trial_period = ~1, include_followup_time = ~1,
                                         estimand_type = 'PP', quiet = T, use_sample_weights =  F)
-    result$hr_estimates[1] <- PP_IPW$model$coefficients['assigned_treatment']
+    result$hr_estimates[5] <- PP_IPW$model$coefficients['assigned_treatment']
     
     switch_data$weight <- simdatafinal1$data %>% dplyr::filter(RA == 1) %>% dplyr::select(Cweights)
     
@@ -478,7 +499,7 @@ oper <- foreach(i = 1:iters) %dopar% {
                                                include_trial_period = ~1, include_followup_time = ~1,
                                                estimand_type = 'PP', quiet = T, use_sample_weights =  F)
     
-    result$hr_estimates[2] <- PP_calibrated$model$coefficients['assigned_treatment']
+    result$hr_estimates[6] <- PP_calibrated$model$coefficients['assigned_treatment']
     
     switch_data$weight <- simdatafinal2$data %>% dplyr::filter(RA == 1) %>% dplyr::select(Cweights)
     
@@ -494,7 +515,7 @@ oper <- foreach(i = 1:iters) %dopar% {
                                                    include_trial_period = ~1, include_followup_time = ~1,
                                                    estimand_type = 'PP', quiet = T, use_sample_weights =  F)
     
-    result$hr_estimates[3] <- PP_calibrated_seq$model$coefficients['assigned_treatment']
+    result$hr_estimates[7] <- PP_calibrated_seq$model$coefficients['assigned_treatment']
     
     switch_data$weight <- 1.0
     
@@ -510,7 +531,7 @@ oper <- foreach(i = 1:iters) %dopar% {
                                           include_trial_period = ~1, include_followup_time = ~1,
                                           estimand_type = 'PP', quiet = T, use_sample_weights =  F)
     
-    result$hr_estimates[4] <- PP_naive$model$coefficients['assigned_treatment']
+    result$hr_estimates[8] <- PP_naive$model$coefficients['assigned_treatment']
     
     design_mat <- expand.grid(id = 1:as.numeric(dim(switch_data)[1]),
                               trial_period = 0:4,
@@ -603,21 +624,18 @@ oper <- foreach(i = 1:iters) %dopar% {
                     cum_hazard_control_cali_seq = cumprod(1-predicted_proba_control_cali_seq)) %>%
       dplyr::ungroup() %>%
       dplyr::group_by(followup_time) %>%
-      dplyr::summarise(risk_treatment_IPW = mean(cum_hazard_treatment_IPW),
-                       risk_treatment_cali = mean(cum_hazard_treatment_cali),
-                       risk_treatment_cali_seq = mean(cum_hazard_treatment_cali_seq),
-                       risk_treatment_naive = mean(cum_hazard_treatment_naive),
+      dplyr::summarise(risk_treatment_IPW_mis = mean(cum_hazard_treatment_IPW),
+                       risk_treatment_cali_mis = mean(cum_hazard_treatment_cali),
+                       risk_treatment_cali_seq_mis = mean(cum_hazard_treatment_cali_seq),
+                       risk_treatment_naive_mis = mean(cum_hazard_treatment_naive),
                        
-                       risk_control_IPW = mean(cum_hazard_control_IPW),
-                       risk_control_cali = mean(cum_hazard_control_cali),
-                       risk_control_cali_seq = mean(cum_hazard_control_cali_seq),
-                       risk_control_naive = mean(cum_hazard_control_naive))
-    result$mr_1_estimates<- predicted_probas_PP[,2:5]
-    result$mr_0_estimates<- predicted_probas_PP[,6:9]
-    
+                       risk_control_IPW_mis = mean(cum_hazard_control_IPW),
+                       risk_control_cali_mis = mean(cum_hazard_control_cali),
+                       risk_control_cali_seq_mis = mean(cum_hazard_control_cali_seq),
+                       risk_control_naive_mis = mean(cum_hazard_control_naive))
+    result$mr_1_estimates<- cbind( result$mr_1_estimates, predicted_probas_PP[,2:5])
+    result$mr_0_estimates<-  cbind(result$mr_0_estimates,predicted_probas_PP[,6:9])
+    return(result)
   }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
 }
-save(meandiffs, file = paste("Simulation results/meandiffs_singletrial_med_scenario3_",as.character(l),".rda", sep = ""))
-save(objectives, file = paste("Simulation results/objectives_singletrial_med_scenario3_",as.character(l),".rda", sep = ""))
-save(hr_estimates, file = paste("Simulation results/hr_estimates_singletrial_med_scenario3_",as.character(l),".rda", sep = ""))
-save(mr_estimates, file = paste("Simulation results/mr_estimates_singletrial_med_scenario3_",as.character(l),".rda", sep = ""))
+save(oper, file = paste("Simulation results/simulation_ipw_cali_cali_seq_singletrial",as.character(l),".rda", sep = ""))

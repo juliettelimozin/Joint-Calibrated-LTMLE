@@ -93,12 +93,16 @@ meandiffs_summary <- simdatafinal$data %>%
 
 treatment_numbers <- meandiffs_summary %>% 
   dplyr::group_by(t) %>% 
-  dplyr::summarise(Treated_unadjusted = sum(RAA1),
+  dplyr::summarise(Treated_notcensored = sum(A1),
+                   Control_notcensored = sum(A0),
+                   Treated_unadjusted = sum(RAA1),
                    Control_unadjusted = sum(RAA0),
                    Treated_IPW = sum(RAA1*weights),
                    Control_IPW = sum(RAA0*weights),
                    Treated_Cali = sum(RAA1 * Cweights),
                    Control_Cali = sum(RAA0*Cweights),
+                   Treated_Cali_sequential = sum(RAA1*Cweights_sequential),
+                   Control_Cali_sequential = sum(RAA0*Cweights_sequential),
                    X1_treated = sum(RAX1*A1)/sum(RAA1),
                    X1_control = sum(RAX1*A0)/sum(RAA0),
                    X1_treated_IPW = sum(RAX1*weights*A1)/sum(RAA1*weights),
