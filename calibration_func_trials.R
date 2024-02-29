@@ -300,4 +300,5 @@ calibration_by_time<-function(simdatafinal, var=c('A1', 'A1X1')){
   }
   list(data = simdatafinal, 
        objective.IPW =  restrictions_weight1(rep(0,dim(data1)[2])), 
-       objective.Cali = wei1op
+       objective.Cali = wei1optAR$fvec)
+}
