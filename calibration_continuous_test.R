@@ -14,7 +14,7 @@ library(ggplot2)
 library(ggpubr)
 library(calculus)
 
-simdata<-DATA_GEN_continous_outcome_treatment_switch(1000, 5, 
+simdata<-DATA_GEN_continous_outcome_treatment_switch(5000, 5, 
                                             treat_prev = -1,
                                             outcome_prev = -3,
                                             censor = F)
@@ -89,6 +89,8 @@ treatment_numbers <- meandiffs_summary %>%
                    Control_Cali = sum(RAA0*Cweights),
                    Treated_Cali_sequential = sum(RAA1*Cweights_sequential),
                    Control_Cali_sequential = sum(RAA0*Cweights_sequential),
+                   X1_treated_notcensored = sum(X1*A1)/sum(A1),
+                   X1_control_notcensored = sum(X1*A0)/sum(A0),
                    X1_treated = sum(RAX1*A1)/sum(RAA1),
                    X1_control = sum(RAX1*A0)/sum(RAA0),
                    X1_treated_IPW = sum(RAX1*weights*A1)/sum(RAA1*weights),

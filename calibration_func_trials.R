@@ -204,15 +204,12 @@ calibration<-function(simdatafinal, var=c('tall', 'X1', 'X2', 'X3', 'X4'))
 
 calibration_by_time<-function(simdatafinal, var=c('A1', 'A1X1')){
   T <- max(simdatafinal$tall)
-  print(T)
   data1 <- simdatafinal[simdatafinal$tall == 1,]
-  data1 <- T*data1$RA*data1[, var]
+  data1 <- data1$RA*data1[, var]
   Tdata1<- t(data1)
   
   data0 <- simdatafinal[simdatafinal$tall == 0,]
-  print(colSums(simdatafinal[simdatafinal$tall == 1, var]))
-  data0 <- T*data0$RA*simdatafinal[simdatafinal$tall == 1, var]
-  print(data0)
+  data0 <- data0$RA*simdatafinal[simdatafinal$tall == 1, var]
   RHS <- colSums(data0)
   print(RHS)
   restrictions_weight1 <- function(w){
@@ -255,17 +252,18 @@ calibration_by_time<-function(simdatafinal, var=c('A1', 'A1X1')){
   
   for (k in 2:T){
     data1 <- simdatafinal[simdatafinal$tall == k,]
-    data1 <- (T - k+ 1)*data1$RA*data1[, var]
-    data0 <- simdatafinal[simdatafinal$tall == k-1,]
-    data0 <- (T - k+ 1)*data0$RA*data0$Cweights*simdatafinal[simdatafinal$tall == k, var]
+    data1 <- data1$RA*data1[, var]
     Tdata1<- t(data1)
     
+    data0 <- simdatafinal[simdatafinal$tall == 0,]
+    data0 <- data0$RA*data0$Cweights*simdatafinal[simdatafinal$tall == k, var]
     RHS <- colSums(data0)
-    restrictions_weightk <- function(w){
+    print(RHS)
+    restrictions_weight1 <- function(w){
       ##Objective function
       lp3<-colSums(Tdata1*w)
       we<-simdatafinal$weights[simdatafinal$tall == k]*exp(lp3)
-      m3<-(colSums(data1*we) - RHS) ##Restrictions (6)
+      m3<-(colSums(data1*we) - RHS)/nrow(data1) ##Restrictions (6)
       c(m3)
     }
     
@@ -274,7 +272,7 @@ calibration_by_time<-function(simdatafinal, var=c('A1', 'A1X1')){
     N1MATAR<-Tdata1
     N2MATAR<-data1
     
-    DgARk<-function(w){
+    DgAR1<-function(w){
       
       lp3<-colSums(Tdata1*w)
       we<-simdatafinal$weights[simdatafinal$tall == k]*exp(lp3)
@@ -285,7 +283,7 @@ calibration_by_time<-function(simdatafinal, var=c('A1', 'A1X1')){
       MAT1
     }
     
-    weikoptAR<-nleqslv::nleqslv(rep(0,dim(data1)[2]),restrictions_weightk,DgARk,method="Broyden",
+    wei1optAR<-nleqslv::nleqslv(rep(0,dim(data1)[2]),restrictions_weight1,DgAR1,method="Broyden",
                                 control=list(maxit=10000,ftol=10^(-16),xtol=10^(-16)), jacobian=T)
     
     weconsAR<-function(w){
@@ -293,9 +291,10 @@ calibration_by_time<-function(simdatafinal, var=c('A1', 'A1X1')){
       we<-simdatafinal$weights[simdatafinal$tall==k]*exp(lp3)
     }
     
-    CALW1<-weconsAR(weikoptAR$x)
+    CALW1<-weconsAR(wei1optAR$x)
     
     simdatafinal$Cweights[simdatafinal$tall == k]<-CALW1
+    
     
   }
   list(data = simdatafinal, 
