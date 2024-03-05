@@ -14,8 +14,8 @@ library(ggplot2)
 library(ggpubr)
 library(calculus)
 
-simdata<-DATA_GEN_continous_outcome_treatment_switch(5000, 5, 
-                                            treat_prev = -1,
+simdata<-DATA_GEN_continous_outcome_treatment_switch(1000, 5, 
+                                            treat_prev = 0,
                                             outcome_prev = -3,
                                             censor = F)
 
@@ -116,17 +116,17 @@ treatment_numbers <- meandiffs_summary %>%
 
 switch_data$Cweights <- simdatafinal2$data[simdatafinal2$data$RA == 1,'Cweights']
 switch_data$Cweights_sequential <- simdatafinal$data[simdatafinal$data$RA == 1,'Cweights']
-
+switch_data$followup_time <- as.factor(switch_data$followup_time)
 PP_IPW <- glm(data = switch_data,
-                                formula = Y ~ assigned_treatment + X1 + X2+ X3,
+                                formula = Y ~ CA + X1 + X2+ X3,
                                 weights = weight, family = 'gaussian')
 
 PP_calibrated <- glm(data = switch_data,
-                    formula = Y ~ assigned_treatment + X1 + X2+ X3,
+                    formula = Y ~ CA + X1 + X2+ X3,
                     weights = Cweights, family = 'gaussian')
 
 PP_calibrated_sequential <- glm(data = switch_data,
-                    formula = Y ~ assigned_treatment + X1 + X2+ X3,
+                    formula = Y ~ CA + X1 + X2+ X3,
                     weights = Cweights_sequential, family = 'gaussian')
 
 design_mat <- expand.grid(id = 1:as.numeric(dim(switch_data)[1]),
@@ -135,7 +135,7 @@ design_mat <- expand.grid(id = 1:as.numeric(dim(switch_data)[1]),
 design_mat <- design_mat[which(5 -design_mat$trial_period > design_mat$followup_time),]
 
 fitting_data_treatment <-  switch_data %>%
-  dplyr::mutate(assigned_treatment = followup_time*0 + 1) %>%
+  dplyr::mutate(assigned_treatment = 1.0) %>%
   dplyr::select(id,trial_period, followup_time, X1,  X2, X3, assigned_treatment) %>%
   merge(design_mat, by = c("id", "trial_period", "followup_time"), all.y = TRUE) %>%
   dplyr::group_by(id) %>%
@@ -151,7 +151,8 @@ fitting_data_treatment <-  switch_data %>%
   dplyr::ungroup()
 
 fitting_data_control <- fitting_data_treatment %>%
-  dplyr::mutate(assigned_treatment = 0.0)
+  dplyr::mutate(assigned_treatment = 0.0,
+                CA = 0.0)
 
 Y_pred_PP_treatment_IPW <- predict.glm(PP_IPW,
                                    fitting_data_treatment)
@@ -174,7 +175,7 @@ predicted_probas_PP <- fitting_data_treatment %>%
                 predicted_proba_treatment_cali_sequential = Y_pred_PP_treatment_cali_sequential,
                 predicted_proba_control_cali_sequential = Y_pred_PP_control_cali_sequential) %>%
   dplyr::group_by(trial_period, followup_time) %>%
-  dplyr::summarise(expected_treatment_IPW = mean(Y_pred_PP_treatment_IPW),
+  dplyr::summarise(expected_treatment_IPW = mean(predicted_proba_treatment),
                    expected_control_IPW = mean(predicted_proba_control),
                    ate_IPW = expected_treatment_IPW - expected_control_IPW,
                    expected_treatment_cali = mean(predicted_proba_treatment_cali),

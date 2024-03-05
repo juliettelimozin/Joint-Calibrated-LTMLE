@@ -18,7 +18,7 @@ DATA_GEN_continous_outcome_treatment_switch<-function(ns, nv, conf = 0.5, treat_
   
   A<-rep(0,nvisit*ns) ##place holders for current  treatments
   Ap<-rep(0,nvisit*ns) ##place holders for  previous treatments
-  
+  CA<- rep(0,nvisit*ns)
   CAp<-rep(0,nvisit*ns)   ##place holders for sum of previous treatment A
   
   
@@ -37,6 +37,7 @@ DATA_GEN_continous_outcome_treatment_switch<-function(ns, nv, conf = 0.5, treat_
   P1[[1]]<-rep(0, ns) 
   seqlist<-list()                              
   seqlist[[1]]<-seq1
+  CA[seq1]<-rep(0, ns)
   CAp[seq1]<-rep(0, ns)
   
   for (k in 2:nvisit){  
@@ -63,7 +64,7 @@ DATA_GEN_continous_outcome_treatment_switch<-function(ns, nv, conf = 0.5, treat_
     } else{ if (all_control == TRUE){
       A[seqlist[[k]]]<- 0.0
     } else{ if(k==2){
-      lpp_baseline <- as.numeric(treat_prev) + 0.1*X1[seqlist[[k]]] + 0.2*X2[seqlist[[k]]] -0.2*X3[seqlist[[k]]]
+      lpp_baseline <- as.numeric(treat_prev) + 0.2*X2[seqlist[[k]]] 
       A[seqlist[[k]]]<-rbinom(ns,1,1/(1+exp(-lpp_baseline)))
     }else{
       A[seqlist[[k]]]<-(rbinom(ns,1,P0[[k]]))*as.numeric(Ap[seqlist[[k]]]==0) + (rbinom(ns,1,P1[[k]]))*as.numeric(Ap[seqlist[[k]]]==1)##Generate treatment at current visit based on  covariates, previous treatment
@@ -71,12 +72,10 @@ DATA_GEN_continous_outcome_treatment_switch<-function(ns, nv, conf = 0.5, treat_
     }
     }
     ##Generate outcome
-    
-    ##### Old formula: intercept was -7 -3.7
-    lp<- as.numeric(outcome_prev) -0.5*A[seqlist[[k]]]+0.3*X1[seqlist[[k]]]+0.3*X2[seqlist[[k]]]+0.3*X3[seqlist[[k]]]
+    CA[seqlist[[k]]]<-CA[seqlist[[k-1]]]+A[seqlist[[k]]]
     
     Yp[seqlist[[k]]]<-Y[seqlist[[k-1]]]
-    Y[seqlist[[k]]]<- 100 + 5*(A[seqlist[[k]]] + X1[seqlist[[k]]]+ X2[seqlist[[k]]]+X3[seqlist[[k]]]) + rnorm(ns,0,10)
+    Y[seqlist[[k]]]<- 100 + 5*(X1[seqlist[[k]]]-CA[seqlist[[k]]]+ X2[seqlist[[k]]]+X3[seqlist[[k]]]) + rnorm(ns,0,10)
     
   }
   
@@ -93,6 +92,7 @@ DATA_GEN_continous_outcome_treatment_switch<-function(ns, nv, conf = 0.5, treat_
   A<-A[-NSEQ]
   Ap<-Ap[-NSEQ]
   CAp<-CAp[-NSEQ]
+  CA<-CA[-NSEQ]
   Y<-Y[-seq(1,nvisit*ns-nv,nvisit)]
   Yp<-Yp[-seq(1,nvisit*ns-nv,nvisit)]
   
