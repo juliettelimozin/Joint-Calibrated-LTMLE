@@ -12,7 +12,7 @@ DATA_GEN_continous_outcome_treatment_switch<-function(ns, nv, conf = 0.5, treat_
   
   X1<-rep(0,nvisit*ns)          ## place holders for time-varying covariates
   Z2<-rnorm(nvisit*ns,0,1)
-  X2<-rep(rnorm(ns,0,0.5),each=nvisit) # baseline continuous covariate
+  X2<-rep(rnorm(ns,0,1),each=nvisit) # baseline continuous covariate
   X3<-rep(0,nvisit*ns)    
   Z3<-rnorm(nvisit*ns,0,1)
   
@@ -54,8 +54,8 @@ DATA_GEN_continous_outcome_treatment_switch<-function(ns, nv, conf = 0.5, treat_
     
     ########### Old formula: lpp<- as.numeric(treat_prev) + Ap[seqlist[[k]]]+0.5*X1[seqlist[[k]]]+as.numeric(conf)*X1[seqlist[[k]]]
     ###########                    -0.2*X3[seqlist[[k]]]+X2[seqlist[[k]]]-0.3*(age[seqlist[[k]]]-35)/12
-    lpp1<- 0.5 + as.numeric(conf)*X1[seqlist[[k]]] + 0.5*X2[seqlist[[k]]] -0.2*X3[seqlist[[k]]]
-    lpp0<- 0.3 + as.numeric(conf)*X1[seqlist[[k]]] + 0.5*X2[seqlist[[k]]] -0.2*X3[seqlist[[k]]]
+    lpp1<- 1.5 + as.numeric(conf)*X1[seqlist[[k]]] + 0.5*X2[seqlist[[k]]] -0.2*X3[seqlist[[k]]]
+    lpp0<- 1 + as.numeric(conf)*X1[seqlist[[k]]] + 0.5*X2[seqlist[[k]]] -0.2*X3[seqlist[[k]]]
     P1[[k]]<-1/(1+exp(-lpp1))
     P0[[k]]<-1/(1+exp(-lpp0))
     
@@ -64,7 +64,7 @@ DATA_GEN_continous_outcome_treatment_switch<-function(ns, nv, conf = 0.5, treat_
     } else{ if (all_control == TRUE){
       A[seqlist[[k]]]<- 0.0
     } else{ if(k==2){
-      lpp_baseline <- as.numeric(treat_prev) + 0.2*X2[seqlist[[k]]] 
+      lpp_baseline <- as.numeric(treat_prev) + 0.5*(X1[seqlist[[k]]]+ X2[seqlist[[k]]]+X3[seqlist[[k]]])
       A[seqlist[[k]]]<-rbinom(ns,1,1/(1+exp(-lpp_baseline)))
     }else{
       A[seqlist[[k]]]<-(rbinom(ns,1,P0[[k]]))*as.numeric(Ap[seqlist[[k]]]==0) + (rbinom(ns,1,P1[[k]]))*as.numeric(Ap[seqlist[[k]]]==1)##Generate treatment at current visit based on  covariates, previous treatment
@@ -72,10 +72,9 @@ DATA_GEN_continous_outcome_treatment_switch<-function(ns, nv, conf = 0.5, treat_
     }
     }
     ##Generate outcome
-    CA[seqlist[[k]]]<-CA[seqlist[[k-1]]]+A[seqlist[[k]]]
-    
+
     Yp[seqlist[[k]]]<-Y[seqlist[[k-1]]]
-    Y[seqlist[[k]]]<- 100 + 5*(X1[seqlist[[k]]]-CA[seqlist[[k]]]+ X2[seqlist[[k]]]+X3[seqlist[[k]]]) + rnorm(ns,0,10)
+    Y[seqlist[[k]]]<- 100 + 5*(X1[seqlist[[k]]]-A[seqlist[[k]]]+ X2[seqlist[[k]]]+X3[seqlist[[k]]]) + rnorm(ns,0,10)
     
   }
   

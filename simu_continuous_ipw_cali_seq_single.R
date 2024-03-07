@@ -70,7 +70,7 @@ oper <- foreach(i = 1:iters,.combine=cbind) %dopar% {
                                                 estimand_type = 'PP',
                                                 switch_d_cov = ~X1 + X2 + X3,
                                                 outcome_cov = ~ X1 + X2 + X3, model_var = c('assigned_treatment'),
-                                                quiet = F,
+                                                quiet = T,
                                                 save_weight_models = F,
                                                 data_dir = getwd())
     
@@ -89,7 +89,8 @@ oper <- foreach(i = 1:iters,.combine=cbind) %dopar% {
     
     glm.d0 <- glm(A ~ X1 + X2 + X3, data = simdata[simdata$Ap == 0 & simdata$t != 0,], family = binomial(link = "logit"))
     summary(glm.d0)
-    
+    glm.d1 <- glm(A ~ X1 + X2 + X3, data = simdata[simdata$Ap == 1 & simdata$t != 0,], family = binomial(link = "logit"))
+    summary(glm.d1)
     data_restric <- simdata %>% 
       dplyr::group_by(ID) %>% 
       dplyr::mutate(A_0 = first(A), RA = ifelse(t !=0, ifelse(A == first(A) & A==Ap, 1, 0),1)) %>% 
@@ -108,7 +109,9 @@ oper <- foreach(i = 1:iters,.combine=cbind) %dopar% {
                     tall = t) %>% 
       merge(dplyr::select(switch_data,id, followup_time, weight), 
             by.x = c('ID', 't'), by.y = c('id', 'followup_time'), all.x = T) %>% 
-      dplyr::mutate(weights = ifelse(!is.na(weight), ifelse(t !=0 & Ap == 0, 1/glm.d0$fitted.values, weight),0)) %>% 
+      dplyr::mutate(weights = ifelse(!is.na(weight), ifelse(t !=0, ifelse(Ap == 0,
+                                                                          ifelse(A == 1,1/(glm.d0$fitted.values), 1/(1-glm.d0$fitted.values)), 
+                                                                          ifelse(A == 1,1/(glm.d1$fitted.values), 1/(1-glm.d1$fitted.values))),weight),0)) %>% 
       dplyr::arrange(ID, t) 
     
    
@@ -195,22 +198,28 @@ oper <- foreach(i = 1:iters,.combine=cbind) %dopar% {
     switch_data$Cweights <- simdatafinal2$data[simdatafinal2$data$RA == 1,'Cweights']
     switch_data$Cweights_sequential <- simdatafinal1$data[simdatafinal1$data$RA == 1,'Cweights']
 
+    switch_data <- switch_data %>% 
+      mutate(kAAp = as.numeric(followup_time != 0)*(assigned_treatment + Ap)/2,
+             a0 = as.numeric(followup_time == 0)*assigned_treatment,
+             X10 = as.numeric(followup_time == 0)*X1,
+             X30 = as.numeric(followup_time == 0)*X3)
+    
     PP_naive <- glm(data = switch_data,
-                    formula = Y ~ CA + Ap + X2,
+                    formula = Y ~ a0 + as.factor(kAAp) + X10 + X2 + X30,
                     weights = NULL, family = 'gaussian')
-    
+    summary(PP_naive)
     PP_IPW <- glm(data = switch_data,
-                  formula = Y ~ CA + Ap + X2,
+                  formula = Y ~ a0 + as.factor(kAAp) + X10 + X2 + X30,
                   weights = weight, family = 'gaussian')
-    
+    summary(PP_IPW)
     PP_calibrated <- glm(data = switch_data,
-                         formula = Y ~ CA + Ap + X2,
+                         formula = Y ~ a0 + as.factor(kAAp) + X10 + X2 + X30,
                          weights = Cweights, family = 'gaussian')
-    
+    summary(PP_calibrated)
     PP_calibrated_sequential <- glm(data = switch_data,
-                                    formula = Y ~ CA + Ap + X2,
+                                    formula = Y ~ a0 + as.factor(kAAp) + X10 + X2 + X30,
                                     weights = Cweights_sequential, family = 'gaussian')
-    
+    summary(PP_calibrated_sequential)
     result$hr_estimates<- array(,dim = c(8,6))
     result$hr_estimates[1,] <- PP_naive$coefficients
     result$hr_estimates[2,] <- PP_IPW$coefficients
