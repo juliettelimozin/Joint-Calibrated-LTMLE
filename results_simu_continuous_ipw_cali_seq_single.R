@@ -30,8 +30,8 @@ iters <- 200
 bias_mr_all <- array(,dim = c(3*8,5,3))
 bias_hr_all <- array(, dim = c(8,3,3))
 
-for (i in 4:6){
-  load(paste0("Simulation results/result_simu_continuous_ipw_cali_seq_single_", i, ".rda"))
+for (i in 1:3){
+  load(paste0("Simulation results/result_simu_continuous_ipw_cali_seq_single_", as.character(size[i]), ".rda"))
   simu.t <- as.data.frame(tidyr::crossing(1:iters, 0:4))
   mr_all <- list.rbind(oper[10,]) %>% 
     dplyr::mutate(simu =simu.t[,1], visit =  simu.t[,2])
@@ -41,7 +41,7 @@ for (i in 4:6){
     dplyr::mutate(simu = simu.scenario[,1], scenario =  simu.scenario[,2])
   for (t in 1:5)
     if (t == 1){
-     bias_mr_all[,t,i-3] <- colMeans(mr_all[mr_all$visit == t-1,1:24],na.rm = T) - c(95,100,-5,
+     bias_mr_all[,t,i] <- colMeans(mr_all[mr_all$visit == t-1,1:24],na.rm = T) - c(95,100,-5,
                                                                                95,100,-5,
                                                                                95,100,-5,
                                                                                95,100,-5,
@@ -50,27 +50,23 @@ for (i in 4:6){
                                                                                95,100,-5,
                                                                                95,100,-5)
     } else {
-      bias_mr_all[,t,i-3] <- colMeans(mr_all[mr_all$visit == t-1,1:24],na.rm = T) - c(100-5*t-3,100,-5*t-3,
-                                                                                100-5*t-3,100,-5*t-3,
-                                                                                100-5*t-3,100,-5*t-3,
-                                                                                100-5*t-3,100,-5*t-3,
-                                                                                100-5*t-3,100,-5*t-3,
-                                                                                100-5*t-3,100,-5*t-3,
-                                                                                100-5*t-3,100,-5*t-3,
-                                                                                100-5*t-3,100,-5*t-3)
+      bias_mr_all[,t,i] <- colMeans(mr_all[mr_all$visit == t-1,1:24],na.rm = T) - c(92,100,-8,
+                                                                                    92,100,-8,
+                                                                                    92,100,-8,
+                                                                                    92,100,-8,
+                                                                                    92,100,-8,
+                                                                                    92,100,-8,
+                                                                                    92,100,-8,
+                                                                                    92,100,-8)
     }
     for (k in 1:8){
-      bias_hr_all[k,,i-3]<- colMeans(hr_all[hr_all$scenario == k, 1:3], na.rm = TRUE) - c(100,-5,-3)
+      bias_hr_all[k,,i]<- colMeans(hr_all[hr_all$scenario == k, 1:3], na.rm = TRUE) - c(100,-5,-8)
     }
 }
 
 print(xtable(bias_hr_all[,,1]),include.rownames=FALSE, type = 'latex')
 print(xtable(bias_hr_all[,,2]),include.rownames=FALSE, type = 'latex')
 print(xtable(bias_hr_all[,,3]),include.rownames=FALSE, type = 'latex')
-
-print(xtable(bias_mr_all[c(3,6,9,12,15,18,21,24),,1]),include.rownames=FALSE, type = 'latex')
-print(xtable(bias_mr_all[c(3,6,9,12,15,18,21,24),,2]),include.rownames=FALSE, type = 'latex')
-print(xtable(bias_mr_all[c(3,6,9,12,15,18,21,24),,3]),include.rownames=FALSE, type = 'latex')
 
 print(xtable(bias_mr_all[c(3,6,9,12,15,18,21,24),,1]),include.rownames=FALSE, type = 'latex')
 print(xtable(bias_mr_all[c(3,6,9,12,15,18,21,24),,2]),include.rownames=FALSE, type = 'latex')

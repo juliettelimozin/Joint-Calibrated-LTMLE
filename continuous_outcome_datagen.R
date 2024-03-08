@@ -54,21 +54,16 @@ DATA_GEN_continous_outcome_treatment_switch<-function(ns, nv, conf = 0.5, treat_
     
     ########### Old formula: lpp<- as.numeric(treat_prev) + Ap[seqlist[[k]]]+0.5*X1[seqlist[[k]]]+as.numeric(conf)*X1[seqlist[[k]]]
     ###########                    -0.2*X3[seqlist[[k]]]+X2[seqlist[[k]]]-0.3*(age[seqlist[[k]]]-35)/12
-    lpp1<- 1.5 + as.numeric(conf)*X1[seqlist[[k]]] + 0.5*X2[seqlist[[k]]] -0.2*X3[seqlist[[k]]]
-    lpp0<- 1 + as.numeric(conf)*X1[seqlist[[k]]] + 0.5*X2[seqlist[[k]]] -0.2*X3[seqlist[[k]]]
-    P1[[k]]<-1/(1+exp(-lpp1))
-    P0[[k]]<-1/(1+exp(-lpp0))
+    
+    lpp<- as.numeric(treat_prev) +  Ap[seqlist[[k]]] + as.numeric(conf)*(X1[seqlist[[k]]]+X3[seqlist[[k]]]) - 0.5*X2[seqlist[[k]]]
+    P1[[k]]<-1/(1+exp(-lpp))
     
     if (all_treat == TRUE){
       A[seqlist[[k]]]<- 1.0
     } else{ if (all_control == TRUE){
       A[seqlist[[k]]]<- 0.0
-    } else{ if(k==2){
-      lpp_baseline <- as.numeric(treat_prev) + 0.5*(X1[seqlist[[k]]]+ X2[seqlist[[k]]]+X3[seqlist[[k]]])
-      A[seqlist[[k]]]<-rbinom(ns,1,1/(1+exp(-lpp_baseline)))
-    }else{
-      A[seqlist[[k]]]<-(rbinom(ns,1,P0[[k]]))*as.numeric(Ap[seqlist[[k]]]==0) + (rbinom(ns,1,P1[[k]]))*as.numeric(Ap[seqlist[[k]]]==1)##Generate treatment at current visit based on  covariates, previous treatment
-    }
+    } else{ 
+      A[seqlist[[k]]]<-rbinom(ns,1,P1[[k]])
     }
     }
     ##Generate outcome
