@@ -14,12 +14,13 @@ library(nleqslv)
 source('calibration_func_trials.R')
 set.seed(NULL)
 
-iters <- 200
-#l <- as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))
+iters <- 500
+l <- as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))
 size <- c(500,1000,5000)
 treat <- c(-1,0,1)
+conf <- c(0.1,0.5,0.9)
 
-scenarios <- tidyr::crossing(size, treat)
+scenarios <- tidyr::crossing(size, treat,conf)
 # Set number of cores. 67 is sufficient for 200 cores.
 registerDoParallel(cores = 4)
 multiResultClass <- function(objectiveIPW = NULL,
@@ -50,12 +51,12 @@ multiResultClass <- function(objectiveIPW = NULL,
   class(me) <- append(class(me),"multiResultClass")
   return(me)
 }
-for (l in 1:3){
 oper <- foreach(i = 1:iters,.combine=cbind) %dopar% {
   tryCatch({
     result <- multiResultClass()
 
-    simdata<-DATA_GEN_continous_outcome_treatment_switch(ns = as.numeric(size[l]),nv = 5, 
+    simdata<-DATA_GEN_continous_outcome_treatment_switch(ns = as.numeric(scenarios[l,1]),nv = 5,treat_prev = as.numeric(scenarios[l,2]),
+                                                         conf = as.numeric(scenarios[l,3]),
                                                          censor = F)
     
     simdata <- simdata %>% 
@@ -188,9 +189,8 @@ oper <- foreach(i = 1:iters,.combine=cbind) %dopar% {
     
     #con4<-xtabs(~followup_time + assigned_treatment, data=switch_data)
     #ftable(con4)
-    switch_data$weight <- simdatafinal2$data[simdatafinal2$data$RA == 1,'weights']
-    switch_data$Cweights <- simdatafinal2$data[simdatafinal2$data$RA == 1,'Cweights']
-    switch_data$Cweights_sequential <- simdatafinal1$data[simdatafinal1$data$RA == 1,'Cweights']
+    switch_data$Cweights <- simdatafinal1$data[simdatafinal1$data$RA == 1,'Cweights']
+    switch_data$Cweights_sequential <- simdatafinal2$data[simdatafinal2$data$RA == 1,'Cweights']
 
     switch_data <- switch_data %>% 
       dplyr::mutate(kAAp = as.numeric(followup_time != 0)*(assigned_treatment + Ap),
@@ -523,5 +523,5 @@ oper <- foreach(i = 1:iters,.combine=cbind) %dopar% {
     return(result)
   }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
 }
-save(oper, file = paste("Simulation results/result_simu_continuous_ipw_cali_seq_single_",as.character(size[l]),".rda", sep = ""))
-}
+save(oper, file = paste("Simulation results/result_simu_continuous_ipw_cali_seq_single_",as.character(l),".rda", sep = ""))
+

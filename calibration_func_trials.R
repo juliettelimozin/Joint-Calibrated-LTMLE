@@ -189,6 +189,7 @@ calibration<-function(simdatafinal, var=c('tall', 'X1', 'X2', 'X3', 'X4'))
   weconsAR<-function(w){
     lp3<-colSums(TDMATRO*w)
     we<-simdatafinal$weights[simdatafinal$tall>0]*exp(lp3)
+    return(we)
   }
   
   CALW<-weconsAR(weioptAR$x)
@@ -207,7 +208,6 @@ calibration_by_time<-function(simdatafinal, var=c('A1', 'A1X1')){
   data1 <- simdatafinal[simdatafinal$tall == 1,]
   data1 <- data1$RA*data1[, var]
   Tdata1<- t(data1)
-  
   data0 <- simdatafinal[simdatafinal$tall == 0,]
   data0 <- data0$RA*simdatafinal[simdatafinal$tall == 1, var]
   RHS <- colSums(data0)
@@ -242,6 +242,7 @@ calibration_by_time<-function(simdatafinal, var=c('A1', 'A1X1')){
   weconsAR<-function(w){
     lp3<-colSums(Tdata1*w)
     we<-simdatafinal$weights[simdatafinal$tall==1]*exp(lp3)
+    return(we)
   }
   
   CALW1<-weconsAR(wei1optAR$x)
@@ -255,7 +256,7 @@ calibration_by_time<-function(simdatafinal, var=c('A1', 'A1X1')){
     data1 <- data1$RA*data1[, var]
     Tdata1<- t(data1)
     
-    data0 <- simdatafinal[simdatafinal$tall == 0,]
+    data0 <- simdatafinal[simdatafinal$tall == k-1,]
     data0 <- data0$RA*data0$Cweights*simdatafinal[simdatafinal$tall == k, var]
     RHS <- colSums(data0)
     print(RHS)
@@ -289,6 +290,7 @@ calibration_by_time<-function(simdatafinal, var=c('A1', 'A1X1')){
     weconsAR<-function(w){
       lp3<-colSums(Tdata1*w)
       we<-simdatafinal$weights[simdatafinal$tall==k]*exp(lp3)
+      return(we)
     }
     
     CALW1<-weconsAR(weikoptAR$x)
