@@ -20,26 +20,29 @@ library(matrixStats)
 library(rlist)
 library(xtable)
 
-size <- c(500,1000,5000)
+size <- c(200,500,1000)
 treat <- c(-1,0,1)
+conf <- c(0.5,0.9,1.5)
 
-scenarios <- as.data.frame(tidyr::crossing(size, treat))
+scenarios <- tidyr::crossing(size, treat,conf)
+iters <- 500
 
-iters <- 200
+bias_mr_all <- array(,dim = c(3*8,5,27))
+bias_hr_all <- array(, dim = c(8,4,27))
+sd_mr_all <- array(,dim = c(3*8,5,27))
+sd_hr_all <- array(, dim = c(8,4,27))
 
-bias_mr_all <- array(,dim = c(3*8,5,3))
-bias_hr_all <- array(, dim = c(8,3,3))
-
-for (i in 1:3){
-  load(paste0("Simulation results/result_simu_continuous_ipw_cali_seq_single_", as.character(size[i]), ".rda"))
+rootmse_mr_all <-  array(,dim = c(3*8,5,27))
+rootmse_hr_all<- array(, dim = c(8,4,27))
+for (i in 1:27){
+  load(paste0("Simulation results/result_simu_continuous_ipw_cali_seq_single_", as.character(i), ".rda"))
   simu.t <- as.data.frame(tidyr::crossing(1:iters, 0:4))
   mr_all <- list.rbind(oper[10,]) %>% 
     dplyr::mutate(simu =simu.t[,1], visit =  simu.t[,2])
-  scenario <- i%%3
   simu.scenario <- as.data.frame(tidyr::crossing(1:iters, 1:8))
   hr_all <- as.data.frame(list.rbind(oper[9,])) %>% 
     dplyr::mutate(simu = simu.scenario[,1], scenario =  simu.scenario[,2])
-  for (t in 1:5)
+  for (t in 1:5){
     if (t == 1){
      bias_mr_all[,t,i] <- colMeans(mr_all[mr_all$visit == t-1,1:24],na.rm = T) - c(95,100,-5,
                                                                                95,100,-5,
@@ -59,18 +62,71 @@ for (i in 1:3){
                                                                                     92,100,-8,
                                                                                     92,100,-8)
     }
-    for (k in 1:8){
-      bias_hr_all[k,,i]<- colMeans(hr_all[hr_all$scenario == k, 1:3], na.rm = TRUE) - c(100,-5,-8)
-    }
+    sd_mr_all[,t,i] <-colSds(as.matrix(mr_all[mr_all$visit == t-1,1:24]),na.rm = T)
+    rootmse_mr_all[,t,i]<- sqrt(bias_mr_all[,t,i]^2 + sd_mr_all[,t,i]^2)
+  }
+  for (k in 1:8){
+    bias_hr_all[k,,i]<- colMeans(hr_all[hr_all$scenario == k, 1:4], na.rm = TRUE) - c(100,100,-5,-8)
+    sd_hr_all[k,,i]<- colSds(as.matrix(hr_all[hr_all$scenario == k, 1:4]), na.rm = TRUE)
+    rootmse_hr_all[k,,i]<- sqrt(bias_hr_all[k,,i]^2 + sd_hr_all[k,,i]^2)
+  }
+  
 }
 
-print(xtable(bias_hr_all[,,1]),include.rownames=FALSE, type = 'latex')
-print(xtable(bias_hr_all[,,2]),include.rownames=FALSE, type = 'latex')
-print(xtable(bias_hr_all[,,3]),include.rownames=FALSE, type = 'latex')
+bias_hr_table <- bias_hr_all[,,1]
+sd_hr_table <- sd_hr_all[,,1]
+rootmse_hr_table <- rootmse_hr_all[,,1]
+for (i in 2:27){
+  bias_hr_table <- rbind(bias_hr_table,bias_hr_all[,,i])
+  sd_hr_table <- rbind(sd_hr_table,sd_hr_all[,,i])
+  rootmse_hr_table <- rbind(rootmse_hr_table,rootmse_hr_all[,,i])
+}
 
-print(xtable(bias_mr_all[c(3,6,9,12,15,18,21,24),,1]),include.rownames=FALSE, type = 'latex')
-print(xtable(bias_mr_all[c(3,6,9,12,15,18,21,24),,2]),include.rownames=FALSE, type = 'latex')
-print(xtable(bias_mr_all[c(3,6,9,12,15,18,21,24),,3]),include.rownames=FALSE, type = 'latex')
+colnames(bias_hr_table) <- c('Bias 1', 'Bias 2', 'Bias 3', 'Bias 4')
+colnames(sd_hr_table) <- c('SD 1', 'SD 2', 'SD 3','SD 4')
+colnames(rootmse_hr_table) <- c('rootMSE 1', 'rootMSE 2', 'rootMSE 3','rootMSE 4')
+size <- c(200,500,1000)
+treat <- c(-1,0,1)
+conf <- c(0.5,0.9,1.5)
+var <- c('Naive', 'IPW', 'Calibration', 'Calibration by time','Naive miss.', 'IPW miss.', 'Calibration miss.', 'Calibration by time miss.')
+scenarios <- tidyr::crossing(size, treat,conf, var) %>% 
+  dplyr::arrange(size, treat, conf,
+                 match(var, c('Naive', 'IPW', 'Calibration', 'Calibration by time','Naive miss.', 'IPW miss.', 'Calibration miss.', 'Calibration by time miss.')))
+
+hr_table <- cbind(scenarios,bias_hr_table, sd_hr_table,rootmse_hr_table) 
+
+
+print(xtable(hr_table[hr_table$size == 200,]),include.rownames=FALSE, type = 'latex')
+
+print(xtable(hr_table[hr_table$size == 500,]),include.rownames=FALSE, type = 'latex')
+
+print(xtable(hr_table[hr_table$size == 1000,]),include.rownames=FALSE, type = 'latex')
+
+bias_mr_table <- bias_mr_all[c(3,6,9,12,15,18,21,24),,1]
+sd_mr_table <- sd_mr_all[c(3,6,9,12,15,18,21,24),,1]
+rootmse_mr_table <- rootmse_mr_all[c(3,6,9,12,15,18,21,24),,1]
+for (i in 2:27){
+  bias_mr_table <- rbind(bias_mr_table,bias_mr_all[c(3,6,9,12,15,18,21,24),,i])
+  sd_mr_table <- rbind(sd_mr_table,sd_mr_all[c(3,6,9,12,15,18,21,24),,i])
+  rootmse_mr_table <- rbind(rootmse_mr_table,rootmse_mr_all[c(3,6,9,12,15,18,21,24),,i])
+}
+
+colnames(bias_mr_table) <- c('Bias 0', 'Bias 1', 'Bias 2', 'Bias 3', 'Bias 4')
+colnames(sd_mr_table) <- c('SD 0', 'SD 1', 'SD 2', 'SD 3', 'SD 4')
+colnames(rootmse_mr_table) <- c('rootMSE 0', 'rootMSE 1', 'rootMSE 2', 'rootMSE 3', 'rootMSE 4')
+size <- c(200,500,1000)
+treat <- c(-1,0,1)
+conf <- c(0.5,0.9,1.5)
+var <- c('Naive', 'IPW', 'Calibration', 'Calibration by time','Naive miss.', 'IPW miss.', 'Calibration miss.', 'Calibration by time miss.')
+scenarios <- tidyr::crossing(size, treat,conf, var)%>% 
+  dplyr::arrange(size, treat, conf,
+                 match(var, c('Naive', 'IPW', 'Calibration', 'Calibration by time','Naive miss.', 'IPW miss.', 'Calibration miss.', 'Calibration by time miss.')))
+
+
+mr_table <- cbind(scenarios,bias_mr_table, sd_mr_table,rootmse_mr_table) 
+
+print(xtable(mr_table[mr_table$size == 200,]),include.rownames=FALSE, type = 'latex')
+
 
 # mr_plot_low <- lapply(1:9, function(i){
 #   scenario <- i%%9

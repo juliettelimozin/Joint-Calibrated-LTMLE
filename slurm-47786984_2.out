@@ -1,0 +1,8 @@
+Loading [1mrhel8/default-icl[22m
+  [94mLoading requirement[0m: dot rhel8/slurm singularity/current rhel8/global
+    cuda/11.4 vgl/2.5.1/64 intel-oneapi-compilers/2022.1.0/gcc/b6zld2mz
+    intel-oneapi-mpi/2021.6.0/intel/guxuvcpm
+WARNING: ignoring environment value of R_HOME
+Error: package or namespace load failed for ‘modelr’ in loadNamespace(j <- i[[1L]], c(lib.loc, .libPaths()), versionCheck = vI[[j]]):
+ there is no package called ‘tibble’
+Execution halted

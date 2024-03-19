@@ -1,5 +1,4 @@
 #!/usr/bin R
-library(modelr)
 library(tidyverse)
 library(tidyr)
 setwd("~/rds/hpc-work/Calibrated-weights-sequential-trial-emulation")
@@ -15,14 +14,14 @@ source('calibration_func_trials.R')
 set.seed(NULL)
 
 iters <- 500
-l <- as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))
-size <- c(500,1000,5000)
+#l <- as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))
+size <- c(200,500,1000)
 treat <- c(-1,0,1)
-conf <- c(0.1,0.5,0.9)
+conf <- c(0.5,0.9,1.5)
 
 scenarios <- tidyr::crossing(size, treat,conf)
 # Set number of cores. 67 is sufficient for 200 cores.
-registerDoParallel(cores = 4)
+registerDoParallel(cores = 32)
 multiResultClass <- function(objectiveIPW = NULL,
                              objectiveCali = NULL,
                              objectiveIPWseq = NULL,
@@ -51,6 +50,7 @@ multiResultClass <- function(objectiveIPW = NULL,
   class(me) <- append(class(me),"multiResultClass")
   return(me)
 }
+for (l in 1:27){
 oper <- foreach(i = 1:iters,.combine=cbind) %dopar% {
   tryCatch({
     result <- multiResultClass()
@@ -67,7 +67,7 @@ oper <- foreach(i = 1:iters,.combine=cbind) %dopar% {
     PP_prep <- TrialEmulation::data_preparation(simdata, id='ID', period='t', treatment='A', outcome='Y', cense = 'C',
                                                 eligible ='eligible',
                                                 estimand_type = 'PP',
-                                                switch_d_cov = ~X1 + X2 + X3,
+                                                switch_d_cov = ~ as.factor(period):X1 + as.factor(period):X2 + as.factor(period):X3,
                                                 switch_n_cov = ~ -1,
                                                 outcome_cov = ~ X1 + X2 + X3, model_var = c('assigned_treatment'),
                                                 quiet = F,
@@ -193,28 +193,32 @@ oper <- foreach(i = 1:iters,.combine=cbind) %dopar% {
     switch_data$Cweights_sequential <- simdatafinal2$data[simdatafinal2$data$RA == 1,'Cweights']
 
     switch_data <- switch_data %>% 
-      dplyr::mutate(kAAp = as.numeric(followup_time != 0)*(assigned_treatment + Ap),
+      dplyr::mutate(kAAp = as.numeric(followup_time != 0)*(assigned_treatment + Ap)/2,
              a0 = as.numeric(followup_time == 0)*assigned_treatment,
              X10 = as.numeric(followup_time == 0)*X1,
-             X30 = as.numeric(followup_time == 0)*X3)
+             X30 = as.numeric(followup_time == 0)*X3,
+             t0 = as.numeric(followup_time == 0),
+             tk = as.numeric(followup_time != 0),
+             t0X2 = as.numeric(followup_time == 0)*X2,
+             tkX2 = as.numeric(followup_time != 0)*X2)
     
     PP_naive <- glm(data = switch_data,
-                    formula = Y ~ a0 + as.factor(kAAp) + X10 + X2 + X30,
+                    formula = Y ~ t0 + tk + a0 + kAAp + X10 + t0X2 + tkX2 + X30 -1,
                     weights = NULL, family = 'gaussian')
-    #summary(PP_naive)
+    summary(PP_naive)
     PP_IPW <- glm(data = switch_data,
-                  formula = Y ~ a0 + as.factor(kAAp) + X10 + X2 + X30,
+                  formula = Y ~ t0 + tk + a0 + kAAp + X10 + t0X2 + tkX2 + X30 - 1,
                   weights = weight, family = 'gaussian')
-    #summary(PP_IPW)
+    summary(PP_IPW)
     PP_calibrated <- glm(data = switch_data,
-                         formula = Y ~ a0 + as.factor(kAAp) + X10 + X2 + X30,
+                         formula = Y ~ t0 + tk + a0 + kAAp + X10 + t0X2 + tkX2 + X30 - 1,
                          weights = Cweights, family = 'gaussian')
-    #summary(PP_calibrated)
+    summary(PP_calibrated)
     PP_calibrated_sequential <- glm(data = switch_data,
-                                    formula = Y ~ a0 + as.factor(kAAp) + X10 + X2 + X30,
+                                    formula = Y ~ t0 + tk + a0 + kAAp + X10 + t0X2 + tkX2 + X30 - 1,
                                     weights = Cweights_sequential, family = 'gaussian')
-    #summary(PP_calibrated_sequential)
-    result$hr_estimates<- array(,dim = c(8,6))
+    summary(PP_calibrated_sequential)
+    result$hr_estimates<- array(,dim = c(8,8))
     result$hr_estimates[1,] <- PP_naive$coefficients
     result$hr_estimates[2,] <- PP_IPW$coefficients
     result$hr_estimates[3,] <- PP_calibrated$coefficients
@@ -237,23 +241,26 @@ oper <- foreach(i = 1:iters,.combine=cbind) %dopar% {
       dplyr::arrange(id, trial_period, followup_time) %>%
       dplyr::distinct(id, trial_period, followup_time, .keep_all = T) %>% 
       dplyr::group_by(id,trial_period) %>%
-      dplyr::mutate(CA = cumsum(assigned_treatment),
-                    Ap = ifelse(followup_time == 0, 0, lag(assigned_treatment)),
-                    kAAp = as.numeric(followup_time != 0)*(assigned_treatment + Ap),
+      dplyr::mutate(kAAp = as.numeric(followup_time != 0)*(assigned_treatment + 1.0)/2,
                     a0 = as.numeric(followup_time == 0)*assigned_treatment,
                     X10 = as.numeric(followup_time == 0)*X1,
-                    X30 = as.numeric(followup_time == 0)*X3) %>%
+                    X30 = as.numeric(followup_time == 0)*X3,
+                    t0 = as.numeric(followup_time == 0),
+                    tk = as.numeric(followup_time != 0),
+                    t0X2 = as.numeric(followup_time == 0)*X2,
+                    tkX2 = as.numeric(followup_time != 0)*X2) %>%
       dplyr::filter(trial_period == 0) %>% 
       dplyr::ungroup()
     
     fitting_data_control <- fitting_data_treatment %>%
-      dplyr::mutate(assigned_treatment = 0.0,
-                    CA = 0.0,
-                    Ap = 0.0,
-                    kAAp = 0.0,
-                    a0 = 0.0,
+      dplyr::mutate(kAAp = as.numeric(followup_time != 0)*(assigned_treatment + 0.0)/2,
+                    a0 = as.numeric(followup_time == 0)*assigned_treatment,
                     X10 = as.numeric(followup_time == 0)*X1,
-                    X30 = as.numeric(followup_time == 0)*X3)
+                    X30 = as.numeric(followup_time == 0)*X3,
+                    t0 = as.numeric(followup_time == 0),
+                    tk = as.numeric(followup_time != 0),
+                    t0X2 = as.numeric(followup_time == 0)*X2,
+                    tkX2 = as.numeric(followup_time != 0)*X2)
     
     Y_pred_PP_treatment_naive <- predict.glm(PP_naive,
                                            fitting_data_treatment)
@@ -305,7 +312,7 @@ oper <- foreach(i = 1:iters,.combine=cbind) %dopar% {
     PP_prep <- TrialEmulation::data_preparation(simdata, id='ID', period='t', treatment='A', outcome='Y', cense = 'C',
                                                 eligible ='eligible',
                                                 estimand_type = 'PP',
-                                                switch_d_cov = ~Z1 + Z2 + Z3,
+                                                switch_d_cov = ~as.factor(period):Z1 + as.factor(period):Z2 + as.factor(period):Z3,
                                                 switch_n_cov = ~ -1,
                                                 outcome_cov = ~Z1 + Z2 + Z3, model_var = c('assigned_treatment'),
                                                 quiet = T,
@@ -413,31 +420,35 @@ oper <- foreach(i = 1:iters,.combine=cbind) %dopar% {
     
     result$balance_summary <- cbind(treatment_numbers,treatment_numbers_mis)
     
-    switch_data$Cweights <- simdatafinal2$data[simdatafinal2$data$RA == 1,'Cweights']
-    switch_data$Cweights_sequential <- simdatafinal1$data[simdatafinal1$data$RA == 1,'Cweights']
+    switch_data$Cweights <- simdatafinal1$data[simdatafinal1$data$RA == 1,'Cweights']
+    switch_data$Cweights_sequential <- simdatafinal2$data[simdatafinal2$data$RA == 1,'Cweights']
     
     switch_data <- switch_data %>% 
-      mutate(kAAp = as.numeric(followup_time != 0)*(assigned_treatment + Ap),
-             a0 = as.numeric(followup_time == 0)*assigned_treatment,
-             Z10 = as.numeric(followup_time == 0)*Z1,
-             Z30 = as.numeric(followup_time == 0)*Z3)
+      dplyr::mutate(kAAp = as.numeric(followup_time != 0)*(assigned_treatment + Ap)/2,
+                   a0 = as.numeric(followup_time == 0)*assigned_treatment,
+                   Z10 = as.numeric(followup_time == 0)*Z1,
+                   Z30 = as.numeric(followup_time == 0)*Z3,
+                   t0 = as.numeric(followup_time == 0),
+                   tk = as.numeric(followup_time != 0),
+                   t0Z2 = as.numeric(followup_time == 0)*Z2,
+                   tkZ2 = as.numeric(followup_time != 0)*Z2)
     
     PP_naive <- glm(data = switch_data,
-                    formula = Y ~ a0 +as.factor(kAAp) + Z10 + Z2+ Z30,
+                    formula = Y ~ t0 + tk + a0 + kAAp + Z10 + t0Z2 + tkZ2 + Z30 -1,
                     weights = NULL, family = 'gaussian')
-    summary(PP_naive)
+    #summary(PP_naive)
     PP_IPW <- glm(data = switch_data,
-                  formula = Y ~ a0 +as.factor(kAAp) + Z10 + Z2+ Z30,
+                  formula = Y ~ t0 + tk + a0 + kAAp + Z10 + t0Z2 + tkZ2 + Z30 -1,
                   weights = weight, family = 'gaussian')
-    summary(PP_IPW)
+    #summary(PP_IPW)
     PP_calibrated <- glm(data = switch_data,
-                         formula = Y ~ a0 +as.factor(kAAp) + Z10 + Z2+ Z30,
+                         formula = Y ~t0 + tk + a0 + kAAp + Z10 + t0Z2 + tkZ2 + Z30 -1,
                          weights = Cweights, family = 'gaussian')
-    summary(PP_calibrated)
+    #summary(PP_calibrated)
     PP_calibrated_sequential <- glm(data = switch_data,
-                                    formula = Y ~ a0 +as.factor(kAAp) + Z10 + Z2+ Z30,
+                                    formula = Y ~ t0 + tk + a0 + kAAp + Z10 + t0Z2 + tkZ2 + Z30 -1,
                                     weights = Cweights_sequential, family = 'gaussian')
-    summary(PP_calibrated_sequential)
+    #summary(PP_calibrated_sequential)
     result$hr_estimates[5,] <- PP_naive$coefficients
     result$hr_estimates[6,] <- PP_IPW$coefficients
     result$hr_estimates[7,] <- PP_calibrated$coefficients
@@ -460,23 +471,26 @@ oper <- foreach(i = 1:iters,.combine=cbind) %dopar% {
       dplyr::arrange(id, trial_period, followup_time) %>%
       dplyr::distinct(id, trial_period, followup_time, .keep_all = T) %>% 
       dplyr::group_by(id,trial_period) %>%
-      dplyr::mutate(CA = cumsum(assigned_treatment),
-                    Ap = ifelse(followup_time == 0, 0,lag(assigned_treatment)),
-                    kAAp = as.numeric(followup_time != 0)*(assigned_treatment + Ap),
+      dplyr::mutate(kAAp = as.numeric(followup_time != 0)*(assigned_treatment + 1.0)/2,
                     a0 = as.numeric(followup_time == 0)*assigned_treatment,
                     Z10 = as.numeric(followup_time == 0)*Z1,
-                    Z30 = as.numeric(followup_time == 0)*Z3) %>%
+                    Z30 = as.numeric(followup_time == 0)*Z3,
+                    t0 = as.numeric(followup_time == 0),
+                    tk = as.numeric(followup_time != 0),
+                    t0Z2 = as.numeric(followup_time == 0)*Z2,
+                    tkZ2 = as.numeric(followup_time != 0)*Z2) %>%
       dplyr::filter(trial_period == 0) %>% 
       dplyr::ungroup()
     
     fitting_data_control <- fitting_data_treatment %>%
-      dplyr::mutate(assigned_treatment = 0.0,
-                    CA = 0.0,
-                    Ap = 0.0,
-                    kAAp = 0.0,
-                    a0 =0.0,
+      dplyr::mutate(kAAp = as.numeric(followup_time != 0)*(assigned_treatment + 0.0)/2,
+                    a0 = as.numeric(followup_time == 0)*assigned_treatment,
                     Z10 = as.numeric(followup_time == 0)*Z1,
-                    Z30 = as.numeric(followup_time == 0)*Z3)
+                    Z30 = as.numeric(followup_time == 0)*Z3,
+                    t0 = as.numeric(followup_time == 0),
+                    tk = as.numeric(followup_time != 0),
+                    t0Z2 = as.numeric(followup_time == 0)*Z2,
+                    tkZ2 = as.numeric(followup_time != 0)*Z2)
     
     Y_pred_PP_treatment_naive <- predict.glm(PP_naive,
                                              fitting_data_treatment)
@@ -524,4 +538,4 @@ oper <- foreach(i = 1:iters,.combine=cbind) %dopar% {
   }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
 }
 save(oper, file = paste("Simulation results/result_simu_continuous_ipw_cali_seq_single_",as.character(l),".rda", sep = ""))
-
+}
