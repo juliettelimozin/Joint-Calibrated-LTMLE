@@ -11,10 +11,10 @@ DATA_GEN_continous_outcome_treatment_switch<-function(ns, nv, conf = 0.5, treat_
   nvisit<-nv+1
   
   X1<-rep(0,nvisit*ns)          ## place holders for time-varying covariates
-  Z2<-rnorm(nvisit*ns,0,1)
-  X2<-rep(rnorm(ns,0,1),each=nvisit) # baseline continuous covariate
+  Z2<-rnorm(nvisit*ns,0,0.5)
+  X2<-rep(rnorm(ns,0,0.5),each=nvisit) # baseline continuous covariate
   X3<-rep(0,nvisit*ns)    
-  Z3<-rnorm(nvisit*ns,0,1)
+  Z3<-rnorm(nvisit*ns,0,0.5)
   
   A<-rep(0,nvisit*ns) ##place holders for current  treatments
   Ap<-rep(0,nvisit*ns) ##place holders for  previous treatments
@@ -55,19 +55,22 @@ DATA_GEN_continous_outcome_treatment_switch<-function(ns, nv, conf = 0.5, treat_
     ########### Old formula: lpp<- as.numeric(treat_prev) + Ap[seqlist[[k]]]+0.5*X1[seqlist[[k]]]+as.numeric(conf)*X1[seqlist[[k]]]
     ###########                    -0.2*X3[seqlist[[k]]]+X2[seqlist[[k]]]-0.3*(age[seqlist[[k]]]-35)/12
     
-    lpp<- as.numeric(treat_prev) +  Ap[seqlist[[k]]] + as.numeric(conf)*(X1[seqlist[[k]]]+X3[seqlist[[k]]]) - 0.5*X2[seqlist[[k]]]
+    lpp<- 3*Ap[seqlist[[k]]] -3*(1-Ap[seqlist[[k]]]) + as.numeric(conf)*(X1[seqlist[[k]]]+X3[seqlist[[k]]]) - 0.5*X2[seqlist[[k]]]
     P1[[k]]<-1/(1+exp(-lpp))
     
     if (all_treat == TRUE){
       A[seqlist[[k]]]<- 1.0
     } else{ if (all_control == TRUE){
       A[seqlist[[k]]]<- 0.0
-    } else{ 
-      A[seqlist[[k]]]<-rbinom(ns,1,P1[[k]])
+    } else{ if (k == 2){
+      lp0 <- as.numeric(treat_prev)  + 0.2*(X1[seqlist[[k]]]+X3[seqlist[[k]]]) - 0.2*X2[seqlist[[k]]]
+      A[seqlist[[k]]]<-rbinom(ns,1,1/(1+exp(-lp0)))
+      } else{
+      A[seqlist[[k]]]<-rbinom(ns,1,P1[[k]])}
     }
     }
     ##Generate outcome
-
+    
     Yp[seqlist[[k]]]<-Y[seqlist[[k-1]]]
     Y[seqlist[[k]]]<- 100 + 5*(X1[seqlist[[k]]]-A[seqlist[[k]]]+ X2[seqlist[[k]]]+X3[seqlist[[k]]]) + rnorm(ns,0,10)
     
