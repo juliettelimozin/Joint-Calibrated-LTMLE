@@ -20,7 +20,7 @@ library(matrixStats)
 library(rlist)
 library(xtable)
 library(janitor)
-library(xlsx)
+library(berryFunctions)
 
 size <- c(200,500,1000)
 treat <- c(-1,0,1)
@@ -33,7 +33,7 @@ bias_mr_all <- array(,dim = c(3*10,5,27))
 bias_hr_all <- array(, dim = c(10,3,27))
 sd_mr_all <- array(,dim = c(3*10,5,27))
 sd_hr_all <- array(, dim = c(10,3,27))
-
+mae_hr_all <-  array(, dim = c(10,3,27))
 rootmse_mr_all <-  array(,dim = c(3*10,5,27))
 rootmse_hr_all<- array(, dim = c(10,3,27))
 for (i in 1:27){
@@ -76,6 +76,7 @@ for (i in 1:27){
     bias_hr_all[k,,i]<- colMeans(hr_all[hr_all$scenario == k, 1:3], na.rm = TRUE) - c(100,-5,-8)
     sd_hr_all[k,,i]<- colSds(as.matrix(hr_all[hr_all$scenario == k, 1:3]), na.rm = TRUE)
     rootmse_hr_all[k,,i]<- sqrt(bias_hr_all[k,,i]^2 + sd_hr_all[k,,i]^2)
+    mae_hr_all[k,,i] <- colMeans(abs(hr_all[hr_all$scenario == k, 1:3] %>% mutate(V1 = V1 - 100, V2 = V2+5, V3 = V3 + 8)), na.rm = TRUE)
   }
   
 }
@@ -83,15 +84,18 @@ for (i in 1:27){
 bias_hr_table <- bias_hr_all[,,1]
 sd_hr_table <- sd_hr_all[,,1]
 rootmse_hr_table <- rootmse_hr_all[,,1]
+mae_hr_table <- mae_hr_all[,,1]
 for (i in 2:27){
   bias_hr_table <- rbind(bias_hr_table,bias_hr_all[,,i])
   sd_hr_table <- rbind(sd_hr_table,sd_hr_all[,,i])
   rootmse_hr_table <- rbind(rootmse_hr_table,rootmse_hr_all[,,i])
+  mae_hr_table <- rbind(mae_hr_table, mae_hr_all[,,i])
 }
 
 colnames(bias_hr_table) <- c('Bias 1', 'Bias 2', 'Bias 3')
 colnames(sd_hr_table) <- c('SD 1', 'SD 2', 'SD 3')
 colnames(rootmse_hr_table) <- c('rootMSE 1', 'rootMSE 2', 'rootMSE 3')
+colnames(mae_hr_table) <- c('MAE 1', 'MAE 2', 'MAE 3')
 size <- c(200,500,1000)
 treat <- c(-1,0,1)
 conf <- c(1,1.5,2)
@@ -103,16 +107,17 @@ scenarios <- tidyr::crossing(size, treat,conf,var) %>%
                               'Naive miss.', 'IPW miss.','Aggregated cali. miss.', 'Calibration by time miss.', 'Aggregated cali. with time miss.')
                  ))
 
-hr_table <- cbind(scenarios,bias_hr_table, sd_hr_table,rootmse_hr_table) %>% 
-  dplyr::select(size, treat, conf,var, 'Bias 1', 'SD 1', 'rootMSE 1','Bias 2', 'SD 2', 'rootMSE 2','Bias 3', 'SD 3', 'rootMSE 3')
+hr_table <- cbind(scenarios,bias_hr_table, sd_hr_table,rootmse_hr_table, mae_hr_table) %>% 
+  dplyr::select(size, treat, conf,var, 'Bias 1', 'SD 1', 'rootMSE 1', 'MAE 1','Bias 2', 'SD 2', 'rootMSE 2','MAE 2','Bias 3', 'SD 3', 'rootMSE 3', 'MAE 3')
 
 
-print(xtable(hr_table[hr_table$size == 200,],digits=c(0,0,0,1,0,4,4,4,4,4,4,4,4,4)),include.rownames=FALSE, type = 'latex')
+print(xtable(hr_table[hr_table$size == 200,],digits=c(0,0,0,1,0,4,4,4,4,4,4,4,4,4,4,4,4)),include.rownames=FALSE, type = 'latex')
 
 print(xtable(hr_table[hr_table$size == 500,]),include.rownames=FALSE, type = 'latex')
 
 print(xtable(hr_table[hr_table$size == 1000,]),include.rownames=FALSE, type = 'latex')
 
+write_csv(hr_table, file = 'simulation_results_hr_table.csv')
 
 bias_mr_table <- bias_mr_all[c(3,6,9,12,15,18,21,24,27,30),1:2,1]
 sd_mr_table <- sd_mr_all[c(3,6,9,12,15,18,21,24,27,30),1:2,1]
@@ -142,6 +147,20 @@ mr_table <- cbind(scenarios,bias_mr_table, sd_mr_table,rootmse_mr_table) %>%
 
 write_csv(mr_table, file = 'simulation_results_mr_table.csv')
 print(xtable(mr_table[mr_table$size == 200,]),include.rownames=FALSE, type = 'latex')
+
+na_list <- c(6)
+for (r in 2:54){
+  na_list <- cbind(na_list, r*5 + r)
+}
+big_results_table <- hr_table %>% 
+  insertRows(r = na_list, new = NA)
+
+print(xtable(big_results_table[big_results_table$size == 200,],digits=c(0,0,0,1,0,4,4,4,4,4,4,4,4,4,4,4,4)),include.rownames=FALSE, type = 'latex')
+
+print(xtable(big_results_table[big_results_table$size == 500,],digits=c(0,0,0,1,0,4,4,4,4,4,4,4,4,4,4,4,4)),include.rownames=FALSE, type = 'latex')
+
+print(xtable(big_results_table[big_results_table$size == 1000,],digits=c(0,0,0,1,0,4,4,4,4,4,4,4,4,4,4,4,4)),include.rownames=FALSE, type = 'latex')
+
 
 wide_mr <-reshape(mr_table,
                   idvar = c('size', 'treat','conf'),

@@ -113,7 +113,7 @@ oper <- foreach(i = 1:iters,.combine=cbind) %dopar% {
                     tA1X3 = t*A_0*X3,
                     tA0X3 = t*(1-A_0)*X3,
                     tA1 = t*A_0,
-                    tA0 = t*1-A_0,
+                    tA0 = t*(1-A_0),
                     sub = ID,
                     tall = t,
                     One = 1.0) %>% 
@@ -122,15 +122,12 @@ oper <- foreach(i = 1:iters,.combine=cbind) %dopar% {
       dplyr::mutate(weights = ifelse(!is.na(weight), weight, 0)) %>% 
       dplyr::arrange(ID, t) 
     
-    or_model <- lm(data = data_restric, formula = Y~ A + X1 + X2 + X3)
-    data_restric$g_Y <- or_model$fitted.values
-    
     weight_training_data <- data_restric %>% 
       group_by(ID) %>% 
       filter(cumsum(1-RA) <= 1, t!= 0)
     
     weight_model <- glm(data = weight_training_data, 
-                        formula = A ~ Ap + X1 + X2 + X3, family = 'binomial')
+                        formula = A ~ Ap + X1 + X3, family = 'binomial')
     #summary(weight_model)
     data_restric$p_1 <- 1.0
     data_restric[data_restric$t != 0,]$p_1 <- predict.glm(weight_model, data_restric[data_restric$t != 0,], type = 'response')
@@ -144,8 +141,8 @@ oper <- foreach(i = 1:iters,.combine=cbind) %dopar% {
    
     ################### Calibration aggregated#######################
     simdatafinal1 <- calibration(simdatafinal = data_restric, 
-                                 var = c('A1','A1X1', 'A1X2','A1X3',
-                                         'A0','A0X1','A0X2','A0X3'))
+                                 var = c('A1','A1X1','A1X3',
+                                         'A0','A0X1','A0X3'))
     
     
     result$objectiveIPW <- simdatafinal1$objective.IPW
@@ -153,8 +150,8 @@ oper <- foreach(i = 1:iters,.combine=cbind) %dopar% {
     
     ################### Calibration by time #######################
     simdatafinal2 <- calibration_by_time(simdatafinal = data_restric, 
-                                         var = c('A1','A1X1', 'A1X2','A1X3',
-                                         'A0','A0X1','A0X2','A0X3'))
+                                         var = c('A1','A1X1', 'A1X3',
+                                         'A0','A0X1','A0X3'))
     
     
     result$objectiveIPWseq <- simdatafinal2$objective.IPW
@@ -162,8 +159,8 @@ oper <- foreach(i = 1:iters,.combine=cbind) %dopar% {
     
     ################## Calibration aggregated with time interaction ###########################
     simdatafinal3 <- calibration(simdatafinal = data_restric, 
-                                         var = c('tA1','tA1X1', 'tA1X2','tA1X3',
-                                                 'tA0','tA0X1','tA0X2','tA0X3'))
+                                         var = c('tA1','tA1X1','tA1X3',
+                                                 'tA0','tA0X1','tA0X3'))
     
     
     result$objectiveIPWCaliT <- simdatafinal3$objective.IPW
@@ -248,29 +245,30 @@ oper <- foreach(i = 1:iters,.combine=cbind) %dopar% {
       dplyr::mutate(kAAp = as.numeric(followup_time != 0)*(assigned_treatment + Ap)/2,
              a0 = as.numeric(followup_time == 0)*assigned_treatment,
              X10 = as.numeric(followup_time == 0)*X1,
-             X30 = as.numeric(followup_time == 0)*X3)
+             X30 = as.numeric(followup_time == 0)*X3,
+             X20 = as.numeric(followup_time == 0)*X2)
     
     PP_naive <- glm(data = switch_data,
-                    formula = Y ~ a0 + kAAp + X10 + X2 + X30,
+                    formula = Y ~ a0 + kAAp + X10 + X20 + X30,
                     weights = NULL, family = 'gaussian')
     #summary(PP_naive)
     
     PP_IPW <- glm(data = switch_data,
-                  formula = Y ~ a0 + kAAp + X10 + X2 + X30,
+                  formula = Y ~ a0 + kAAp + X10 + X20 + X30,
                   weights = weight, family = 'gaussian')
-    #summary(PP_IPW)
+    summary(PP_IPW)
     PP_calibrated <- glm(data = switch_data,
-                         formula = Y ~ a0 + kAAp + X10 + X2 + X30,
+                         formula = Y ~ a0 + kAAp + X10 + X20 + X30,
                          weights = Cweights, family = 'gaussian')
-    #summary(PP_calibrated)
+    summary(PP_calibrated)
     PP_calibrated_sequential <- glm(data = switch_data,
-                                    formula = Y ~ a0 + kAAp + X10 + X2 + X30,
+                                    formula = Y ~ a0 + kAAp + X10 + X20 + X30,
                                     weights = Cweights_sequential, family = 'gaussian')
-    #summary(PP_calibrated_sequential)
+    summary(PP_calibrated_sequential)
     PP_calibrated_T <- glm(data = switch_data,
-                                    formula = Y ~ a0 + kAAp + X10 + X2 + X30,
+                                    formula = Y ~ a0 + kAAp + X10 + X20 + X30,
                                     weights = CweightsT, family = 'gaussian')
-    #summary(PP_calibrated_T)
+    summary(PP_calibrated_T)
   
     
     result$hr_estimates<- array(,dim = c(10,6))
@@ -301,10 +299,7 @@ oper <- foreach(i = 1:iters,.combine=cbind) %dopar% {
                     a0 = as.numeric(followup_time == 0)*assigned_treatment,
                     X10 = as.numeric(followup_time == 0)*X1,
                     X30 = as.numeric(followup_time == 0)*X3,
-                    t0 = as.numeric(followup_time == 0),
-                    tk = as.numeric(followup_time != 0),
-                    t0X2 = as.numeric(followup_time == 0)*X2,
-                    tkX2 = as.numeric(followup_time != 0)*X2) %>%
+                    X20 = as.numeric(followup_time == 0)*X2) %>%
       dplyr::filter(trial_period == 0) %>% 
       dplyr::ungroup()
     
@@ -313,10 +308,7 @@ oper <- foreach(i = 1:iters,.combine=cbind) %dopar% {
                     a0 = as.numeric(followup_time == 0)*0.0,
                     X10 = as.numeric(followup_time == 0)*X1,
                     X30 = as.numeric(followup_time == 0)*X3,
-                    t0 = as.numeric(followup_time == 0),
-                    tk = as.numeric(followup_time != 0),
-                    t0X2 = as.numeric(followup_time == 0)*X2,
-                    tkX2 = as.numeric(followup_time != 0)*X2)
+                    X20 = as.numeric(followup_time == 0)*X2)
     
     Y_pred_PP_treatment_naive <- predict.glm(PP_naive,
                                            fitting_data_treatment)
@@ -372,7 +364,7 @@ oper <- foreach(i = 1:iters,.combine=cbind) %dopar% {
     
     ######### Misspecified ############### 
     simdata <- simdata %>% 
-      mutate(Z1 = X1^3/9,Z2 = X1*X2, Z3 = log(abs(X3))+4)
+      mutate(Z1 =X1/(1+exp(X3))+10,Z2 =(X2/25+0.6)^3, Z3 = exp(X3/2))
     
     PP_prep <- TrialEmulation::data_preparation(simdata, id='ID', period='t', treatment='A', outcome='Y', cense = 'C',
                                                 eligible ='eligible',
@@ -421,7 +413,7 @@ oper <- foreach(i = 1:iters,.combine=cbind) %dopar% {
                     tA1Z3 = t*A_0*Z3,
                     tA0Z3 = t*(1-A_0)*Z3,
                     tA1 = t*A_0,
-                    tA0 = t*1-A_0,
+                    tA0 = t*(1-A_0),
                     sub = ID,
                     tall = t,
                     One = 1.0) %>% 
@@ -430,15 +422,12 @@ oper <- foreach(i = 1:iters,.combine=cbind) %dopar% {
       dplyr::mutate(weights = ifelse(!is.na(weight), weight, 0)) %>% 
       dplyr::arrange(ID, t) 
     
-    or_model <- lm(data = data_restric, formula = Y~ A + Z1 + Z2 + Z3)
-    data_restric$g_Y <- or_model$fitted.values
-    
     weight_training_data <- data_restric %>% 
       group_by(ID) %>% 
       filter(cumsum(1-RA) <= 1, t!= 0)
     
     weight_model <- glm(data = weight_training_data, 
-                        formula = A ~ Ap + Z1 + Z2 + Z3, family = 'binomial')
+                        formula = A ~ Ap + Z1 + Z3, family = 'binomial')
     #summary(weight_model)
     data_restric$p_1 <- 1.0
     data_restric[data_restric$t != 0,]$p_1 <- predict.glm(weight_model, data_restric[data_restric$t != 0,], type = 'response')
@@ -452,8 +441,8 @@ oper <- foreach(i = 1:iters,.combine=cbind) %dopar% {
     
     ################### Calibration aggregated#######################
     simdatafinal1 <- calibration(simdatafinal = data_restric, 
-                                 var = c('A1','A1Z1', 'A1Z2','A1Z3',
-                                         'A0','A0Z1','A0Z2','A0Z3'))
+                                 var = c('A1','A1Z1', 'A1Z3',
+                                         'A0','A0Z1','A0Z3'))
     
     
     result$objectiveIPWmis <- simdatafinal1$objective.IPW
@@ -461,8 +450,8 @@ oper <- foreach(i = 1:iters,.combine=cbind) %dopar% {
     
     ################### Calibration by time #######################
     simdatafinal2 <- calibration_by_time(simdatafinal = data_restric, 
-                                         var = c('A1','A1Z1', 'A1Z2','A1Z3',
-                                                 'A0','A0Z1','A0Z2','A0Z3'))
+                                         var = c('A1','A1Z1', 'A1Z3',
+                                                 'A0','A0Z1','A0Z3'))
     
     
     result$objectiveIPWseqmis <- simdatafinal2$objective.IPW
@@ -470,8 +459,8 @@ oper <- foreach(i = 1:iters,.combine=cbind) %dopar% {
     
     ################## Calibration aggregated with time interaction ###########################
     simdatafinal3 <- calibration(simdatafinal = data_restric, 
-                                 var = c('tA1','tA1Z1', 'tA1Z2','tA1Z3',
-                                         'tA0','tA0Z1','tA0Z2','tA0Z3'))
+                                 var = c('tA1','tA1Z1', 'tA1Z3',
+                                         'tA0','tA0Z1','tA0Z3'))
     
     
     result$objectiveIPWCaliT <- simdatafinal3$objective.IPW
@@ -542,29 +531,30 @@ oper <- foreach(i = 1:iters,.combine=cbind) %dopar% {
       dplyr::mutate(kAAp = as.numeric(followup_time != 0)*(assigned_treatment + Ap)/2,
                     a0 = as.numeric(followup_time == 0)*assigned_treatment,
                     Z10 = as.numeric(followup_time == 0)*Z1,
-                    Z30 = as.numeric(followup_time == 0)*Z3)
+                    Z30 = as.numeric(followup_time == 0)*Z3,
+                    Z20 = as.numeric(followup_time == 0)*Z2)
     
     PP_naive <- glm(data = switch_data,
-                    formula = Y ~ a0 + kAAp + Z10 + Z2 + Z30,
+                    formula = Y ~ a0 + kAAp + Z10 + Z20 + Z30,
                     weights = NULL, family = 'gaussian')
-    #summary(PP_naive)
+    summary(PP_naive)
     
     PP_IPW <- glm(data = switch_data,
-                  formula = Y ~ a0 + kAAp + Z10 + Z2 + Z30,
+                  formula = Y ~ a0 + kAAp + Z10 + Z20 + Z30,
                   weights = weight, family = 'gaussian')
-    #summary(PP_IPW)
+    summary(PP_IPW)
     PP_calibrated <- glm(data = switch_data,
-                         formula = Y ~ a0 + kAAp + Z10 + Z2 + Z30,
+                         formula = Y ~ a0 + kAAp + Z10 + Z20 + Z30,
                          weights = Cweights, family = 'gaussian')
-    #summary(PP_calibrated)
+    summary(PP_calibrated)
     PP_calibrated_sequential <- glm(data = switch_data,
-                                    formula = Y ~ a0 + kAAp + Z10 + Z2 + Z30,
+                                    formula = Y ~ a0 + kAAp + Z10 + Z20 + Z30,
                                     weights = Cweights_sequential, family = 'gaussian')
-    #summary(PP_calibrated_sequential)
+    summary(PP_calibrated_sequential)
     PP_calibrated_T <- glm(data = switch_data,
-                           formula = Y ~ a0 + kAAp + Z10 + Z2 + Z30,
+                           formula = Y ~ a0 + kAAp + Z10 + Z20 + Z30,
                            weights = CweightsT, family = 'gaussian')
-    #summary(PP_calibrated_T)
+    summary(PP_calibrated_T)
     
     
     result$hr_estimates[6,] <- PP_naive$coefficients
@@ -593,7 +583,8 @@ oper <- foreach(i = 1:iters,.combine=cbind) %dopar% {
       dplyr::mutate(kAAp = as.numeric(followup_time != 0)*(assigned_treatment + 1.0)/2,
                     a0 = as.numeric(followup_time == 0)*assigned_treatment,
                     Z10 = as.numeric(followup_time == 0)*Z1,
-                    Z30 = as.numeric(followup_time == 0)*Z3) %>%
+                    Z30 = as.numeric(followup_time == 0)*Z3,
+                    Z20 = as.numeric(followup_time == 0)*Z2) %>%
       dplyr::filter(trial_period == 0) %>% 
       dplyr::ungroup()
     
@@ -601,7 +592,8 @@ oper <- foreach(i = 1:iters,.combine=cbind) %dopar% {
       dplyr::mutate(kAAp = as.numeric(followup_time != 0)*(0.0 + 0.0)/2,
                     a0 = as.numeric(followup_time == 0)*0.0,
                     Z10 = as.numeric(followup_time == 0)*Z1,
-                    Z30 = as.numeric(followup_time == 0)*Z3)
+                    Z30 = as.numeric(followup_time == 0)*Z3,
+                    Z20 = as.numeric(followup_time == 0)*Z2)
     
     Y_pred_PP_treatment_naive <- predict.glm(PP_naive,
                                              fitting_data_treatment)

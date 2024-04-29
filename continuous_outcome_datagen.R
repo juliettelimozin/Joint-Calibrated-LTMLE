@@ -55,7 +55,7 @@ DATA_GEN_continous_outcome_treatment_switch<-function(ns, nv, conf = 0.5, treat_
     ########### Old formula: lpp<- as.numeric(treat_prev) + Ap[seqlist[[k]]]+0.5*X1[seqlist[[k]]]+as.numeric(conf)*X1[seqlist[[k]]]
     ###########                    -0.2*X3[seqlist[[k]]]+X2[seqlist[[k]]]-0.3*(age[seqlist[[k]]]-35)/12
     
-    lpp<- 3*Ap[seqlist[[k]]] -3*(1-Ap[seqlist[[k]]]) + as.numeric(conf)*(X1[seqlist[[k]]]+X3[seqlist[[k]]]) - 0.5*X2[seqlist[[k]]]
+    lpp<- 3*Ap[seqlist[[k]]] -3*(1-Ap[seqlist[[k]]]) + as.numeric(conf)*(X1[seqlist[[k]]]+X3[seqlist[[k]]])
     P1[[k]]<-1/(1+exp(-lpp))
     
     if (all_treat == TRUE){
@@ -72,7 +72,13 @@ DATA_GEN_continous_outcome_treatment_switch<-function(ns, nv, conf = 0.5, treat_
     ##Generate outcome
     
     Yp[seqlist[[k]]]<-Y[seqlist[[k-1]]]
-    Y[seqlist[[k]]]<- 100 + 5*(X1[seqlist[[k]]]-A[seqlist[[k]]]+ X2[seqlist[[k]]]+X3[seqlist[[k]]]) + rnorm(ns,0,10)
+    
+    if (k == 2){
+      Y[seqlist[[k]]]<- 100 + 5*(X1[seqlist[[k]]]-A[seqlist[[k]]]+ X2[seqlist[[k]]]+X3[seqlist[[k]]]) + rnorm(ns,0,10)
+    } else{
+      Y[seqlist[[k]]]<- 100 + 5*(X1[seqlist[[k]]]-A[seqlist[[k]]]+X3[seqlist[[k]]]) + rnorm(ns,0,10)
+    }
+    
     
   }
   
