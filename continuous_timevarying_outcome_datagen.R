@@ -57,8 +57,8 @@ DATA_GEN_continous_timevarying_outcome_treatment_switch<-function(ns, nv, conf =
     
     CAp[seqlist[[k]]]<-CAp[seqlist[[k-1]]]+Ap[seqlist[[k]]]
     
-    X1[seqlist[[k]]]<-Z1[seqlist[[k]]]-0.5*Ap[seqlist[[k]]] ## continuous time-varying confounder 
-    X2[seqlist[[k]]]<-Z2[seqlist[[k]]]-0.5*Ap[seqlist[[k]]]
+    X1[seqlist[[k]]]<-Z1[seqlist[[k]]]-0.3*CAp[seqlist[[k]]] ## continuous time-varying confounder 
+    X2[seqlist[[k]]]<-Z2[seqlist[[k]]]-0.3*CAp[seqlist[[k]]]
     
     CX1[seqlist[[k]]]<- CX1[seqlist[[k-1]]] + X1[seqlist[[k]]]
     CX2[seqlist[[k]]]<-CX2[seqlist[[k-1]]] + X2[seqlist[[k]]]
@@ -84,11 +84,9 @@ DATA_GEN_continous_timevarying_outcome_treatment_switch<-function(ns, nv, conf =
     
     Yp[seqlist[[k]]]<-Y[seqlist[[k-1]]]
     
-    if (k == 2){
-      Y[seqlist[[k]]]<- 100 -5*A[seqlist[[k]]]+ rnorm(ns,0,10)
-    } else{
-      Y[seqlist[[k]]]<- 100 + 5*(CX1[seqlist[[k]]] + CX2[seqlist[[k]]]) -5*A[seqlist[[k]]]+ rnorm(ns,0,10)
-    }
+  
+    Y[seqlist[[k]]]<- 100 + 5*(X1[seqlist[[k]]] + X2[seqlist[[k]]]) -3*A[seqlist[[k]]]+ rnorm(ns,0,10)
+    
     
     
   }

@@ -2,7 +2,7 @@
 library(dplyr)
 library(tidyr)
 #setwd("~/rds/hpc-work/Calibrated-weights-sequential-trial-emulation")
-source("continuous_outcome_datagen.R")
+source("continuous_timevarying_outcome_datagen.R")
 library(TrialEmulation)
 library(MASS)
 library(sandwich)

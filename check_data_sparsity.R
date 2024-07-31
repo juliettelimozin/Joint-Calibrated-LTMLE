@@ -118,9 +118,31 @@ data_restric <- data_restric %>%
 ################ CHECKING WEIGHT DISTRIBUTION ##################################
 ggplot(data = data_restric[data_restric$t==4  & data_restric$RA == 1 ,], aes(x = X2, fill = as.factor(A))) +
   geom_histogram()
+ggplot(data = data_restric[data_restric$t==4  & data_restric$RA == 1 ,], aes(x = true_p_1, fill = as.factor(A_0))) +
+  geom_histogram() +
+  labs(title = 'True ps at t = 4')
+ggplot(data = data_restric[data_restric$t==4  & data_restric$RA == 1 ,], aes(x = p_1, fill = as.factor(A_0))) +
+  geom_histogram() +
+  labs(title = 'Correctly specified ps at t = 4')
+ggplot(data = data_restric[data_restric$t==4  & data_restric$RA == 1 ,], aes(x = miss_p1, fill = as.factor(A_0))) +
+  geom_histogram() +
+  labs(title = 'Misspecified ps at t = 4')
 
-ggplot(data = data_restric[data_restric$t==4  & data_restric$RA == 1 ,], aes(x = true_p_1, fill = as.factor(A))) +
-  geom_histogram()
+ggplot(data = data_restric[data_restric$t==4  & data_restric$RA == 1 ,], aes(x = 1/true_weights, fill = as.factor(A_0))) +
+  geom_histogram() +
+  labs(title = 'True 1/weight at t = 4')
+ggplot(data = data_restric[data_restric$t==4  & data_restric$RA == 1 ,], aes(x = 1/weights, fill = as.factor(A_0))) +
+  geom_histogram()+
+  labs(title = 'Correctly specified 1/weight at t = 4')
+ggplot(data = data_restric[data_restric$t==4  & data_restric$RA == 1 ,], aes(x = 1/miss_weights, fill = as.factor(A_0))) +
+  geom_histogram()+
+  labs(title = 'Misspecified 1/weight at t = 4')
+
+
+ggplot(data = data_restric[data_restric$t==4  & data_restric$RA == 1 ,], aes(x = X1, y = X2, fill = as.factor(A))) +
+  geom_point()
+
+
 
 ggplot(data = data_restric[data_restric$t==1  & data_restric$RA == 1,], aes(x = X1, group = A_0)) +
   geom_histogram()
