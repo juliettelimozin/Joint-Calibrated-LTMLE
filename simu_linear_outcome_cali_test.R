@@ -13,7 +13,7 @@ library(nleqslv)
 source('calibration_func_trials.R')
 set.seed(NULL)
 
-iters <- 500
+iters <- 10
 #l <- as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))
 size <- c(200,500,1000,5000)
 
@@ -42,14 +42,12 @@ for (l in 1:4){
                                                                        censor = F)
       simdata <- simdata %>% 
         mutate(switch = ifelse(t == 0, 0,ifelse(A!=Ap,1,0)),
-               missCX1 = log(abs(CX1))/4,
-               missCX2 = sqrt(abs(CX2))/3,
                missX1 = log(abs(X1))/4,
-               missX2 = sqrt(abs(X2))/3,
-               CX1sq = CX1^2,
-               CX2sq = CX2^2,
-               X1sq = X1^2,
-               X2sq = X2^2)
+               missX2 = sqrt(abs(X2))/3) %>% 
+        group_by(ID) %>% 
+        dplyr::mutate(missCX1 = cumsum(missX1),
+               missCX2 = cumsum(missX2),
+               CA = cumsum(A))
       #con4<-xtabs(~t + switch, data=simdata)
       #ftable(con4)
       
@@ -81,7 +79,7 @@ for (l in 1:4){
       
       ########## Outcome imputation correct and miss ############
       library(data.table)
-      wideSimdata <- data.table::dcast(setDT(simdata), ID ~ t, value.var = c("A", "X1", "X2", "missX1", "missX2", "Y"))
+      wideSimdata <- data.table::dcast(setDT(simdata), ID ~ t, value.var = c("A", "X1", "X2", "missX1", "missX2", "CA", "Y"))
       
       wideSimdata$y4pred <- wideSimdata$Y_4
       
@@ -90,59 +88,108 @@ for (l in 1:4){
       q4miss <- glm(y4pred ~ missX1_4 + missX2_4  + A_4,
                  data = wideSimdata, family = 'gaussian')
       
-      wideSimdata$y4pred <- predict.glm(q4,type = "response", newdata = wideSimdata %>% mutate(A_4 ))
-      wideSimdata$y4predmiss <- predict.glm(q4miss,type = "response", newdata = wideSimdata %>% mutate(A_4 = A_0))
+      wideSimdata$y4pred1 <- predict.glm(q4,type = "response", newdata = wideSimdata %>% mutate(A_4 = 1))
+      wideSimdata$y4predmiss1 <- predict.glm(q4miss,type = "response", newdata = wideSimdata %>% mutate(A_4 = 1))
       
-      q3 <- glm(y4pred ~ X1_3 + X2_3 + A_3,
+      wideSimdata$y4pred0 <- predict.glm(q4,type = "response", newdata = wideSimdata %>% mutate(A_4 = 0))
+      wideSimdata$y4predmiss0 <- predict.glm(q4miss,type = "response", newdata = wideSimdata %>% mutate(A_4 = 0))
+      
+      q3_1 <- glm(y4pred1 ~ CA_3,
                  data = wideSimdata, family = 'gaussian')
-      q3miss <- glm(y4predmiss ~ missX1_3 + missX2_3  + A_3,
+      q3miss_1 <- glm(y4predmiss1 ~ CA_3,
                 data = wideSimdata, family = 'gaussian')
       
-      wideSimdata$y4pred <- predict.glm(q3,type = "response", newdata = wideSimdata %>% mutate(A_3 = A_0))
-      wideSimdata$y4predmiss <- predict.glm(q3miss,type = "response", newdata = wideSimdata %>% mutate(A_3 = A_0))
+      q3_0 <- glm(y4pred0 ~ CA_3,
+                  data = wideSimdata, family = 'gaussian')
+      q3miss_0 <- glm(y4predmiss0 ~ CA_3,
+                      data = wideSimdata, family = 'gaussian')
       
-      q2 <- glm(y4pred ~  X1_2 + X2_2 + A_2,
+      wideSimdata$y4pred1 <- predict.glm(q3_1,type = "response", newdata = wideSimdata %>% mutate(CA_3 = 4))
+      wideSimdata$y4predmiss1 <- predict.glm(q3miss_1,type = "response", newdata = wideSimdata %>% mutate(CA_3 = 4))
+      
+      wideSimdata$y4pred0 <- predict.glm(q3_0,type = "response", newdata = wideSimdata %>% mutate(CA_3 = 0))
+      wideSimdata$y4predmiss0 <- predict.glm(q3miss_0,type = "response", newdata = wideSimdata %>% mutate(CA_3 = 0))
+      
+      q2_1 <- glm(y4pred1 ~  1,
                  data = wideSimdata, family = 'gaussian')
-      q2miss <- glm(y4predmiss ~  missX1_2 + missX2_2 + A_2,
+      q2miss_1 <- glm(y4predmiss1 ~  1,
                 data = wideSimdata, family = 'gaussian')
+      q2_0 <- glm(y4pred0 ~  1,
+                  data = wideSimdata, family = 'gaussian')
+      q2miss_0 <- glm(y4predmiss0 ~  1,
+                      data = wideSimdata, family = 'gaussian')
       
-      wideSimdata$y4pred <- predict.glm(q2,type = "response", newdata = wideSimdata %>% mutate(A_2 = A_0))
-      wideSimdata$y4predmiss <- predict.glm(q2miss,type = "response", newdata = wideSimdata %>% mutate(A_2 = A_0))
+      wideSimdata$y4pred1 <- predict.glm(q2_1,type = "response", newdata = wideSimdata)
+      wideSimdata$y4predmiss1 <- predict.glm(q2miss_1,type = "response", newdata = wideSimdata)
       
-      q1 <- glm(y4pred ~  X1_1 + X2_1 + A_1,
-                data = wideSimdata, family = 'gaussian')
-      q1miss <- glm(y4predmiss ~  missX1_1 + missX2_1  + A_1,
-                data = wideSimdata, family = 'gaussian')
+      wideSimdata$y4pred0 <- predict.glm(q2_0,type = "response", newdata = wideSimdata)
+      wideSimdata$y4predmiss0 <- predict.glm(q2miss_0,type = "response", newdata = wideSimdata)
       
-      wideSimdata$y4pred <- predict.glm(q1,type = "response", newdata = wideSimdata %>% mutate(A_1 = A_0))
-      wideSimdata$y4predmiss <- predict.glm(q1miss,type = "response", newdata = wideSimdata %>% mutate(A_1 = A_0))
+      q1_1 <- glm(y4pred1 ~  1,
+                  data = wideSimdata, family = 'gaussian')
+      q1miss_1 <- glm(y4predmiss1 ~  1,
+                      data = wideSimdata, family = 'gaussian')
+      q1_0 <- glm(y4pred0 ~  1,
+                  data = wideSimdata, family = 'gaussian')
+      q1miss_0 <- glm(y4predmiss0 ~  1,
+                      data = wideSimdata, family = 'gaussian')
       
-      q0 <- glm(y4pred ~  X1_0 + X2_0 + A_0,
-                data = wideSimdata, family = 'gaussian')
-      q0miss <- glm(y4predmiss ~  missX1_0 + missX2_0 + A_0,
-                data = wideSimdata, family = 'gaussian')
+      wideSimdata$y4pred1 <- predict.glm(q1_1,type = "response", newdata = wideSimdata)
+      wideSimdata$y4predmiss1 <- predict.glm(q1miss_1,type = "response", newdata = wideSimdata)
       
-      wideSimdata$y4pred <- predict.glm(q0,type = "response", newdata = wideSimdata)
-      wideSimdata$y4predmiss <- predict.glm(q0miss,type = "response", newdata = wideSimdata)
+      wideSimdata$y4pred0 <- predict.glm(q1_0,type = "response", newdata = wideSimdata)
+      wideSimdata$y4predmiss0 <- predict.glm(q1miss_0,type = "response", newdata = wideSimdata)
       
-      wideSimdata$Y0 <- mean(wideSimdata$A_0*predict.glm(q0, type = "response", newdata = wideSimdata %>% mutate(A_0 = 1))) + mean((1-wideSimdata$A_0)*predict.glm(q0, type = "response", newdata = wideSimdata %>% mutate(A_0 = 0)))
-      wideSimdata$Y1 <- mean(wideSimdata$A_1*predict.glm(q1, type = "response", newdata = wideSimdata %>% mutate(A_1 = 1))) + mean((1-wideSimdata$A_1)*predict.glm(q1, type = "response", newdata = wideSimdata %>% mutate(A_1 = 0)))
-      wideSimdata$Y2 <- mean(wideSimdata$A_2*predict.glm(q2, type = "response", newdata = wideSimdata %>% mutate(A_2 = 1))) + mean((1-wideSimdata$A_2)*predict.glm(q2, type = "response", newdata = wideSimdata %>% mutate(A_2 = 0)))
-      wideSimdata$Y3 <- mean(wideSimdata$A_3*predict.glm(q3, type = "response", newdata = wideSimdata %>% mutate(A_3 = 1))) + mean((1-wideSimdata$A_3)*predict.glm(q3, type = "response", newdata = wideSimdata %>% mutate(A_3 = 0)))
-      wideSimdata$Y4 <- mean(wideSimdata$A_4*predict.glm(q4, type = "response", newdata = wideSimdata %>% mutate(A_4 = 1))) + mean((1-wideSimdata$A_4)*predict.glm(q4, type = "response", newdata = wideSimdata %>% mutate(A_4 = 0)))
+      q0_1 <- glm(y4pred1 ~  1,
+                  data = wideSimdata, family = 'gaussian')
+      q0miss_1 <- glm(y4predmiss1 ~  1,
+                      data = wideSimdata, family = 'gaussian')
+      q0_0 <- glm(y4pred0 ~  1,
+                  data = wideSimdata, family = 'gaussian')
+      q0miss_0 <- glm(y4predmiss0 ~  1,
+                      data = wideSimdata, family = 'gaussian')
+      
+      wideSimdata$y4pred1 <- predict.glm(q0_1,type = "response", newdata = wideSimdata)
+      wideSimdata$y4predmiss1 <- predict.glm(q0miss_1,type = "response", newdata = wideSimdata)
+      
+      wideSimdata$y4pred0 <- predict.glm(q0_0,type = "response", newdata = wideSimdata)
+      wideSimdata$y4predmiss0 <- predict.glm(q0miss_0,type = "response", newdata = wideSimdata)
+      
+      wideSimdata$Y1_0 <- predict.glm(q0_1, type = "response", newdata = wideSimdata)
+      wideSimdata$Y1_1 <- predict.glm(q1_1, type = "response", newdata = wideSimdata)
+      wideSimdata$Y1_2 <- predict.glm(q2_1, type = "response", newdata = wideSimdata)
+      wideSimdata$Y1_3 <- predict.glm(q3_1, type = "response", newdata = wideSimdata %>% mutate(CA_3 = 4))
+      wideSimdata$Y1_4 <- predict.glm(q4, type = "response", newdata = wideSimdata %>% mutate(A_4 = 1))
       
       
-      wideSimdata$missY0 <- mean(wideSimdata$A_0*predict.glm(q0miss, type = "response", newdata = wideSimdata %>% mutate(A_0 = 1))) + mean((1-wideSimdata$A_0)*predict.glm(q0miss, type = "response", newdata = wideSimdata %>% mutate(A_0 = 0)))
-      wideSimdata$missY1 <- mean(wideSimdata$A_1*predict.glm(q1miss, type = "response", newdata = wideSimdata %>% mutate(A_1 = 1))) + mean((1-wideSimdata$A_1)*predict.glm(q1miss, type = "response", newdata = wideSimdata %>% mutate(A_1 = 0)))
-      wideSimdata$missY2 <- mean(wideSimdata$A_2*predict.glm(q2miss, type = "response", newdata = wideSimdata %>% mutate(A_2 = 1))) + mean((1-wideSimdata$A_2)*predict.glm(q2miss, type = "response", newdata = wideSimdata %>% mutate(A_2 = 0)))
-      wideSimdata$missY3 <- mean(wideSimdata$A_3*predict.glm(q3miss, type = "response", newdata = wideSimdata %>% mutate(A_3 = 1))) + mean((1-wideSimdata$A_3)*predict.glm(q3miss, type = "response", newdata = wideSimdata %>% mutate(A_3 = 0)))
-      wideSimdata$missY4 <- mean(wideSimdata$A_4*predict.glm(q4miss, type = "response", newdata = wideSimdata %>% mutate(A_4 = 1))) + mean((1-wideSimdata$A_4)*predict.glm(q4miss, type = "response", newdata = wideSimdata %>% mutate(A_4 = 0)))
+      wideSimdata$missY1_0 <- predict.glm(q0miss_1, type = "response", newdata = wideSimdata)
+      wideSimdata$missY1_1 <- predict.glm(q1miss_1, type = "response", newdata = wideSimdata)
+      wideSimdata$missY1_2 <- predict.glm(q2miss_1, type = "response", newdata = wideSimdata)
+      wideSimdata$missY1_3 <- predict.glm(q3miss_1, type = "response", newdata = wideSimdata %>% mutate(CA_3 = 4))
+      wideSimdata$missY1_4 <- predict.glm(q4miss, type = "response", newdata = wideSimdata %>% mutate(A_4 = 1))
+      
+      wideSimdata$Y0_0 <- predict.glm(q0_0, type = "response", newdata = wideSimdata)
+      wideSimdata$Y0_1 <- predict.glm(q1_0, type = "response", newdata = wideSimdata)
+      wideSimdata$Y0_2 <- predict.glm(q2_0, type = "response", newdata = wideSimdata)
+      wideSimdata$Y0_3 <- predict.glm(q3_0, type = "response", newdata = wideSimdata %>% mutate(CA_3 = 0))
+      wideSimdata$Y0_4 <- predict.glm(q4, type = "response", newdata = wideSimdata %>% mutate(A_4 = 0))
       
       
-      simdata_imputed <- pivot_longer(wideSimdata %>% dplyr::select(ID, Y0, Y1, Y2, Y3, Y4),
-                                   cols = Y0:Y4, names_to = 't', names_prefix = "Y", values_to = "Yhat") %>% 
-        merge(pivot_longer(wideSimdata %>% dplyr::select(ID, missY0, missY1, missY2, missY3, missY4),
-                           cols = missY0:missY4, names_to = 't', names_prefix = "missY", values_to = "missYhat"),by = c("ID", "t")) %>% 
+      wideSimdata$missY0_0 <- predict.glm(q0miss_0, type = "response", newdata = wideSimdata)
+      wideSimdata$missY0_1 <- predict.glm(q1miss_0, type = "response", newdata = wideSimdata)
+      wideSimdata$missY0_2 <- predict.glm(q2miss_0, type = "response", newdata = wideSimdata)
+      wideSimdata$missY0_3 <- predict.glm(q3miss_0, type = "response", newdata = wideSimdata %>% mutate(CA_3 = 0))
+      wideSimdata$missY0_4 <- predict.glm(q4miss, type = "response", newdata = wideSimdata %>% mutate(A_4 = 0))
+      
+      
+      simdata_imputed <- pivot_longer(wideSimdata %>% dplyr::select(ID, Y1_0, Y1_1, Y1_2, Y1_3, Y1_4),
+                                   cols = Y1_0:Y1_4, names_to = 't', names_prefix = "Y1_", values_to = "Y1hat") %>% 
+        merge(pivot_longer(wideSimdata %>% dplyr::select(ID, Y0_0, Y0_1, Y0_2, Y0_3, Y0_4),
+                           cols = Y0_0:Y0_4, names_to = 't', names_prefix = "Y0_", values_to = "Y0hat"),by = c("ID", "t")) %>% 
+        merge(pivot_longer(wideSimdata %>% dplyr::select(ID, missY0_0, missY0_1, missY0_2, missY0_3, missY0_4),
+                           cols = missY0_0:missY0_4, names_to = 't', names_prefix = "missY0_", values_to = "missY0hat"),by = c("ID", "t")) %>% 
+        merge(pivot_longer(wideSimdata %>% dplyr::select(ID, missY1_0, missY1_1, missY1_2, missY1_3, missY1_4),
+                           cols = missY1_0:missY1_4, names_to = 't', names_prefix = "missY1_", values_to = "missY1hat"),by = c("ID", "t")) %>% 
         dplyr::mutate(t = as.numeric(t))
       
     
@@ -152,8 +199,8 @@ for (l in 1:4){
       outcome_model_miss <- glm(Y ~  missX1 + missX2 + A,
                            data = simdata, family = 'gaussian')
       
-      simdata$Ythat <- mean(simdata$A*predict.glm(outcome_model, type = "response", newdata = simdata %>% mutate(A =1))) + mean((1-simdata$A)*predict.glm(outcome_model, type = "response", newdata = simdata %>% mutate(A =0)))
-      simdata$Ytmisshat <- mean(simdata$A*predict.glm(outcome_model_miss, type = "response", newdata = simdata %>% mutate(A =1))) + mean((1-simdata$A)*predict.glm(outcome_model_miss, type = "response", newdata = simdata %>% mutate(A =0)))
+      simdata$Ythat <- predict.glm(outcome_model, type = "response", newdata = simdata %>% mutate(A =1))
+      simdata$Ytmisshat <- predict.glm(outcome_model_miss, type = "response", newdata = simdata %>% mutate(A =1))
       
       data_restric <- simdata %>% 
         merge(simdata_imputed, by = c("ID", "t")) %>% 
@@ -168,10 +215,10 @@ for (l in 1:4){
                       A0X1 = (1-A_0)*X1,
                       A1 = A_0,
                       A0 = 1-A_0,
-                      A1Yhat = A_0*Yhat,
-                      A0Yhat = (1-A_0)*Yhat,
-                      A1missYhat = A_0*missYhat,
-                      A0missYhat = (1-A_0)*missYhat,
+                      A1Y1hat = A_0*Y1hat,
+                      A0Y0hat = (1-A_0)*Y0hat,
+                      A1missY1hat = A_0*missY1hat,
+                      A0missY0hat = (1-A_0)*missY0hat,
                       A1Ythat = A_0*Ythat,
                       A0Ythat = (1-A_0)*Ythat,
                       A1Ytmisshat = A_0*Ytmisshat,
@@ -188,7 +235,7 @@ for (l in 1:4){
       weight_model <- glm(data = simdata, 
                           formula = A ~ Ap + X1 + X2, family = 'binomial')
       weight_model_miss <- glm(data = simdata, 
-                          formula = A ~ Ap + X1, family = 'binomial')
+                          formula = A ~ Ap + missX1 + missX2, family = 'binomial')
       summary(weight_model)
       summary(weight_model_miss)
       data_restric$p_1 <- 1.0
@@ -221,83 +268,83 @@ for (l in 1:4){
 
       ################### Calibration by time g(Lk) gimp #######################
       simdatafinal2 <- calibration(simdatafinal = data_restric, 
-                                           var = c('A1','A1Yhat',
-                                                   'A0','A0Yhat'))
+                                           var = c('A1','A1Y1hat',
+                                                   'A0','A0Y0hat'))
       
       
       ################## Calibration by time Lk, g(Lk) gimp###########################
-      simdatafinal3 <- calibration_by_time(simdatafinal = data_restric, 
-                                           var = c('A1','A1X1', 'A1X2','A1Yhat',
-                                                   'A0','A0X1','A0X2','A0Yhat'))
+      simdatafinal3 <- calibration(simdatafinal = data_restric, 
+                                           var = c('A1','A1X1', 'A1X2','A1Y1hat',
+                                                   'A0','A0X1','A0X2','A0Y0hat'))
       
       
       
       ################## Calibration by time g(Lk) gimp miss #######################
-      simdatafinal4 <- calibration_by_time(simdatafinal = data_restric, 
-                                           var = c('A1','A1missYhat',
-                                                   'A0','A0missYhat'))
+      simdatafinal4 <- calibration(simdatafinal = data_restric, 
+                                           var = c('A1','A1missY1hat',
+                                                   'A0','A0missY0hat'))
       
       ################## Calibration by time Lk, g(Lk) gimp ###########################
-      simdatafinal5 <- calibration_by_time(simdatafinal = data_restric, 
-                                           var = c('A1','A1X1', 'A1X2','A1missYhat',
-                                                   'A0','A0X1','A0X2','A0missYhat'))
+      simdatafinal5 <- calibration(simdatafinal = data_restric, 
+                                           var = c('A1','A1X1', 'A1X2','A1missY1hat',
+                                                   'A0','A0X1','A0X2','A0missY0hat'))
       
       ################### Calibration by time Lk miss #######################
-      simdatafinal6 <- calibration_by_time(simdatafinal = data_restric %>% mutate(weights = weights_miss), 
+      simdatafinal6 <- calibration(simdatafinal = data_restric %>% mutate(weights = weights_miss), 
                                            var = c('A1','A1X1',
                                                    'A0','A0X1'))
       ################### Calibration by time miss g(Lk) gimp correct #######################
-      simdatafinal7 <- calibration_by_time(simdatafinal = data_restric %>% mutate(weights = weights_miss), 
-                                           var = c('A1','A1Yhat',
-                                                   'A0','A0Yhat'))
+      simdatafinal7 <- calibration(simdatafinal = data_restric %>% mutate(weights = weights_miss), 
+                                           var = c('A1','A1Y1hat',
+                                                   'A0','A0Y0hat'))
       ################### Calibration by time miss Lk g(Lk)gimp correct #######################
-      simdatafinal8 <- calibration_by_time(simdatafinal = data_restric %>% mutate(weights = weights_miss), 
-                                           var = c('A1','A1X1', 'A1Yhat',
-                                                   'A0','A0X1', 'A0Yhat'))
+      simdatafinal8 <- calibration(simdatafinal = data_restric %>% mutate(weights = weights_miss), 
+                                           var = c('A1','A1X1', 'A1Y1hat',
+                                                   'A0','A0X1', 'A0Y0hat'))
       
       ################### Calibration by time all gimp miss #######################
-      simdatafinal9 <- calibration_by_time(simdatafinal = data_restric %>% mutate(weights = weights_miss), 
-                                           var = c('A1','A1X1', 'A1missYhat',
-                                                   'A0','A0X1', 'A0missYhat'))
+      simdatafinal9 <- calibration(simdatafinal = data_restric %>% mutate(weights = weights_miss), 
+                                           var = c('A1','A1X1', 'A1missY1hat',
+                                                   'A0','A0X1', 'A0missY0hat'))
       
     
       
       ################### Calibration by time g(Lk) basic #######################
-      simdatafinal10 <- calibration_by_time(simdatafinal = data_restric, 
+      simdatafinal10 <- calibration(simdatafinal = data_restric, 
                                            var = c('A1','A1Ythat',
                                                    'A0','A0Ythat'))
       
       
       ################## Calibration by time Lk, g(Lk) basic###########################
-      simdatafinal11 <- calibration_by_time(simdatafinal = data_restric, 
+      simdatafinal11 <- calibration(simdatafinal = data_restric, 
                                            var = c('A1','A1X1', 'A1X2','A1Ythat',
                                                    'A0','A0X1','A0X2','A0Ythat'))
       
       
       
       ################## Calibration by time g(Lk) basic miss #######################
-      simdatafinal12 <- calibration_by_time(simdatafinal = data_restric, 
+      simdatafinal12 <- calibration(simdatafinal = data_restric, 
                                            var = c('A1','A1Ytmisshat',
                                                    'A0','A0Ytmisshat'))
       
       ################## Calibration by time Lk, g(Lk) basic miss  ###########################
-      simdatafinal13 <- calibration_by_time(simdatafinal = data_restric, 
+      simdatafinal13 <- calibration(simdatafinal = data_restric, 
                                            var = c('A1','A1X1', 'A1X2','A1Ytmisshat',
                                                    'A0','A0X1','A0X2','A0Ytmisshat'))
       
   
       ################### Calibration by time miss g(Lk) gimp correct #######################
-      simdatafinal14 <- calibration_by_time(simdatafinal = data_restric %>% mutate(weights = weights_miss), 
+      simdatafinal14 <- calibration(simdatafinal = data_restric %>% mutate(weights = weights_miss), 
                                            var = c('A1','A1Ythat',
                                                    'A0','A0Ythat'))
      
       
       ################### Calibration by time miss Lk g(Lk)gimp correct #######################
-      simdatafinal15 <- calibration_by_time(simdatafinal = data_restric %>% mutate(weights = weights_miss), 
+      simdatafinal15 <- calibration(simdatafinal = data_restric %>% mutate(weights = weights_miss), 
                                            var = c('A1','A1X1', 'A1Ythat',
                                                    'A0','A0X1', 'A0Ythat'))
       ################### Calibration by time all gimp miss #######################
-      simdatafinal16 <- calibration_by_time(simdatafinal = data_restric %>% mutate(weights = weights_miss), 
+      simdatafinal16 <- calibration(simdatafinal = data_restric %>% mutate(weights = weights_miss), 
                                            var = c('A1','A1X1', 'A1Ytmisshat',
                                                    'A0','A0X1', 'A0Ytmisshat'))
       
@@ -477,18 +524,17 @@ for (l in 1:4){
 }
 
 scenarios <- tidyr::crossing(size, treat,conf)
-iters <- 3
 
 bias_ate <- array(,dim = c(19,5))
-bias_hr <- array(, dim = c(19,2,4))
+bias_hr <- array(, dim = c(19,2,5))
 sd_ate <- array(,dim = c(19,5))
-sd_hr <- array(, dim = c(19,2,4))
+sd_hr <- array(, dim = c(19,2,5))
 mae_ate <- array(,dim = c(19,5))
-mae_hr <- array(, dim = c(19,2,4))
+mae_hr <- array(, dim = c(19,2,5))
 medae_ate <- array(,dim = c(19,5))
-medae_hr <- array(, dim = c(19,2,4))
+medae_hr <- array(, dim = c(19,2,5))
 rootmse_ate <- array(,dim = c(19,5))
-rootmse_hr <- array(, dim = c(19,2,4))
+rootmse_hr <- array(, dim = c(19,2,5))
 
 
 for (l in 1:4){
@@ -508,11 +554,11 @@ for (l in 1:4){
   hr_all <- as.data.frame(list.rbind(oper[2,])) %>% 
     dplyr::mutate(simu = simu.scenario[,1], scenario =  simu.scenario[,2])
   
-  bias_ate[,i+1] <- colMeans(ate_all[,-20]) - (-15)
-  sd_ate[,i+1] <- colSds(as.matrix(ate_all[,-20]))
-  mae_ate[,i+1] <- colMeans(abs(ate_all[,-20] - (-15)))
-  medae_ate[,i+1] <- colMedians(as.matrix(abs(ate_all[,-20] - (-15))))
-  rootmse_ate[,i+1] <- sqrt(as.numeric(bias_ate[,i+1])^2 +as.numeric(sd_ate[,i+1])^2)
+  bias_ate[,l+1] <- colMeans(ate_all[,-20]) - (-15)
+  sd_ate[,l+1] <- colSds(as.matrix(ate_all[,-20]))
+  mae_ate[,l+1] <- colMeans(abs(ate_all[,-20] - (-15)))
+  medae_ate[,l+1] <- colMedians(as.matrix(abs(ate_all[,-20] - (-15))))
+  rootmse_ate[,l+1] <- sqrt(as.numeric(bias_ate[,l+1])^2 +as.numeric(sd_ate[,l+1])^2)
 
   
 }
@@ -522,149 +568,3 @@ colnames(sd_ate) <- c('Method', 'N = 200', 'N = 500', 'N = 1000', 'N = 5000')
 colnames(mae_ate) <- c('Method', 'N = 200', 'N = 500', 'N = 1000', 'N = 5000')
 colnames(medae_ate) <- c('Method', 'N = 200', 'N = 500', 'N = 1000', 'N = 5000')
 colnames(rootmse_ate) <- c('Method', 'N = 200', 'N = 500', 'N = 1000', 'N = 5000')
-
-bias_hr_table <- bias_hr_all[,,1]
-sd_hr_table <- sd_hr_all[,,1]
-rootmse_hr_table <- rootmse_hr_all[,,1]
-mae_hr_table <- mae_hr_all[,,1]
-medae_hr_table <- medae_hr_all[,,1]
-for (i in 2:27){
-  bias_hr_table <- rbind(bias_hr_table,bias_hr_all[,,i])
-  sd_hr_table <- rbind(sd_hr_table,sd_hr_all[,,i])
-  rootmse_hr_table <- rbind(rootmse_hr_table,rootmse_hr_all[,,i])
-  mae_hr_table <- rbind(mae_hr_table, mae_hr_all[,,i])
-  medae_hr_table <- rbind(medae_hr_table, medae_hr_all[,,i])
-}
-
-colnames(bias_hr_table) <- c('Bias 1', 'Bias 2', 'Bias 3')
-colnames(sd_hr_table) <- c('SD 1', 'SD 2', 'SD 3')
-colnames(rootmse_hr_table) <- c('rootMSE 1', 'rootMSE 2', 'rootMSE 3')
-colnames(mae_hr_table) <- c('MAE 1', 'MAE 2', 'MAE 3')
-colnames(medae_hr_table) <- c('MedAE 1', 'MedAE 2', 'MedAE 3')
-size <- c(200,500,1000)
-treat <- c(0.25,0.5,0.75)
-conf <- c(1,1.5,2)
-var <- c('Naive', 'IPW', 'Aggregated cali.', 'Calibration by time','Aggregated cali. with time', 
-         'Naive miss.', 'IPW miss.','Aggregated cali. miss.', 'Calibration by time miss.', 'Aggregated cali. with time miss.')
-scenarios <- tidyr::crossing(size, treat,conf,var) %>% 
-  dplyr::arrange(size, treat, conf,
-                 match(var, c('Naive', 'IPW', 'Aggregated cali.', 'Calibration by time','Aggregated cali. with time', 
-                              'Naive miss.', 'IPW miss.','Aggregated cali. miss.', 'Calibration by time miss.', 'Aggregated cali. with time miss.')
-                 ))
-
-na_list <- c(6)
-for (r in 2:54){
-  na_list <- cbind(na_list, r*5 + r)
-}
-hr_table <- cbind(scenarios,bias_hr_table, sd_hr_table,rootmse_hr_table, mae_hr_table,medae_hr_table) %>% 
-  dplyr::select(size, treat, conf,var, 'Bias 1', 'SD 1', 'rootMSE 1', 'MAE 1','MedAE 1','Bias 2', 'SD 2', 'rootMSE 2','MAE 2','MedAE 2','Bias 3', 'SD 3', 'rootMSE 3', 'MAE 3','MedAE 3')%>% 
-  insertRows(r = na_list, new = NA)
-
-
-print(xtable(hr_table[hr_table$size == 200,],digits=c(0,0,2,1,0,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4)),include.rownames=FALSE, type = 'latex')
-
-print(xtable(hr_table[hr_table$size == 500,],digits=c(0,0,2,1,0,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4)),include.rownames=FALSE, type = 'latex')
-
-print(xtable(hr_table[hr_table$size == 1000,],digits=c(0,0,2,1,0,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4)),include.rownames=FALSE, type = 'latex')
-
-write_csv(hr_table, file = 'simulation_results_hr_table.csv')
-
-bias_ate_table <- bias_ate_all[,,1]
-sd_ate_table <- sd_ate_all[,,1]
-rootmse_ate_table <- rootmse_ate_all[,,1]
-mae_ate_table <- mae_ate_all[,,1]
-medae_ate_table <- medae_ate_all[,,1]
-for (i in 2:27){
-  bias_ate_table <- rbind(bias_ate_table,bias_ate_all[,,i])
-  sd_ate_table <- rbind(sd_ate_table,sd_ate_all[,,i])
-  rootmse_ate_table <- rbind(rootmse_ate_table,rootmse_ate_all[,,i])
-  mae_ate_table <- rbind(mae_ate_table, mae_ate_all[,,i])
-  medae_ate_table <- rbind(medae_ate_table, medae_ate_all[,,i])
-}
-
-colnames(bias_ate_table) <- c('Bias 0', 'Bias 1','Bias 2', 'Bias 3','Bias 4')
-colnames(sd_ate_table) <- c('SD 0', 'SD 1','SD 2', 'SD 3','SD 4')
-colnames(rootmse_ate_table) <- c('rootMSE 0', 'rootMSE 1','rootMSE 2', 'rootMSE 3','rootMSE 4')
-colnames(mae_ate_table) <- c('MAE 0','MAE 1', 'MAE 2', 'MAE 3','MAE 4')
-colnames(medae_ate_table) <- c('MedAE 0','MedAE 1', 'MedAE 2', 'MedAE 3','MedAE 4')
-size <- c(200,500,1000)
-treat <- c(0.25,0.50,0.75)
-conf <- c(1,1.5,2)
-var <- c('Naive', 'IPW', 'Aggregated cali.', 'Calibration by time','Aggregated cali. with time', 
-         'Naive miss.', 'IPW miss.','Aggregated cali. miss.', 'Calibration by time miss.', 'Aggregated cali. with time miss.')
-scenarios <- tidyr::crossing(size, treat,conf,var)%>% 
-  dplyr::arrange(size, treat, conf,
-                 match(var, c('Naive', 'IPW', 'Aggregated cali.', 'Calibration by time','Aggregated cali. with time', 
-                              'Naive miss.', 'IPW miss.','Aggregated cali. miss.', 'Calibration by time miss.', 'Aggregated cali. with time miss.')))
-
-
-ate_table <- cbind(scenarios,bias_ate_table, sd_ate_table,rootmse_ate_table,mae_ate_table,medae_ate_table) %>% 
-  dplyr::select(size, treat, conf,var,
-                'Bias 0', 'SD 0', 'rootMSE 0', 'MAE 0','MedAE 0',
-                'Bias 1', 'SD 1', 'rootMSE 1', 'MAE 1','MedAE 1',
-                'Bias 2', 'SD 2', 'rootMSE 2','MAE 2','MedAE 2',
-                'Bias 3', 'SD 3', 'rootMSE 3', 'MAE 3','MedAE 3',
-                'Bias 4', 'SD 4', 'rootMSE 4', 'MAE 4','MedAE 4')%>% 
-  insertRows(r = na_list, new = NA)
-
-write_csv(ate_table, file = 'simulation_results_ate_table.csv')
-print(xtable(ate_table[ate_table$size == 200,],
-             digits=c(0,0,2,1,0,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4)),
-      include.rownames=FALSE, type = 'latex')
-print(xtable(ate_table[ate_table$size == 500,],
-             digits=c(0,0,2,1,0,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4)),
-      include.rownames=FALSE, type = 'latex')
-print(xtable(ate_table[ate_table$size == 1000,],
-             digits=c(0,0,2,1,0,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4)),
-      include.rownames=FALSE, type = 'latex')
-
-
-bias_mean1_table <- bias_mean1_all[,,1]
-sd_mean1_table <- sd_mean1_all[,,1]
-rootmse_mean1_table <- rootmse_mean1_all[,,1]
-mae_mean1_table <- mae_mean1_all[,,1]
-medae_mean1_table <- medae_mean1_all[,,1]
-for (i in 2:27){
-  bias_mean1_table <- rbind(bias_mean1_table,bias_mean1_all[,,i])
-  sd_mean1_table <- rbind(sd_mean1_table,sd_mean1_all[,,i])
-  rootmse_mean1_table <- rbind(rootmse_mean1_table,rootmse_mean1_all[,,i])
-  mae_mean1_table <- rbind(mae_mean1_table, mae_mean1_all[,,i])
-  medae_mean1_table <- rbind(medae_mean1_table, medae_mean1_all[,,i])
-}
-
-colnames(bias_mean1_table) <- c('Bias 0', 'Bias 1','Bias 2', 'Bias 3','Bias 4')
-colnames(sd_mean1_table) <- c('SD 0', 'SD 1','SD 2', 'SD 3','SD 4')
-colnames(rootmse_mean1_table) <- c('rootMSE 0', 'rootMSE 1','rootMSE 2', 'rootMSE 3','rootMSE 4')
-colnames(mae_mean1_table) <- c('MAE 0','MAE 1', 'MAE 2', 'MAE 3','MAE 4')
-colnames(medae_mean1_table) <- c('MedAE 0','MedAE 1', 'MedAE 2', 'MedAE 3','MedAE 4')
-size <- c(200,500,1000)
-treat <- c(0.25,0.50,0.75)
-conf <- c(1,1.5,2)
-var <- c('Naive', 'IPW', 'Aggregated cali.', 'Calibration by time','Aggregated cali. with time', 
-         'Naive miss.', 'IPW miss.','Aggregated cali. miss.', 'Calibration by time miss.', 'Aggregated cali. with time miss.')
-scenarios <- tidyr::crossing(size, treat,conf,var)%>% 
-  dplyr::arrange(size, treat, conf,
-                 match(var, c('Naive', 'IPW', 'Aggregated cali.', 'Calibration by time','Aggregated cali. with time', 
-                              'Naive miss.', 'IPW miss.','Aggregated cali. miss.', 'Calibration by time miss.', 'Aggregated cali. with time miss.')))
-
-
-mean1_table <- cbind(scenarios,bias_mean1_table, sd_mean1_table,rootmse_mean1_table,mae_mean1_table,medae_mean1_table) %>% 
-  dplyr::select(size, treat, conf,var,
-                'Bias 0', 'SD 0', 'rootMSE 0', 'MAE 0','MedAE 0',
-                'Bias 1', 'SD 1', 'rootMSE 1', 'MAE 1','MedAE 1',
-                'Bias 2', 'SD 2', 'rootMSE 2','MAE 2','MedAE 2',
-                'Bias 3', 'SD 3', 'rootMSE 3', 'MAE 3','MedAE 3',
-                'Bias 4', 'SD 4', 'rootMSE 4', 'MAE 4','MedAE 4')%>% 
-  insertRows(r = na_list, new = NA)
-
-write_csv(mean1_table, file = 'simulation_results_mean1_table.csv')
-print(xtable(mean1_table[mean1_table$size == 200,],
-             digits=c(0,0,2,1,0,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4)),
-      include.rownames=FALSE, type = 'latex')
-print(xtable(mean1_table[mean1_table$size == 500,],
-             digits=c(0,0,2,1,0,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4)),
-      include.rownames=FALSE, type = 'latex')
-print(xtable(mean1_table[mean1_table$size == 1000,],
-             digits=c(0,0,2,1,0,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4)),
-      include.rownames=FALSE, type = 'latex')
-
