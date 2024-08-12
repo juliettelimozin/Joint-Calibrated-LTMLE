@@ -13,7 +13,7 @@ library(nleqslv)
 source('calibration_func_trials.R')
 set.seed(NULL)
 
-iters <- 10
+iters <- 500
 #l <- as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))
 size <- c(200,500,1000,5000)
 
@@ -260,91 +260,91 @@ for (l in 1:4){
           weights_miss = ifelse(weights !=0.0,wtprodmiss,0.0))
     
       ################### Calibration by time Lk #######################
-      simdatafinal1 <- calibration(simdatafinal = data_restric, 
+      simdatafinal1 <- calibration_by_time(simdatafinal = data_restric, 
                                            var = c('A1','A1X1', 'A1X2',
                                                    'A0','A0X1','A0X2'))
       
       
 
       ################### Calibration by time g(Lk) gimp #######################
-      simdatafinal2 <- calibration(simdatafinal = data_restric, 
+      simdatafinal2 <- calibration_by_time(simdatafinal = data_restric, 
                                            var = c('A1','A1Y1hat',
                                                    'A0','A0Y0hat'))
       
       
       ################## Calibration by time Lk, g(Lk) gimp###########################
-      simdatafinal3 <- calibration(simdatafinal = data_restric, 
+      simdatafinal3 <- calibration_by_time(simdatafinal = data_restric, 
                                            var = c('A1','A1X1', 'A1X2','A1Y1hat',
                                                    'A0','A0X1','A0X2','A0Y0hat'))
       
       
       
       ################## Calibration by time g(Lk) gimp miss #######################
-      simdatafinal4 <- calibration(simdatafinal = data_restric, 
+      simdatafinal4 <- calibration_by_time(simdatafinal = data_restric, 
                                            var = c('A1','A1missY1hat',
                                                    'A0','A0missY0hat'))
       
       ################## Calibration by time Lk, g(Lk) gimp ###########################
-      simdatafinal5 <- calibration(simdatafinal = data_restric, 
+      simdatafinal5 <- calibration_by_time(simdatafinal = data_restric, 
                                            var = c('A1','A1X1', 'A1X2','A1missY1hat',
                                                    'A0','A0X1','A0X2','A0missY0hat'))
       
       ################### Calibration by time Lk miss #######################
-      simdatafinal6 <- calibration(simdatafinal = data_restric %>% mutate(weights = weights_miss), 
+      simdatafinal6 <- calibration_by_time(simdatafinal = data_restric %>% mutate(weights = weights_miss), 
                                            var = c('A1','A1X1',
                                                    'A0','A0X1'))
       ################### Calibration by time miss g(Lk) gimp correct #######################
-      simdatafinal7 <- calibration(simdatafinal = data_restric %>% mutate(weights = weights_miss), 
+      simdatafinal7 <- calibration_by_time(simdatafinal = data_restric %>% mutate(weights = weights_miss), 
                                            var = c('A1','A1Y1hat',
                                                    'A0','A0Y0hat'))
       ################### Calibration by time miss Lk g(Lk)gimp correct #######################
-      simdatafinal8 <- calibration(simdatafinal = data_restric %>% mutate(weights = weights_miss), 
+      simdatafinal8 <- calibration_by_time(simdatafinal = data_restric %>% mutate(weights = weights_miss), 
                                            var = c('A1','A1X1', 'A1Y1hat',
                                                    'A0','A0X1', 'A0Y0hat'))
       
       ################### Calibration by time all gimp miss #######################
-      simdatafinal9 <- calibration(simdatafinal = data_restric %>% mutate(weights = weights_miss), 
+      simdatafinal9 <- calibration_by_time(simdatafinal = data_restric %>% mutate(weights = weights_miss), 
                                            var = c('A1','A1X1', 'A1missY1hat',
                                                    'A0','A0X1', 'A0missY0hat'))
       
     
       
       ################### Calibration by time g(Lk) basic #######################
-      simdatafinal10 <- calibration(simdatafinal = data_restric, 
+      simdatafinal10 <- calibration_by_time(simdatafinal = data_restric, 
                                            var = c('A1','A1Ythat',
                                                    'A0','A0Ythat'))
       
       
       ################## Calibration by time Lk, g(Lk) basic###########################
-      simdatafinal11 <- calibration(simdatafinal = data_restric, 
+      simdatafinal11 <- calibration_by_time(simdatafinal = data_restric, 
                                            var = c('A1','A1X1', 'A1X2','A1Ythat',
                                                    'A0','A0X1','A0X2','A0Ythat'))
       
       
       
       ################## Calibration by time g(Lk) basic miss #######################
-      simdatafinal12 <- calibration(simdatafinal = data_restric, 
+      simdatafinal12 <- calibration_by_time(simdatafinal = data_restric, 
                                            var = c('A1','A1Ytmisshat',
                                                    'A0','A0Ytmisshat'))
       
       ################## Calibration by time Lk, g(Lk) basic miss  ###########################
-      simdatafinal13 <- calibration(simdatafinal = data_restric, 
+      simdatafinal13 <- calibration_by_time(simdatafinal = data_restric, 
                                            var = c('A1','A1X1', 'A1X2','A1Ytmisshat',
                                                    'A0','A0X1','A0X2','A0Ytmisshat'))
       
   
       ################### Calibration by time miss g(Lk) gimp correct #######################
-      simdatafinal14 <- calibration(simdatafinal = data_restric %>% mutate(weights = weights_miss), 
+      simdatafinal14 <- calibration_by_time(simdatafinal = data_restric %>% mutate(weights = weights_miss), 
                                            var = c('A1','A1Ythat',
                                                    'A0','A0Ythat'))
      
       
       ################### Calibration by time miss Lk g(Lk)gimp correct #######################
-      simdatafinal15 <- calibration(simdatafinal = data_restric %>% mutate(weights = weights_miss), 
+      simdatafinal15 <- calibration_by_time(simdatafinal = data_restric %>% mutate(weights = weights_miss), 
                                            var = c('A1','A1X1', 'A1Ythat',
                                                    'A0','A0X1', 'A0Ythat'))
       ################### Calibration by time all gimp miss #######################
-      simdatafinal16 <- calibration(simdatafinal = data_restric %>% mutate(weights = weights_miss), 
+      simdatafinal16 <- calibration_by_time(simdatafinal = data_restric %>% mutate(weights = weights_miss), 
                                            var = c('A1','A1X1', 'A1Ytmisshat',
                                                    'A0','A0X1', 'A0Ytmisshat'))
       
