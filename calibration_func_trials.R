@@ -211,7 +211,6 @@ calibration_by_time<-function(simdatafinal, var=c('A1', 'A1X1')){
   data0 <- simdatafinal[simdatafinal$tall == 0,]
   data0 <- data0$RA*simdatafinal[simdatafinal$tall == 1, var]
   RHS <- colSums(data0)
-  print(RHS)
   restrictions_weight1 <- function(w){
     ##Objective function
     lp3<-colSums(Tdata1*w)
@@ -259,7 +258,6 @@ calibration_by_time<-function(simdatafinal, var=c('A1', 'A1X1')){
     data0 <- simdatafinal[simdatafinal$tall == k-1,]
     data0 <- data0$RA*data0$Cweights*simdatafinal[simdatafinal$tall == k, var]
     RHS <- colSums(data0)
-    print(RHS)
     restrictions_weightk <- function(w){
       ##Objective function
       lp3<-colSums(Tdata1*w)
@@ -406,7 +404,6 @@ calibration_by_time_stabilised<-function(simdatafinal, var=c('A1', 'A1X1')){
   data0 <- simdatafinal[simdatafinal$tall == 0,]
   data0 <- data0$RA*simdatafinal[simdatafinal$tall == 1, var]*simdatafinal[simdatafinal$tall == 1, 'phi']
   RHS <- colSums(data0)
-  print(RHS)
   restrictions_weight1 <- function(w){
     ##Objective function
     lp3<-colSums(Tdata1*w)
@@ -454,7 +451,6 @@ calibration_by_time_stabilised<-function(simdatafinal, var=c('A1', 'A1X1')){
     data0 <- simdatafinal[simdatafinal$tall == k-1,]
     data0 <- data0$RA*data0$Cweights*simdatafinal[simdatafinal$tall == k, var]*simdatafinal[simdatafinal$tall == k, 'phi']
     RHS <- colSums(data0)
-    print(RHS)
     restrictions_weightk <- function(w){
       ##Objective function
       lp3<-colSums(Tdata1*w)
