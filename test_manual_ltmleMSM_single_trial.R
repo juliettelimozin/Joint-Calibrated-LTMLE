@@ -335,8 +335,8 @@ simulation <- foreach(i = 1:iters, .combine=cbind) %dopar% {
   c((b-a)*plogis(c(1,3)%*%msm$coefficients) + a - ((b-a)*plogis(c(1,0)%*%msm$coefficients) + a), 
     c(1,3)%*%msm_transformed$coefficients - c(1,0)%*%msm_transformed$coefficients,
     (b-a)*plogis(c(1,3)%*%tmle$beta) + a - ((b-a)*plogis(c(1,0)%*%tmle$beta) + a),
-    predict.glm(PP_pooled, newdata = data.frame(cumA = 3), type = 'response') - predict.glm(PP, newdata = data.frame(cumA = 0), type = 'response'),
-    predict.glm(PP_strat, newdata = data.frame(cumA = 3), type = 'response') - predict.glm(PP, newdata = data.frame(cumA = 0), type = 'response'))
+    predict.glm(PP_pooled, newdata = data.frame(cumA = 3), type = 'response') - predict.glm(PP_pooled, newdata = data.frame(cumA = 0), type = 'response'),
+    predict.glm(PP_strat, newdata = data.frame(cumA = 3), type = 'response') - predict.glm(PP_strat, newdata = data.frame(cumA = 0), type = 'response'))
 }
 
 cat(paste('Estimation of ATE_2 = E(Y_2(\bar A = \bar 1)) - E(Y_2(\bar A = \bar 0))\n'))
