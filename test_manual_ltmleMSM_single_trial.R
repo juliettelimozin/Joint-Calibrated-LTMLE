@@ -2,9 +2,7 @@
 library(dplyr)
 #setwd("~/rds/hpc-work/Calibrated-weights-sequential-trial-emulation")
 source("continuous_timevarying_outcome_datagen.R")
-library(TrialEmulation)
 library(MASS)
-library(sandwich)
 library(foreach)
 library(doParallel)
 library(doRNG)
@@ -12,7 +10,6 @@ library(nleqslv)
 library(ltmle)
 library(data.table)
 library(matrixStats)
-source('calibration_func_trials.R')
 
 set.seed(14052025)
 seeds <- floor(runif(1000)*10^8)
@@ -52,24 +49,6 @@ simulation <- foreach(i = 1:iters, .combine=cbind) %dopar% {
   # 
   # names(balance_list) <- unique(simdata$t)
   # balance_list[[3]]
-  
-  PP_prep <- TrialEmulation::data_preparation(simdata, id='ID', period='t', treatment='A', outcome='Y', cense = 'C',
-                                              eligible ='eligible',
-                                              estimand_type = 'PP',
-                                              switch_d_cov = ~ X1 + X2,
-                                              switch_n_cov = ~ -1,
-                                              outcome_cov = ~ X1 + X2, model_var = c('assigned_treatment'),
-                                              quiet = T,
-                                              save_weight_models = F,
-                                              data_dir = getwd())
-  
-  switch_data <- PP_prep$data
-  switch_data$t <- switch_data$trial_period + switch_data$followup_time
-  switch_data <- switch_data[switch_data$trial_period == 0,]
-  switch_data <- merge(switch_data, simdata[, c("ID", "t", "Y")], by.x = c("id", "t"), by.y = c("ID", "t"), all.x = TRUE)
-  switch_data <- switch_data[order(switch_data$id, switch_data$t),]
-  switch_data$cumA <- ave(switch_data$assigned_treatment, switch_data$id, FUN = cumsum)
-  
   
   
   #con4<-xtabs(~followup_time + assigned_treatment, data=switch_data)
@@ -312,40 +291,43 @@ simulation <- foreach(i = 1:iters, .combine=cbind) %dopar% {
   #print(paste('PACKAGE ATE(t = 2) =', (b-a)*plogis(c(1,3)%*%tmle$beta) + a - ((b-a)*plogis(c(1,0)%*%tmle$beta) + a)))
   
   ##################### IPW - MSM ##################################
+  switch_data <- rbind(simdata[simdata$t == 0,],
+                       simdata[simdata$t == 1 & (simdata$CA ==2 | simdata$CA ==0),],
+                       simdata[simdata$t == 2 & (simdata$CA ==3 | simdata$CA ==0),])
   switch_data$weight <- 1.0
-  switch_data[switch_data$t == 1& switch_data$assigned_treatment == 1,]$weight <- 1/(wideSimdata[switch_data[switch_data$t == 1& switch_data$assigned_treatment == 1,]$id,]$g_treat_1_pooled)
-  switch_data[switch_data$t == 2& switch_data$assigned_treatment == 1,]$weight <- 1/(wideSimdata[switch_data[switch_data$t == 2& switch_data$assigned_treatment == 1,]$id,]$g_treat_1_pooled*wideSimdata[switch_data[switch_data$t == 2& switch_data$assigned_treatment == 1,]$id,]$g_treat_2_pooled)
+  switch_data[switch_data$t == 1& switch_data$A == 1,]$weight <- 1/(wideSimdata[switch_data[switch_data$t == 1& switch_data$A == 1,],]$g_treat_1_pooled)
+  switch_data[switch_data$t == 2& switch_data$A == 1,]$weight <- 1/(wideSimdata[switch_data[switch_data$t == 2& switch_data$A == 1,],]$g_treat_1_pooled*wideSimdata[switch_data[switch_data$t == 2& switch_data$A == 1,],]$g_treat_2_pooled)
   
-  switch_data[switch_data$t == 1& switch_data$assigned_treatment == 0,]$weight <- 1/(wideSimdata[switch_data[switch_data$t == 1& switch_data$assigned_treatment == 0,]$id,]$g_control_1_pooled)
-  switch_data[switch_data$t == 2& switch_data$assigned_treatment == 0,]$weight <- 1/(wideSimdata[switch_data[switch_data$t == 2& switch_data$assigned_treatment == 0,]$id,]$g_control_1_pooled*wideSimdata[switch_data[switch_data$t == 2& switch_data$assigned_treatment == 0,]$id,]$g_control_2_pooled)
+  switch_data[switch_data$t == 1& switch_data$A == 0,]$weight <- 1/(wideSimdata[switch_data[switch_data$t == 1& switch_data$A == 0,],]$g_control_1_pooled)
+  switch_data[switch_data$t == 2& switch_data$A == 0,]$weight <- 1/(wideSimdata[switch_data[switch_data$t == 2& switch_data$A == 0,],]$g_control_1_pooled*wideSimdata[switch_data[switch_data$t == 2& switch_data$A == 0,],]$g_control_2_pooled)
   
   switch_data$weight_strat <- 1.0
-  switch_data[switch_data$t == 0& switch_data$assigned_treatment == 1,]$weight_strat <- 1/(wideSimdata[switch_data[switch_data$t == 0& switch_data$assigned_treatment == 1,]$id,]$g_treat_0)
-  switch_data[switch_data$t == 1& switch_data$assigned_treatment == 1,]$weight_strat <- 1/(wideSimdata[switch_data[switch_data$t == 1& switch_data$assigned_treatment == 1,]$id,]$g_treat_0*wideSimdata[switch_data[switch_data$t == 1& switch_data$assigned_treatment == 1,]$id,]$g_treat_1)
-  switch_data[switch_data$t == 2& switch_data$assigned_treatment == 1,]$weight_strat <- 1/(wideSimdata[switch_data[switch_data$t == 2& switch_data$assigned_treatment == 1,]$id,]$g_treat_0*wideSimdata[switch_data[switch_data$t == 2& switch_data$assigned_treatment == 1,]$id,]$g_treat_1*wideSimdata[switch_data[switch_data$t == 2& switch_data$assigned_treatment == 1,]$id,]$g_treat_2)
+  switch_data[switch_data$t == 0& switch_data$A == 1,]$weight_strat <- 1/(wideSimdata[switch_data[switch_data$t == 0& switch_data$A == 1,],]$g_treat_0)
+  switch_data[switch_data$t == 1& switch_data$A == 1,]$weight_strat <- 1/(wideSimdata[switch_data[switch_data$t == 1& switch_data$A == 1,],]$g_treat_0*wideSimdata[switch_data[switch_data$t == 1& switch_data$A == 1,],]$g_treat_1)
+  switch_data[switch_data$t == 2& switch_data$A == 1,]$weight_strat <- 1/(wideSimdata[switch_data[switch_data$t == 2& switch_data$A == 1,],]$g_treat_0*wideSimdata[switch_data[switch_data$t == 2& switch_data$A == 1,],]$g_treat_1*wideSimdata[switch_data[switch_data$t == 2& switch_data$A == 1,],]$g_treat_2)
   
-  switch_data[switch_data$t == 0& switch_data$assigned_treatment == 0,]$weight_strat <- 1/(wideSimdata[switch_data[switch_data$t == 0& switch_data$assigned_treatment == 0,]$id,]$g_control_0)
-  switch_data[switch_data$t == 1& switch_data$assigned_treatment == 0,]$weight_strat <- 1/(wideSimdata[switch_data[switch_data$t == 1& switch_data$assigned_treatment == 0,]$id,]$g_control_0*wideSimdata[switch_data[switch_data$t == 1& switch_data$assigned_treatment == 0,]$id,]$g_control_1)
-  switch_data[switch_data$t == 2& switch_data$assigned_treatment == 0,]$weight_strat <- 1/(wideSimdata[switch_data[switch_data$t == 2& switch_data$assigned_treatment == 0,]$id,]$g_control_0*wideSimdata[switch_data[switch_data$t == 2& switch_data$assigned_treatment == 0,]$id,]$g_control_1*wideSimdata[switch_data[switch_data$t == 2& switch_data$assigned_treatment == 0,]$id,]$g_control_2)
+  switch_data[switch_data$t == 0& switch_data$A == 0,]$weight_strat <- 1/(wideSimdata[switch_data[switch_data$t == 0& switch_data$A == 0,],]$g_control_0)
+  switch_data[switch_data$t == 1& switch_data$A == 0,]$weight_strat <- 1/(wideSimdata[switch_data[switch_data$t == 1& switch_data$A == 0,],]$g_control_0*wideSimdata[switch_data[switch_data$t == 1& switch_data$A == 0,],]$g_control_1)
+  switch_data[switch_data$t == 2& switch_data$A == 0,]$weight_strat <- 1/(wideSimdata[switch_data[switch_data$t == 2& switch_data$A == 0,],]$g_control_0*wideSimdata[switch_data[switch_data$t == 2& switch_data$A == 0,],]$g_control_1*wideSimdata[switch_data[switch_data$t == 2& switch_data$A == 0,],]$g_control_2)
   
-  PP_pooled <- glm(Y ~ cumA, data = switch_data, weights = weight, family = 'gaussian')
-  PP_strat <- glm(Y ~ cumA, data = switch_data, weights = weight_strat, family = 'gaussian')
+  PP_pooled <- glm(Y ~ CA, data = switch_data, weights = weight, family = 'gaussian')
+  PP_strat <- glm(Y ~ CA, data = switch_data, weights = weight_strat, family = 'gaussian')
   }))
   
   c((b-a)*plogis(c(1,3)%*%msm$coefficients) + a - ((b-a)*plogis(c(1,0)%*%msm$coefficients) + a), 
     c(1,3)%*%msm_transformed$coefficients - c(1,0)%*%msm_transformed$coefficients,
     (b-a)*plogis(c(1,3)%*%tmle$beta) + a - ((b-a)*plogis(c(1,0)%*%tmle$beta) + a),
-    predict.glm(PP_pooled, newdata = data.frame(cumA = 3), type = 'response') - predict.glm(PP_pooled, newdata = data.frame(cumA = 0), type = 'response'),
-    predict.glm(PP_strat, newdata = data.frame(cumA = 3), type = 'response') - predict.glm(PP_strat, newdata = data.frame(cumA = 0), type = 'response'))
+    predict.glm(PP_pooled, newdata = data.frame(CA = 3), type = 'response') - predict.glm(PP_pooled, newdata = data.frame(CA = 0), type = 'response'),
+    predict.glm(PP_strat, newdata = data.frame(CA = 3), type = 'response') - predict.glm(PP_strat, newdata = data.frame(CA = 0), type = 'response'))
 }
 
-cat(paste('Estimation of ATE_2 = E(Y_2(\bar A = \bar 1)) - E(Y_2(\bar A = \bar 0))\n'))
+cat(paste('Estimation of ATE_2 = E(Y_2(always treated )) - E(Y_2(never treated))\n'))
 
 cat(paste('Time taken for iters = ', iters))
 print(proc.time() - time)
 
 cat('\n')
-rownames(simulation) <- c('Manual LTMLE-MSM with MSM fitted on Q*_0', 'Manual LTMLE-MSM with MSM fitted on transformed Q*_0', 'Package', 'IPW-MSM, pooled treatment model', 'IPW-MSM, stratified treatment model')
+rownames(simulation) <- c('Manual LTMLE-MSM with MSM fitted on Q*_0', 'Manual LTMLE-MSM with MSM fitted on transformed Q*_0', 'Package ltmleMSM', 'IPW-MSM, pooled treatment model', 'IPW-MSM, stratified treatment model')
 cat('Bias: \n')
 print(rowMeans(simulation, na.rm = TRUE)+9)
 
