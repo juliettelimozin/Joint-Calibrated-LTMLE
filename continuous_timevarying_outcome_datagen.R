@@ -83,9 +83,8 @@ DATA_GEN_continous_timevarying_outcome_treatment_switch<-function(ns, nv, conf =
     ##Generate outcome
     
     Yp[seqlist[[k]]]<-Y[seqlist[[k-1]]]
-    
-  
-    Y[seqlist[[k]]]<- 20 + 5*(X1[seqlist[[k]]] + X2[seqlist[[k]]]) -3*A[seqlist[[k]]]+ rnorm(ns,0,10)
+   
+    Y[seqlist[[k]]]<- 50 + 5*(CX1[seqlist[[k]]] + CX2[seqlist[[k]]]) -3*A[seqlist[[k]]]+ rnorm(ns,0,10)
     
     
     
