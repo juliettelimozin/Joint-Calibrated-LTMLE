@@ -1,5 +1,4 @@
 #!/usr/bin R
-library(dplyr)
 #setwd("~/rds/hpc-work/Calibrated-weights-sequential-trial-emulation")
 source("/home/juliette/Calibrated-weights-sequential-trial-emulation/dgm_2nd_simulation_biometrics.R")
 library(MASS)
@@ -23,7 +22,7 @@ simulation <- foreach(i = 1:iters, .combine=cbind) %dopar% {
   set.seed(seeds[i])
   suppressMessages(suppressWarnings({
     simdata<-DATA_GEN(ns = sample_size, treat_prev = 0, conf = 0.2)
-
+    
     treatment_model_pooled <- glm(A~Ap+ X1+ X2+ X3 + X4, data = simdata[simdata$t !=0,], family = 'quasibinomial')
     
     treat_model_A_0 <- glm(A~X1 + X2 + X3 + X4, data = simdata[simdata$t == 0,], family = 'quasibinomial')
@@ -54,13 +53,6 @@ simulation <- foreach(i = 1:iters, .combine=cbind) %dopar% {
     
     ########## Manual LTMLE MSM ############
     wideSimdata <- data.table::dcast(setDT(simdata), ID ~ t, value.var = c("A", "X1", "X2","X3", "X4", "CA", "Y"))
-   
-    regime_data <- array(1, dim = c(sample_size,5,2))
-    regime_data[,,2] <- 0.0*regime_data[,,2]
-    summary_measures <- array(, dim = c(2,1,5))
-    summary_measures[1,1,] <- c(1,2,3,4,5)
-    summary_measures[2,1,] <- c(0,0,0,0,0)
-    colnames(summary_measures) <- 'cumA'
     
     
     wideSimdata$g_treat_1_pooled <- plogis(as.matrix(cbind(rep(1,sample_size), rep(1,sample_size), wideSimdata$X1_1, wideSimdata$X2_1,wideSimdata$X3_1, wideSimdata$X4_1)) %*% treatment_model_pooled$coefficients)
@@ -99,7 +91,7 @@ simulation <- foreach(i = 1:iters, .combine=cbind) %dopar% {
     
     logitQ4_4 <- predict.glm(Q4_4_fit, newdata = data.frame(A_4 = c(rep(1,sample_size), rep(0,sample_size)), X1_4 = rep(wideSimdata$X1_4, 2), X2_4 = rep(wideSimdata$X2_4, 2), X3_4 = rep(wideSimdata$X3_4, 2), X4_4 = rep(wideSimdata$X4_4, 2)), type = 'link')
     
-    #------------- update Q2_2-----------------------
+    #------------- update Q4_4-----------------------
     regimen_ind = c(as.numeric(wideSimdata$CA_4 ==5), as.numeric(wideSimdata$CA_4 ==0))
     weight = 1/c(wideSimdata$g_treat_4*wideSimdata$g_treat_3*wideSimdata$g_treat_2*wideSimdata$g_treat_1*wideSimdata$g_treat_0,  wideSimdata$g_control_4*wideSimdata$g_control_3*wideSimdata$g_control_2*wideSimdata$g_control_1*wideSimdata$g_control_0)
     
@@ -164,9 +156,9 @@ simulation <- foreach(i = 1:iters, .combine=cbind) %dopar% {
     
     ########### t = 2 ##########
     
-    Q2_2_fit <- glm(data = wideSimdata, formula = Y_2_scaled ~ A_2 + cumX1_2 + cumX2_2, family = 'quasibinomial')
+    Q2_2_fit <- glm(data = wideSimdata, formula = Y_2_scaled ~ A_2 + X1_2 + X2_2 + X3_2 +X4_2, family = 'quasibinomial')
     
-    logitQ2_2 <- predict.glm(Q2_2_fit, newdata = data.frame(A_2 = c(rep(1,sample_size), rep(0,sample_size)), cumX1_2 = rep(wideSimdata$cumX1_2, 2), cumX2_2 = rep(wideSimdata$cumX2_2, 2)), type = 'link')
+    logitQ2_2 <- predict.glm(Q2_2_fit, newdata = data.frame(A_2 = c(rep(1,sample_size), rep(0,sample_size)), X1_2 = rep(wideSimdata$X1_2, 2), X2_2 = rep(wideSimdata$X2_2, 2),X3_2 = rep(wideSimdata$X3_2, 2), X4_2 = rep(wideSimdata$X4_2, 2)), type = 'link')
     
     fitting_data <- data.frame(ID = rep(wideSimdata$ID,2), Q4_3star = Q4_3star, Q3_3star = Q3_3star, CA_2 = rep(wideSimdata$CA_2,2))
     
@@ -174,10 +166,8 @@ simulation <- foreach(i = 1:iters, .combine=cbind) %dopar% {
     Q4_2_fit_d0 <- glm(data = fitting_data[(sample_size+1):(sample_size*2),], formula = Q4_3star ~ 1, family = 'quasibinomial')
     
     logitQ4_2 <- as.matrix(c(predict.glm(Q4_2_fit_d1, 
-                                         #newdata = data.frame(CA_3 = rep(4,sample_size)), 
                                          type = 'link'),
                              predict.glm(Q4_2_fit_d0, 
-                                         newdata = data.frame(CA_3 = rep(0,sample_size)), 
                                          type = 'link')))
     
     Q3_2_fit_d1 <- glm(data = fitting_data[1:sample_size,], formula = Q3_3star ~ CA_2, family = 'quasibinomial')
@@ -207,23 +197,66 @@ simulation <- foreach(i = 1:iters, .combine=cbind) %dopar% {
     
     Q2_2star <- predict.glm(Q2_2star_fit, newdata = update_data, type = 'response')
     
+    #------------- update Q4_2-----------------------
+    
+    update_data <- data.frame(id = rep(wideSimdata$ID,2),
+                              Q4_3star = Q4_3star,
+                              off = logitQ4_2,
+                              intercept = rep(1,sample_size*2), 
+                              cumA = c(rep(5,sample_size), rep(0,sample_size)))
+    
+    Q4_2star_fit <- glm(Q4_3star ~ intercept + cumA + offset(off) - 1, family = 'quasibinomial', 
+                        data = update_data[regimen_ind == 1,],
+                        weights = as.vector(scale(weight[regimen_ind == 1], center=FALSE)))
+    
+    Q4_2star <- predict.glm(Q4_2star_fit, newdata = update_data, type = 'response')
+    #------------- update Q3_2 -----------------------
+    
+    update_data <- data.frame(id = rep(wideSimdata$ID,2),
+                              Q3_3star = Q3_3star,
+                              off = logitQ3_2,
+                              intercept = rep(1,sample_size*2), 
+                              cumA = c(rep(4,sample_size), rep(0,sample_size)))
+    
+    Q3_2star_fit <- glm(Q3_3star ~ intercept + cumA + offset(off) - 1, family = 'quasibinomial', 
+                        data = update_data[regimen_ind == 1,],
+                        weights = as.vector(scale(weight[regimen_ind == 1], center=FALSE)))
+    
+    Q3_2star <- predict.glm(Q3_2star_fit, newdata = update_data, type = 'response')
+    
     ########### t = 1 ##########
     #------------- Get Q2_1, Q1_1 ---------------------
-    fitting_data <- data.frame(ID = rep(wideSimdata$ID,2), Q2_2star = Q2_2star, A_1 = rep(wideSimdata$A_1, 2), cumX1_1 = rep(wideSimdata$cumX1_1,2), cumX2_1 = rep(wideSimdata$cumX2_1,2))
+    fitting_data <- data.frame(ID = rep(wideSimdata$ID,2), Q4_2star = Q4_2star, Q3_2star = Q3_2star, Q2_2star = Q2_2star, CA_1 = rep(wideSimdata$CA_1, 2))
     
-    Q2_1_fit_d1 <- glm(data = fitting_data[1:sample_size,], formula = Q2_2star ~ A_1 + cumX1_1 + cumX2_1, family = 'quasibinomial')
-    Q2_1_fit_d0 <- glm(data = fitting_data[(sample_size+1):(sample_size*2),], formula = Q2_2star ~ A_1 + cumX1_1 + cumX2_1, family = 'quasibinomial')
+    Q4_1_fit_d1 <- glm(data = fitting_data[1:sample_size,], formula = Q4_2star ~ 1, family = 'quasibinomial')
+    Q4_1_fit_d0 <- glm(data = fitting_data[(sample_size+1):(sample_size*2),], formula = Q4_2star ~ 1, family = 'quasibinomial')
     
-    logitQ2_1 <- as.matrix(c(predict.glm(Q2_1_fit_d1, 
-                                         newdata = data.frame(A_1 = rep(1,sample_size),cumX1_1 = fitting_data[1:sample_size,]$cumX1_1, cumX2_1 = fitting_data[1:sample_size,]$cumX2_1), 
+    logitQ4_1 <- as.matrix(c(predict.glm(Q4_1_fit_d1, 
                                          type = 'link'),
-                             predict.glm(Q2_1_fit_d0, 
-                                         newdata = data.frame(A_1 = rep(0,sample_size),cumX1_1 = fitting_data[(sample_size+1):(sample_size*2),]$cumX1_1, cumX2_1 = fitting_data[(sample_size+1):(sample_size*2),]$cumX2_1), 
+                             predict.glm(Q4_1_fit_d0, 
                                          type = 'link')))
     
-    Q1_1_fit <- glm(data = wideSimdata, formula = Y_1_scaled ~ A_1 + cumX1_1 + cumX2_1, family = 'quasibinomial')
+    Q3_1_fit_d1 <- glm(data = fitting_data[1:sample_size,], formula = Q3_2star ~ 1, family = 'quasibinomial')
+    Q3_1_fit_d0 <- glm(data = fitting_data[(sample_size+1):(sample_size*2),], formula = Q3_2star ~ 1, family = 'quasibinomial')
     
-    logitQ1_1 <- predict.glm(Q1_1_fit, newdata = data.frame(A_1 = c(rep(1,sample_size), rep(0,sample_size)), cumX1_1 = rep(wideSimdata$cumX1_1, 2), cumX2_1 = rep(wideSimdata$cumX2_1, 2)), type = 'link')
+    logitQ3_1 <- as.matrix(c(predict.glm(Q3_1_fit_d1, 
+                                         type = 'link'),
+                             predict.glm(Q3_1_fit_d0, 
+                                         type = 'link')))
+    
+    Q2_1_fit_d1 <- glm(data = fitting_data[1:sample_size,], formula = Q2_2star ~ CA_1, family = 'quasibinomial')
+    Q2_1_fit_d0 <- glm(data = fitting_data[(sample_size+1):(sample_size*2),], formula = Q2_2star ~ CA_1, family = 'quasibinomial')
+    
+    logitQ2_1 <- as.matrix(c(predict.glm(Q2_1_fit_d1, 
+                                         newdata = data.frame(CA_1 = rep(2,sample_size),), 
+                                         type = 'link'),
+                             predict.glm(Q2_1_fit_d0, 
+                                         newdata = data.frame(CA_1 = rep(0,sample_size)), 
+                                         type = 'link')))
+    
+    Q1_1_fit <- glm(data = wideSimdata, formula = Y_1_scaled ~ A_1 + X1_1 + X2_1 + X3_1 + X4_1, family = 'quasibinomial')
+    
+    logitQ1_1 <- predict.glm(Q1_1_fit, newdata = data.frame(A_1 = c(rep(1,sample_size), rep(0,sample_size)), X1_1 = rep(wideSimdata$X1_1, 2), X2_1 = rep(wideSimdata$X2_1, 2),X3_1 = rep(wideSimdata$X3_1, 2), X4_1 = rep(wideSimdata$X4_1, 2)), type = 'link')
     
     
     #------------- update Q1_1-----------------------
@@ -242,6 +275,33 @@ simulation <- foreach(i = 1:iters, .combine=cbind) %dopar% {
     
     Q1_1star <- predict.glm(Q1_1star_fit, newdata = update_data, type = 'response')
     
+    #------------- update Q4_1-----------------------
+    
+    update_data <- data.frame(id = rep(wideSimdata$ID,2),
+                              Q4_2star = Q4_2star,
+                              off = logitQ4_1,
+                              intercept = rep(1,sample_size*2), 
+                              cumA = c(rep(5,sample_size), rep(0,sample_size)))
+    
+    Q4_1star_fit <- glm(Q4_2star ~ intercept + cumA + offset(off) - 1, family = 'quasibinomial', 
+                        data = update_data[regimen_ind == 1,],
+                        weights = as.vector(scale(weight[regimen_ind == 1], center=FALSE)))
+    
+    Q4_1star <- predict.glm(Q4_1star_fit, newdata = update_data, type = 'response')
+    #------------- update Q3_1 -----------------------
+    
+    update_data <- data.frame(id = rep(wideSimdata$ID,2),
+                              Q3_2star = Q3_2star,
+                              off = logitQ3_1,
+                              intercept = rep(1,sample_size*2), 
+                              cumA = c(rep(4,sample_size), rep(0,sample_size)))
+    
+    Q3_1star_fit <- glm(Q3_2star ~ intercept + cumA + offset(off) - 1, family = 'quasibinomial', 
+                        data = update_data[regimen_ind == 1,],
+                        weights = as.vector(scale(weight[regimen_ind == 1], center=FALSE)))
+    
+    Q3_1star <- predict.glm(Q3_1star_fit, newdata = update_data, type = 'response')
+    
     #------------- update Q2_1-----------------------
     
     update_data <- data.frame(id = rep(wideSimdata$ID,2),
@@ -257,33 +317,59 @@ simulation <- foreach(i = 1:iters, .combine=cbind) %dopar% {
     Q2_1star <- predict.glm(Q2_1star_fit, newdata = update_data, type = 'response')
     
     ########### t = 0 ##########
-    #------------- Get Q2_0, Q1_0, Q0_0 ---------------------
-    fitting_data <- data.frame(ID = rep(wideSimdata$ID,2), Q2_1star = Q2_1star, Q1_1star = Q1_1star, A_0 = rep(wideSimdata$A_0, 2), X1_0 = rep(wideSimdata$X1_0,2), X2_0 = rep(wideSimdata$X2_0,2))
+    #------------- Get Q4_0, Q3_0, Q2_0, Q1_0, Q0_0 ---------------------
+    fitting_data <- data.frame(ID = rep(wideSimdata$ID,2), 
+                               Q4_1star = Q4_1star, 
+                               Q3_1star = Q3_1star, 
+                               Q2_1star = Q2_1star, 
+                               Q1_1star = Q1_1star, 
+                               CA_0 = rep(wideSimdata$CA_0, 2), 
+                               X1_0 = rep(wideSimdata$X1_0,2), 
+                               X2_0 = rep(wideSimdata$X2_0,2),
+                               X3_0 = rep(wideSimdata$X3_0,2), 
+                               X4_0 = rep(wideSimdata$X4_0,2))
     
-    Q2_0_fit_d1 <- glm(data = fitting_data[1:sample_size,], formula = Q2_1star ~ A_0 + X1_0 + X2_0, family = 'quasibinomial')
-    Q2_0_fit_d0 <- glm(data = fitting_data[(sample_size+1):(sample_size*2),], formula = Q2_1star ~ A_0 + X1_0 + X2_0, family = 'quasibinomial')
+    Q4_0_fit_d1 <- glm(data = fitting_data[1:sample_size,], formula = Q4_1star ~ 1, family = 'quasibinomial')
+    Q4_0_fit_d0 <- glm(data = fitting_data[(sample_size+1):(sample_size*2),], formula = Q4_1star ~ 1, family = 'quasibinomial')
+    
+    logitQ4_0 <- as.matrix(c(predict.glm(Q4_0_fit_d1, 
+                                         type = 'link'),
+                             predict.glm(Q4_0_fit_d0, 
+                                         type = 'link')))
+    
+    Q3_0_fit_d1 <- glm(data = fitting_data[1:sample_size,], formula = Q3_1star ~ 1, family = 'quasibinomial')
+    Q3_0_fit_d0 <- glm(data = fitting_data[(sample_size+1):(sample_size*2),], formula = Q3_1tar ~ 1, family = 'quasibinomial')
+    
+    logitQ3_0 <- as.matrix(c(predict.glm(Q3_0_fit_d1, 
+                                         type = 'link'),
+                             predict.glm(Q3_0_fit_d0, 
+                                         type = 'link')))
+    
+    Q2_0_fit_d1 <- glm(data = fitting_data[1:sample_size,], formula = Q2_1star ~ 1, family = 'quasibinomial')
+    Q2_0_fit_d0 <- glm(data = fitting_data[(sample_size+1):(sample_size*2),], formula = Q2_1star ~ 1, family = 'quasibinomial')
     
     logitQ2_0 <- as.matrix(c(predict.glm(Q2_0_fit_d1, 
-                                         newdata = data.frame(A_0 = rep(1,sample_size),X1_0 = fitting_data[1:sample_size,]$X1_0, X2_0 = fitting_data[1:sample_size,]$X2_0), 
                                          type = 'link'),
                              predict.glm(Q2_0_fit_d0, 
-                                         newdata = data.frame(A_0 = rep(0,sample_size),X1_0 = fitting_data[(sample_size+1):(sample_size*2),]$X1_0, X2_0 = fitting_data[(sample_size+1):(sample_size*2),]$X2_0), 
                                          type = 'link')))
     
-    Q1_0_fit_d1 <- glm(data = fitting_data[1:sample_size,], formula = Q1_1star ~ A_0 + X1_0 + X2_0, family = 'quasibinomial')
-    Q1_0_fit_d0 <- glm(data = fitting_data[(sample_size+1):(sample_size*2),], formula = Q1_1star ~ A_0 + X1_0 + X2_0, family = 'quasibinomial')
+    Q1_0_fit_d1 <- glm(data = fitting_data[1:sample_size,], formula = Q1_1star ~ CA_0, family = 'quasibinomial')
+    Q1_0_fit_d0 <- glm(data = fitting_data[(sample_size+1):(sample_size*2),], formula = Q1_1star ~ CA_0, family = 'quasibinomial')
     
     logitQ1_0 <- as.matrix(c(predict.glm(Q1_0_fit_d1, 
-                                         newdata = data.frame(A_0 = rep(1,sample_size),X1_0 = fitting_data[1:sample_size,]$X1_0, X2_0 = fitting_data[1:sample_size,]$X2_0), 
+                                         newdata = data.frame(CA_0 = rep(1,sample_size)),
                                          type = 'link'),
                              predict.glm(Q1_0_fit_d0, 
-                                         newdata = data.frame(A_0 = rep(0,sample_size),X1_0 = fitting_data[(sample_size+1):(sample_size*2),]$X1_0, X2_0 = fitting_data[(sample_size+1):(sample_size*2),]$X2_0), 
+                                         newdata = data.frame(CA_0 = rep(0,sample_size)),
                                          type = 'link')))
     
-    Q0_0_fit <- glm(data = wideSimdata, formula = Y_0_scaled ~ A_0 + X1_0 + X2_0, family = 'quasibinomial')
+    Q0_0_fit <- glm(data = wideSimdata, formula = Y_0_scaled ~ CA_0 + X1_0 + X2_0 + X3_0 + X4_0, family = 'quasibinomial')
     
-    logitQ0_0 <- predict.glm(Q0_0_fit, newdata = data.frame(A_0 = c(rep(1,sample_size), rep(0,sample_size)), X1_0 = rep(wideSimdata$X1_0, 2), X2_0 = rep(wideSimdata$X2_0, 2)), type = 'link')
-    
+    logitQ0_0 <- predict.glm(Q0_0_fit, newdata = data.frame(CA_0 = c(rep(1,sample_size), rep(0,sample_size)), 
+                                                            X1_0 = rep(wideSimdata$X1_0, 2), 
+                                                            X2_0 = rep(wideSimdata$X2_0, 2),
+                                                            X3_0 = rep(wideSimdata$X3_0, 2), 
+                                                            X4_0 = rep(wideSimdata$X4_0, 2)), type = 'link')
     
     
     #------------- update Q0_0-----------------------
@@ -301,7 +387,35 @@ simulation <- foreach(i = 1:iters, .combine=cbind) %dopar% {
                         weights = as.vector(scale(weight[regimen_ind == 1], center=FALSE)))
     
     Q0_0star <- predict.glm(Q0_0star_fit, newdata = update_data, type = 'response')
-    #------------- update Q2_0-----------------------
+
+    #------------- update Q4_0-----------------------
+    
+    update_data <- data.frame(id = rep(wideSimdata$ID,2),
+                              Q4_1star = Q4_1star,
+                              off = logitQ4_0,
+                              intercept = rep(1,sample_size*2), 
+                              cumA = c(rep(5,sample_size), rep(0,sample_size)))
+    
+    Q4_0star_fit <- glm(Q4_1star ~ intercept + cumA + offset(off) - 1, family = 'quasibinomial', 
+                        data = update_data[regimen_ind == 1,],
+                        weights = as.vector(scale(weight[regimen_ind == 1], center=FALSE)))
+    
+    Q4_0star <- predict.glm(Q4_0star_fit, newdata = update_data, type = 'response')
+    #------------- update Q3_0 -----------------------
+    
+    update_data <- data.frame(id = rep(wideSimdata$ID,2),
+                              Q3_1star = Q3_1star,
+                              off = logitQ3_1,
+                              intercept = rep(1,sample_size*2), 
+                              cumA = c(rep(4,sample_size), rep(0,sample_size)))
+    
+    Q3_0star_fit <- glm(Q3_1star ~ intercept + cumA + offset(off) - 1, family = 'quasibinomial', 
+                        data = update_data[regimen_ind == 1,],
+                        weights = as.vector(scale(weight[regimen_ind == 1], center=FALSE)))
+    
+    Q3_0star <- predict.glm(Q3_0star_fit, newdata = update_data, type = 'response')
+    
+  #------------- update Q2_0-----------------------
     
     update_data <- data.frame(id = rep(wideSimdata$ID,2),
                               Q2_1star = Q2_1star,
@@ -331,14 +445,37 @@ simulation <- foreach(i = 1:iters, .combine=cbind) %dopar% {
     
     ################# Fit MSM ##########################
     
-    msm_fitting_data <- data.frame(id = rep(1:sample_size,6), t = c(rep(0,sample_size*2), rep(1,sample_size*2), rep(2,sample_size*2)),Y = c(Q0_0star, Q1_0star, Q2_0star), cumA = c(rep(1,sample_size), rep(0,sample_size), rep(2,sample_size), rep(0,sample_size), rep(3,sample_size), rep(0,sample_size)))
+    msm_fitting_data <- data.frame(id = rep(1:sample_size,6), 
+                                   t = c(rep(0,sample_size*2), 
+                                         rep(1,sample_size*2), 
+                                         rep(2,sample_size*2),
+                                         rep(3,sample_size*2),
+                                         rep(4,sample_size*2)),
+                                   Y = c(Q0_0star, Q1_0star, Q2_0star, Q3_0star, Q4_0star), 
+                                   cumA = c(rep(1,sample_size), rep(0,sample_size), 
+                                            rep(2,sample_size), rep(0,sample_size), 
+                                            rep(3,sample_size), rep(0,sample_size),
+                                            rep(4,sample_size), rep(0,sample_size),
+                                            rep(5,sample_size), rep(0,sample_size)))
+    
     msm <- glm(Y ~ cumA, data = msm_fitting_data, family = 'quasibinomial')
     #print(msm$coefficients)
     #print(paste('E(Y_2(1)) =', (b-a)*plogis(c(1,3)%*%msm$coefficients) + a))
     #print(paste('E(Y_2(0)) =', (b-a)*plogis(c(1,0)%*%msm$coefficients) + a))
     #print(paste('ATE(t = 2) =', (b-a)*plogis(c(1,3)%*%msm$coefficients) + a - ((b-a)*plogis(c(1,0)%*%msm$coefficients) + a)))
     
-    msm_fitting_data_transformed <- data.frame(id = rep(1:sample_size,6), t = c(rep(0,sample_size*2), rep(1,sample_size*2), rep(2,sample_size*2)),Y = c(Q0_0star, Q1_0star, Q2_0star)*(b-a)+a, cumA = c(rep(1,sample_size), rep(0,sample_size), rep(2,sample_size), rep(0,sample_size), rep(3,sample_size), rep(0,sample_size)))
+    msm_fitting_data_transformed <- data.frame(id = rep(1:sample_size,6), 
+                                               t = c(rep(0,sample_size*2), 
+                                                     rep(1,sample_size*2), 
+                                                     rep(2,sample_size*2),
+                                                     rep(3,sample_size*2),
+                                                     rep(4,sample_size*2)),
+                                               Y = c(Q0_0star, Q1_0star, Q2_0star, Q3_0star, Q4_0star)*(b-a) + a, 
+                                               cumA = c(rep(1,sample_size), rep(0,sample_size), 
+                                                        rep(2,sample_size), rep(0,sample_size), 
+                                                        rep(3,sample_size), rep(0,sample_size),
+                                                        rep(4,sample_size), rep(0,sample_size),
+                                                        rep(5,sample_size), rep(0,sample_size)))
     msm_transformed <- glm(Y ~ cumA, data = msm_fitting_data_transformed)
     #print(msm_transformed$coefficients)
     
@@ -347,31 +484,35 @@ simulation <- foreach(i = 1:iters, .combine=cbind) %dopar% {
     #print(paste('SCALED MSM ATE(t = 2) =', c(1,3)%*%msm_transformed$coefficients - c(1,0)%*%msm_transformed$coefficients))
     
     ################## PACKAGE LTMLE MSM #########################################
-    regime_data <- array(1, dim = c(sample_size,3,2))
+    regime_data <- array(1, dim = c(sample_size,5,2))
     regime_data[,,2] <- 0.0*regime_data[,,2]
-    summary_measures <- array(, dim = c(2,1,3))
-    summary_measures[1,1,] <- c(1,2,3)
-    summary_measures[2,1,] <- c(0,0,0)
+    summary_measures <- array(, dim = c(2,1,5))
+    summary_measures[1,1,] <- c(1,2,3,4,5)
+    summary_measures[2,1,] <- c(0,0,0,0,0)
     colnames(summary_measures) <- 'cumA'
     
-    tmle <- ltmleMSM(data = wideSimdata[,.(X1_0,X2_0,A_0,Y_0,X1_1,X2_1,cumX1_1, cumX2_1, A_1, Y_1, X1_2, X2_2, cumX1_2, cumX2_2,A_2, Y_2)], 
+    tmle <- ltmleMSM(data = wideSimdata[,.(X1_0, X2_0, X3_0, X4_0, CA_0, A_0, Y_0,
+                                           X1_1, X2_1, X3_1, X4_1, CA_1, A_1, Y_1, 
+                                           X1_2, X2_2, X3_2, X4_2, CA_2, A_2, Y_2,
+                                           X1_3, X2_3, X3_3, X4_3, CA_3, A_3, Y_3,
+                                           X1_4, X2_4, X3_4, X4_4, CA_4, A_4, Y_4,)], 
                      Anodes = c('A_0', 'A_1', 'A_2'), 
-                     Lnodes = c('X1_0','X2_0', 'X1_1', 'X2_1', 'cumX1_1', 'cumX2_1', 'X1_2', 'X2_2','cumX1_2', 'cumX2_2'), 
+                     Lnodes = c('X1_0','X2_0','X3_0','X4_0','CA_0',
+                                'X1_1','X2_1','X3_1','X4_1','CA_1',
+                                'X1_2','X2_2','X3_2','X4_2','CA_2',
+                                'X1_3','X2_3','X3_3','X4_3','CA_3',
+                                'X1_4','X2_4','X3_4','X4_4','CA_4'), 
                      Ynodes = c('Y_0', 'Y_1', 'Y_2'),
-                     Qform = c(X1_0 = 'Q.kplus1 ~ 1',
-                               X2_0 = 'Q.kplus1 ~ 1',
-                               Y_0 = 'Q.kplus1 ~ X1_0 + X2_0 + A_0',
-                               X1_1 = 'Q.kplus1 ~ 1',
-                               X2_1 = 'Q.kplus1 ~ 1',
-                               cumX1_1 = 'Q.kplus1 ~ 1',
-                               cumX2_1 = 'Q.kplus1 ~ 1',
-                               Y_1 = 'Q.kplus1 ~ cumX1_1 + cumX2_1 + A_1',
-                               X1_2 = 'Q.kplus1 ~ 1',
-                               X2_2 = 'Q.kplus1 ~ 1',
-                               cumX1_2 = 'Q.kplus1 ~ 1',
-                               cumX2_2 = 'Q.kplus1 ~ 1',
-                               Y_2 = 'Q.kplus1 ~ cumX1_2 + cumX2_2 + A_2'),
-                     gform = c(A_0 = 'A_0 ~ 1', A_1 = 'A_1 ~ A_0 + X1_1 + X2_1', A_2 = 'A_2 ~ A_1 + X1_2 + X2_2'),
+                     Qform = c(X1_0='Q.kplus1 ~ 1', X2_0='Q.kplus1 ~ 1', X3_0='Q.kplus1 ~ 1', X4_0='Q.kplus1 ~ 1', CA_0='Q.kplus1 ~ 1', Y_0='Q.kplus1 ~ X1_0 + X2_0 + X3_0 + X4_0 + CA_0', 
+                               X1_1='Q.kplus1 ~ 1', X2_1='Q.kplus1 ~ 1', X3_1='Q.kplus1 ~ 1', X4_1='Q.kplus1 ~ 1', CA_1='Q.kplus1 ~ 1', Y_1='Q.kplus1 ~ X1_1 + X2_1 + X3_1 + X4_1 + CA_1', 
+                               X1_2='Q.kplus1 ~ 1', X2_2='Q.kplus1 ~ 1', X3_2='Q.kplus1 ~ 1', X4_2='Q.kplus1 ~ 1', CA_2='Q.kplus1 ~ 1', Y_2='Q.kplus1 ~ X1_2 + X2_2 + X3_2 + X4_2 + CA_2', 
+                               X1_3='Q.kplus1 ~ 1', X2_3='Q.kplus1 ~ 1', X3_3='Q.kplus1 ~ 1', X4_3='Q.kplus1 ~ 1', CA_3='Q.kplus1 ~ 1', Y_3='Q.kplus1 ~ X1_3 + X2_3 + X3_3 + X4_3 + CA_3', 
+                               X1_4='Q.kplus1 ~ 1', X2_4='Q.kplus1 ~ 1', X3_4='Q.kplus1 ~ 1', X4_4='Q.kplus1 ~ 1', CA_4='Q.kplus1 ~ 1', Y_4='Q.kplus1 ~ X1_4 + X2_4 + X3_4 + X4_4 + CA_4'),
+                     gform = c(A_0 = 'A_0 ~ X1_0 + X2_0 + X3_0 + X4_0', 
+                               A_1='A_1 ~ A_0 + X1_1 + X2_1 + X3_1 + X4_1',
+                               A_2='A_2 ~ A_1 + X1_2 + X2_2 + X3_2 + X4_2',
+                               A_3='A_3 ~ A_2 + X1_3 + X2_3 + X3_3 + X4_3',
+                               A_4='A_4 ~ A_3 + X1_4 + X2_4 + X3_4 + X4_4')
                      gbounds = c(0,1),
                      Yrange = c(a,b),
                      survivalOutcome = FALSE, 
@@ -380,7 +521,7 @@ simulation <- foreach(i = 1:iters, .combine=cbind) %dopar% {
                      msm.weights = NULL,
                      observation.weights = NULL,
                      summary.measures = summary_measures,
-                     final.Ynodes = c('Y_0', 'Y_1', 'Y_2')
+                     final.Ynodes = c('Y_0', 'Y_1', 'Y_2', 'Y_3', 'Y_4')
     )
     #print(paste('PACKAGE E(Y_2(1)) =', (b-a)*plogis(c(1,3)%*%tmle$beta) + a))
     #print(paste('PACKAGE E(Y_2(0)) =', (b-a)*plogis(c(1,0)%*%tmle$beta) + a))
