@@ -27,11 +27,11 @@ simulation <- foreach(i = 1:iters, .combine=cbind) %dopar% {
                                                                    censor = F)
   simdata$CA <- ave(simdata$A, simdata$ID, FUN = cumsum)
   
-  treatment_model_pooled <- glm(A~Ap+ X1+ X2, data = simdata[simdata$t !=0,], family = 'quasibinomial')
+  treatment_model_pooled <- glm(A~Ap+ X1+ X2, data = simdata[simdata$t !=0,], family = 'binomial')
   
-  treat_model_A_0 <- glm(A~1, data = simdata[simdata$t == 0,], family = 'quasibinomial')
-  treat_model_A_1 <- glm(A~ Ap+ X1+ X2, data = simdata[simdata$t == 1,], family = 'quasibinomial')
-  treat_model_A_2 <- glm(A~ Ap+ X1+ X2, data = simdata[simdata$t == 2,], family = 'quasibinomial')
+  treat_model_A_0 <- glm(A~1, data = simdata[simdata$t == 0,], family = 'binomial')
+  treat_model_A_1 <- glm(A~ Ap+ X1+ X2, data = simdata[simdata$t == 1,], family = 'binomial')
+  treat_model_A_2 <- glm(A~ Ap+ X1+ X2, data = simdata[simdata$t == 2,], family = 'binomial')
   
   
   #con4<-xtabs(~t + switch + A, data=simdata)
