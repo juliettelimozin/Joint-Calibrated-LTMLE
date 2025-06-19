@@ -52,7 +52,7 @@ simulation <- foreach(i = 1:iters, .combine=cbind) %dopar% {
     simdata$weight <- ave(simdata$ps, simdata$ID, FUN = function(X) 1/cumprod(X))
     simdata$weights <- simdata$weight
     simdata$tall <- simdata$t
-    
+    simdata$sub <- simdata$ID
     simdata$RA <- 1
     simdata[simdata$t == 0 & !(simdata$CA == 1),]$RA <- 0
     simdata[simdata$t == 1 & !(simdata$CA == 2),]$RA <- 0
@@ -469,13 +469,14 @@ simulation <- foreach(i = 1:iters, .combine=cbind) %dopar% {
     )
     
     ##################### IPW - MSM ##################################
+    
     simdata$RA <- 1
-    simdata[simdata$t == 1 & !(simdata$CA == 2 |simdata$CA == 0),]$RA <- 0
-    simdata[simdata$t == 2 & !(simdata$CA == 3 |simdata$CA == 0),]$RA <- 0
+    simdata[simdata$t == 0 & !(simdata$CA == 1 | simdata$CA == 0),]$RA <- 0
+    simdata[simdata$t == 1 & !(simdata$CA == 2 | simdata$CA == 0),]$RA <- 0
+    simdata[simdata$t == 2 & !(simdata$CA == 3 | simdata$CA == 0),]$RA <- 0
     
-    simdatafinal <- calibration_by_time_from_baseline(as.data.frame(simdata), var = c("X1", "X2", "X3", "X4"))
+    switch_data <- simdata[simdata$RA == 1,]
     
-    switch_data <- simdatafinal$data[simdatafinal$data$RA == 1,]
     switch_data$X1 <- ave(switch_data$X1, switch_data$ID, FUN = first)
     switch_data$X2 <- ave(switch_data$X2, switch_data$ID, FUN = first)
     switch_data$X3 <- ave(switch_data$X3, switch_data$ID, FUN = first)

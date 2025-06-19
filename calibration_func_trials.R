@@ -592,3 +592,92 @@ calibration_by_time_from_baseline<-function(simdatafinal, var=c('A1', 'A1X1')){
        objective.IPW =  restrictions_weight1(rep(0,dim(data1)[2])), 
        objective.Cali = wei1optAR$fvec)
 }
+
+aggregated_calibration_from_baseline<-function(simdatafinal, var=c('X1', 'X2', 'X3', 'X4'))  
+{
+  
+  ##restrictions (7) #########
+  lenID<-ave(simdatafinal$sub,simdatafinal$sub,FUN=length)
+  maxlen<-max(lenID) #T + 1
+  
+  clen<-function(n){
+    maxlen:(maxlen-n[1]+1)}
+  
+  lenvec<-ave(lenID,simdatafinal$sub,FUN=clen)
+
+  DMATR<-cbind(1, simdatafinal$sub,  simdatafinal[, var] )
+  DMATR2<-DMATR[,-2] ### remove the sub index
+  
+  DMATRvec1<-lenvec*DMATR2 #(T - t+1)X_t, t= 0,...,T
+  
+  lagfun1<-function(n)
+  {
+    n1<-n[-1]
+    c(n1,0)
+  }
+  
+  lagfun2<-function(n)
+  {
+    ave(n,DMATR[,2],FUN=lagfun1)
+  }
+  
+  DMATRvec2<-apply(DMATRvec1,2,lagfun2) #(T-t)X_{t+1}, t = 0,..., T
+  
+  DMATR12<-simdatafinal$RA*(DMATRvec1-DMATRvec2) #RA[(T - t+1)X_t -(T-t)X_{t+1}]
+  
+  indT0<-which(simdatafinal$tall==0)  ### indicator for baseline measurements
+  
+  Baselinecond<-maxlen*colSums(DMATR2[indT0,]) #(T+1)sum_{i = 1}^N X_0
+  
+  
+  ##Weight estimation with correct covariates##########
+  
+  TDMATRO<-t(DMATR12)
+  
+  ##Objective function
+  gfunAR<-function(w)
+  {            
+    lp3<-colSums(TDMATRO*w)
+    we<-simdatafinal$weights*exp(lp3)
+    m3<-(colSums(DMATR12*we)-Baselinecond)/nrow(DMATR12) ##Restrictions (13) from paper
+    c(m3)
+  }
+  
+  
+  ##Hessian matrix
+  
+  N1MATAR<-TDMATRO
+  N2MATAR<-DMATR12
+  
+  DgAR<-function(w){
+    
+    lp3<-colSums(TDMATRO*w)
+    we<-simdatafinal$weights*exp(lp3)
+    MAT<-N2MATAR*we
+    MAT1<-diag(length(w))
+    for (k in 1:length(w)){
+      MAT1[,k]<-colMeans(N1MATAR[k,]*MAT)}
+    MAT1
+  }
+  
+  
+  weioptAR<-nleqslv::nleqslv(rep(0,dim(DMATR2)[2]),gfunAR,DgAR,method="Broyden",
+                             control=list(maxit=10000,ftol=10^(-16),xtol=10^(-16)), jacobian=T)
+  
+  
+  
+  
+  weconsAR<-function(w){
+    lp3<-colSums(TDMATRO*w)
+    we<-simdatafinal$weights*exp(lp3)
+    return(we)
+  }
+  
+  CALW<-weconsAR(weioptAR$x)
+  
+  simdatafinal$Cweights<-CALW
+  
+  list(data = simdatafinal, 
+       objective.IPW =  gfunAR(rep(0,dim(DMATR2)[2])), 
+       objective.Cali = weioptAR$fvec)
+}
