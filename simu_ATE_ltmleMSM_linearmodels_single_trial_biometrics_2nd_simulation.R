@@ -277,9 +277,9 @@ simulation_code <- function(iters, transformed = FALSE, sample_size, conf,seeds)
       #------------- update Q2_1-----------------------
       
       update_data <- data.frame(id = rep(wideSimdata$ID,2),
-                                Q2_2star = Q2_2star,
-                                Q2_2star_cali = Q2_2star_cali,
-                                Q2_2star_cali_aggr = Q2_2star_cali_aggr,
+                                Q2_2star = (Q2_2star-a)/(b-a),
+                                Q2_2star_cali = (Q2_2star_cali-a)/(b-a),
+                                Q2_2star_cali_aggr = (Q2_2star_cali_aggr-a)/(b-a),
                                 off = logitQ2_1,
                                 off_cali = logitQ2_1_cali,
                                 off_cali_aggr = logitQ2_1_cali_aggr,
@@ -436,9 +436,9 @@ simulation_code <- function(iters, transformed = FALSE, sample_size, conf,seeds)
       #------------- update Q2_0-----------------------
       
       update_data <- data.frame(id = rep(wideSimdata$ID,2),
-                                Q2_1star = Q2_1star,
-                                Q2_1star_cali = Q2_1star_cali,
-                                Q2_1star_cali_aggr = Q2_1star_cali_aggr,
+                                Q2_1star = (Q2_1star-a)/(b-a),
+                                Q2_1star_cali = (Q2_1star_cali-a)/(b-a),
+                                Q2_1star_cali_aggr = (Q2_1star_cali_aggr-a)/(b-a),
                                 off = logitQ2_0,
                                 off_cali = logitQ2_0_cali,
                                 off_cali_aggr = logitQ2_0_cali_aggr,
@@ -466,9 +466,9 @@ simulation_code <- function(iters, transformed = FALSE, sample_size, conf,seeds)
       #------------- update Q1_0-----------------------
       
       update_data <- data.frame(id = rep(wideSimdata$ID,2),
-                                Q1_1star = Q1_1star,
-                                Q1_1star_cali = Q1_1star_cali,
-                                Q1_1star_cali_aggr = Q1_1star_cali_aggr,
+                                Q1_1star = (Q1_1star-a)/(b-a),
+                                Q1_1star_cali = (Q1_1star_cali-a)/(b-a),
+                                Q1_1star_cali_aggr = (Q1_1star_cali_aggr-a)/(b-a),
                                 off = logitQ1_0,
                                 off_cali = logitQ1_0_cali,
                                 off_cali_aggr = logitQ1_0_cali_aggr,
@@ -506,9 +506,9 @@ simulation_code <- function(iters, transformed = FALSE, sample_size, conf,seeds)
                                               rep(2,sample_size), rep(0,sample_size), 
                                               rep(3,sample_size), rep(0,sample_size)))
       
-      msm <- glm(Y ~ cumA, data = msm_fitting_data, family = 'quasibinomial')
-      msm_cali <- glm(Y_cali ~ cumA, data = msm_fitting_data, family = 'quasibinomial')
-      msm_cali_aggr <- glm(Y_cali_aggr ~ cumA, data = msm_fitting_data, family = 'quasibinomial')
+      msm <- glm(Y ~ cumA, data = msm_fitting_data)
+      msm_cali <- glm(Y_cali ~ cumA, data = msm_fitting_data)
+      msm_cali_aggr <- glm(Y_cali_aggr ~ cumA, data = msm_fitting_data)
       
       
       ##################### IPW - MSM ##################################
