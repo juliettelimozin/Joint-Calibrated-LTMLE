@@ -495,7 +495,8 @@ calibration_by_time_stabilised<-function(simdatafinal, var=c('A1', 'A1X1')){
        objective.Cali = wei1optAR$fvec)
 }
 
-calibration_by_time_from_baseline<-function(simdatafinal, var=c('A1', 'A1X1')){
+calibration_by_time_from_baseline<-function(simdatafinal, var=c('X1', 'X2'), weights_var = 'weights'){
+  simdatafinal$weights <- simdatafinal[,weights_var]
   T <- max(simdatafinal$tall)
   data1 <- simdatafinal[simdatafinal$tall == 0,]
   data1 <- cbind(data1$RA, data1$RA*data1[, var])
@@ -593,9 +594,9 @@ calibration_by_time_from_baseline<-function(simdatafinal, var=c('A1', 'A1X1')){
        objective.Cali = wei1optAR$fvec)
 }
 
-aggregated_calibration_from_baseline<-function(simdatafinal, var=c('X1', 'X2', 'X3', 'X4'))  
+aggregated_calibration_from_baseline<-function(simdatafinal, var=c('X1', 'X2', 'X3', 'X4'), weights_var = 'weights')  
 {
-  
+  simdatafinal$weights <- simdatafinal[,weights_var]
   ##restrictions (7) #########
   lenID<-ave(simdatafinal$sub,simdatafinal$sub,FUN=length)
   maxlen<-max(lenID) #T + 1
