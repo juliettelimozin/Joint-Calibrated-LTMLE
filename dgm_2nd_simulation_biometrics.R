@@ -1,63 +1,87 @@
-DATA_GEN<-function(ns, nv, conf = 0.5){  #ns=number of patients
-  Z1<-rnorm(nv*ns,0,1)
-  Z2<-rnorm(nv*ns,0,1)
-  Z3<-rnorm(nv*ns,0,1)
-  Z4<-rnorm(nv*ns,0,1)
+DATA_GEN<-function(ns, #ns=number of patients
+                   conf = 0.2, 
+                   treat_prev_0 = 0, 
+                   treat_prev_d1_1 = 1, 
+                   treat_prev_d0_1 = -1.25, 
+                   treat_prev_d1_2 =0.8, 
+                   treat_prev_d0_2 = -1.25){
+  Z1<-rnorm(3*ns,0,1)
+  Z2<-rnorm(3*ns,0,1)
+  Z3<-rnorm(3*ns,0,1)
+  Z4<-rnorm(3*ns,0,1)
   
-  X1<-rep(0,nv*ns)
-  X2<-rep(0,nv*ns)
-  X3<-rep(0,nv*ns)
-  X4<-rep(0,nv*ns)
+  X1<-rep(0,3*ns)
+  X2<-rep(0,3*ns)
+  X3<-rep(0,3*ns)
+  X4<-rep(0,3*ns)
   
-  seq1<-seq(1,nv*ns - (nv-1) ,nv)
+  #Baseline
+  seq1<-seq(1,3*ns - (3-1) ,3)
   
-  Ap<-rep(0,nv*ns)
-  CAp<-rep(0,nv*ns)
-  A <- rep(0,nv*ns)
+  Ap<-rep(0,3*ns)
+  CAp<-rep(0,3*ns)
+  A <- rep(0,3*ns)
   X1[seq1]<-Z1[seq1]
   X2[seq1]<-Z2[seq1]
   X3[seq1]<-Z3[seq1]
   X4[seq1]<-Z4[seq1]
   
-  P01<-1/(1+exp(-0.5*X1[seq1]-0.5*X2[seq1]+as.numeric(conf)*X3[seq1]+as.numeric(conf)*X4[seq1]))
+  P01<-1/(1+exp(-treat_prev_0-0.5*X1[seq1]-0.5*X2[seq1]-as.numeric(conf)*X3[seq1]-as.numeric(conf)*X4[seq1]))
   
   A[seq1]<-rbinom(ns,1,P01)
   
-  Y<-rep(0,nv*ns)
+  Y<-rep(0,3*ns)
   
-  ### mean of the longitudinal outcome at 1st visit given treatment history and covariate history
+  ### mean of the longitudinal outcome at baseline given treatment history and covariate history
   lp1<-2*A[seq1]+X1[seq1]+X2[seq1]+X3[seq1]+X4[seq1]
   
   Y[seq1]<-200+5*lp1+rnorm(ns,0,20)
   
-  seqlist<-list()                              
-  seqlist[[1]]<-seq1
+  ## update covariates at t = 1
+  seq2<-seq1+1
+
+  Ap[seq2]<-A[seq1]
+  CAp[seq2]<- CAp[seq1]+ A[seq1]
   
-  for (k in 2:nv){  
-    ## update covariates
-    seqlist[[k]]<-seqlist[[k-1]]+1
+  U2 <- 1-0.3*Ap[seq2]
   
-    Ap[seqlist[[k]]]<-A[seqlist[[k-1]]]
-    CAp[seqlist[[k]]]<- CAp[seqlist[[k-1]]]+ A[seqlist[[k-1]]]
-    
-    U2 <- 1-0.3*Ap[seqlist[[k]]]
-    
-    X1[seqlist[[k]]]<-U2*Z1[seqlist[[k]]]
-    X2[seqlist[[k]]]<-U2*Z2[seqlist[[k]]]
-    X3[seqlist[[k]]]<-Z3[seqlist[[k]]]+0.5*CAp[seqlist[[k]]]
-    X4[seqlist[[k]]]<-Z4[seqlist[[k]]]+0.5*CAp[seqlist[[k]]]
-    
-    P1<-1/(1+exp(-2.5*Ap[seqlist[[k]]] + 2.5*(1-Ap[seqlist[[k]]])-0.5*X1[seqlist[[k]]]-0.5*X2[seqlist[[k]]]+as.numeric(conf)*X3[seqlist[[k]]]+as.numeric(conf)*X4[seqlist[[k]]]))
-    
-    A[seqlist[[k]]]<-rbinom(ns,1,P1)
-    
-    ### mean of the longitudinal outcome at 1st visit given treatment history and covariate history
-    lp<-2*A[seqlist[[k]]]+Ap[seqlist[[k]]]+X1[seqlist[[k]]]+X2[seqlist[[k]]]+X3[seqlist[[k]]]+X4[seqlist[[k]]] + X1[seqlist[[k-1]]]+X2[seqlist[[k-1]]]+X3[seqlist[[k-1]]]+X4[seqlist[[k-1]]]
-    
-    Y[seqlist[[k]]]<-200+5*lp+rnorm(ns,0,20)
-  }
+  X1[seq2]<-U2*Z1[seq2]
+  X2[seq2]<-U2*Z2[seq2]
+  X3[seq2]<-Z3[seq2]+0.5*CAp[seq2]
+  X4[seq2]<-Z4[seq2]+0.5*CAp[seq2]
   
-  ID<-rep(1:ns,each=nv)
+  P1<-1/(1+exp(-treat_prev_d1_1*Ap[seq2] -treat_prev_d0_1*(1-Ap[seq2])-0.5*X1[seq2]-0.5*X2[seq2]-as.numeric(conf)*X3[seq2]-as.numeric(conf)*X4[seq2]))
+  
+  A[seq2]<-rbinom(ns,1,P1)
+  
+  ### mean of the longitudinal outcome at 1st visit given treatment history and covariate history
+  lp<-2*A[seq2]+Ap[seq2]+X1[seq2]+X2[seq2]+X3[seq2]+X4[seq2] + X1[seq1]+X2[seq1]+X3[seq1]+X4[seq1]
+  
+  Y[seq2]<-200+5*lp+rnorm(ns,0,20)
+  
+  ## update covariates at t = 2
+  seq3<-seq2+1
+  
+  Ap[seq3]<-A[seq2]
+  CAp[seq3]<- CAp[seq2]+ A[seq2]
+  
+  U2 <- 1-0.3*Ap[seq3]
+  
+  X1[seq3]<-U2*Z1[seq3]
+  X2[seq3]<-U2*Z2[seq3]
+  X3[seq3]<-Z3[seq3]+0.5*CAp[seq3]
+  X4[seq3]<-Z4[seq3]+0.5*CAp[seq3]
+  
+  P1<-1/(1+exp(-treat_prev_d1_2*Ap[seq3] -treat_prev_d0_2*(1-Ap[seq3])-0.5*X1[seq3]-0.5*X2[seq3]-as.numeric(conf)*X3[seq3]-as.numeric(conf)*X4[seq3]))
+  
+  A[seq3]<-rbinom(ns,1,P1)
+  
+  ### mean of the longitudinal outcome at 1st visit given treatment history and covariate history
+  lp<-2*A[seq3]+Ap[seq3]+X1[seq3]+X2[seq3]+X3[seq3]+X4[seq3] + X1[seq2]+X2[seq2]+X3[seq2]+X4[seq2]
+  
+  Y[seq3]<-200+5*lp+rnorm(ns,0,20)
+  
+  ID<-rep(1:ns,each=3)
   
   CA<-ave(A,ID,FUN=cumsum)
   
@@ -70,7 +94,7 @@ DATA_GEN<-function(ns, nv, conf = 0.5){  #ns=number of patients
   
   TX4<-1/(1+exp(X4))
   
-  DATA<-data.frame(ID,t=rep(c(0:(nv-1)),ns),A,Ap,CA,X1,X2,X3,X4,TX1,TX2,TX3,TX4,Y)
+  DATA<-data.frame(ID,t=rep(0:2,ns),A,Ap,CA,X1,X2,X3,X4,TX1,TX2,TX3,TX4,Y)
   
   DATA
 }

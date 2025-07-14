@@ -18,7 +18,12 @@ library(xtable)
 set.seed(160625)
 seeds <- floor(runif(1000)*10^8)
 
-simulation_code <- function(iters, transformed = FALSE, sample_size, conf,seeds){
+simulation_code <- function(iters, transformed = FALSE, sample_size,seeds,conf = 0.2, 
+                            treat_prev_0 = 0, 
+                            treat_prev_d1_1 = 1, 
+                            treat_prev_d0_1 = -1.25, 
+                            treat_prev_d1_2 =0.8, 
+                            treat_prev_d0_2 = -1.25){
   time <- proc.time()
   if(transformed){
     print("Transformed covariates")
@@ -26,7 +31,11 @@ simulation_code <- function(iters, transformed = FALSE, sample_size, conf,seeds)
   simulation <- foreach(i = 1:iters, .combine=cbind) %dopar% {
     set.seed(seeds[i])
     suppressMessages(suppressWarnings({
-      simdata<-DATA_GEN(ns = sample_size, nv = 3, conf = conf)
+      simdata<-DATA_GEN(ns = sample_size, conf = conf,treat_prev_0 = treat_prev_0, 
+                        treat_prev_d1_1 = treat_prev_d1_1, 
+                        treat_prev_d0_1 = treat_prev_d0_1, 
+                        treat_prev_d1_2 =treat_prev_d1_2, 
+                        treat_prev_d0_2 = treat_prev_d0_2)
       if(transformed){
         simdata$X1 <- simdata$TX1
         simdata$X2 <- simdata$TX2
@@ -57,9 +66,13 @@ simulation_code <- function(iters, transformed = FALSE, sample_size, conf,seeds)
       simdata[simdata$t == 0 & !(simdata$CA == 1),]$RA <- 0
       simdata[simdata$t == 1 & !(simdata$CA == 2),]$RA <- 0
       simdata[simdata$t == 2 & !(simdata$CA == 3),]$RA <- 0
+      simdata$tX1 <- simdata$t*simdata$X1
+      simdata$tX2 <- simdata$t*simdata$X2
+      simdata$tX3 <- simdata$t*simdata$X3
+      simdata$tX4 <- simdata$t*simdata$X4
       
       calibrate_always_treated <- calibration_by_time_from_baseline(simdata, var = c("X1", "X2", "X3", "X4"), weights_var = 'weight')
-      calibrate_always_treated_aggr <- aggregated_calibration_from_baseline(simdata, var = c("X1", "X2", "X3", "X4"), weights_var = 'weight')
+      calibrate_always_treated_aggr <- aggregated_calibration_from_baseline(simdata, var = c("X1", "X2", "X3", "X4", "t", "tX1", "tX2", "tX3", "tX4"), weights_var = 'weight')
      
       simdata$Cweights <- calibrate_always_treated$data$Cweights
       simdata$Cweights_aggr <- calibrate_always_treated_aggr$data$Cweights
@@ -70,7 +83,7 @@ simulation_code <- function(iters, transformed = FALSE, sample_size, conf,seeds)
       simdata[simdata$t == 2 & !(simdata$CA == 0),]$RA <- 0
       
       calibrate_never_treated <- calibration_by_time_from_baseline(simdata, var = c("X1", "X2", "X3", "X4"), weights_var = 'Cweights')
-      calibrate_never_treated_aggr <- aggregated_calibration_from_baseline(simdata, var = c("X1", "X2", "X3", "X4"), weights_var = 'Cweights_aggr')
+      calibrate_never_treated_aggr <- aggregated_calibration_from_baseline(simdata, var = c("X1", "X2", "X3", "X4", "t", "tX1", "tX2", "tX3", "tX4"), weights_var = 'Cweights_aggr')
       
       simdata$Cweights <- calibrate_never_treated$data$Cweights
       simdata$Cweights_aggr <- calibrate_never_treated_aggr$data$Cweights
@@ -533,41 +546,6 @@ simulation_code <- function(iters, transformed = FALSE, sample_size, conf,seeds)
       msm_transformed_cali <- glm(Y_cali ~ cumA, data = msm_fitting_data_transformed)
       msm_transformed_cali_aggr <- glm(Y_cali_aggr ~ cumA, data = msm_fitting_data_transformed)
       
-      ################## PACKAGE LTMLE MSM #########################################
-      regime_data <- array(1, dim = c(sample_size,3,2))
-      regime_data[,,2] <- 0.0*regime_data[,,2]
-      summary_measures <- array(, dim = c(2,1,3))
-      summary_measures[1,1,] <- c(1,2,3)
-      summary_measures[2,1,] <- c(0,0,0)
-      colnames(summary_measures) <- 'cumA'
-      
-      tmle <- ltmleMSM(data = wideSimdata[,.(X1_0, X2_0, X3_0, X4_0,  A_0, Y_0,
-                                             X1_1, X2_1, X3_1, X4_1,  A_1, Y_1, 
-                                             X1_2, X2_2, X3_2, X4_2,  A_2, Y_2)], 
-                       Anodes = c('A_0', 'A_1', 'A_2'), 
-                       Lnodes = c('X1_0','X2_0','X3_0','X4_0',
-                                  'X1_1','X2_1','X3_1','X4_1',
-                                  'X1_2','X2_2','X3_2','X4_2'), 
-                       Ynodes = c('Y_0', 'Y_1', 'Y_2'),
-                       Qform = c(X1_0='Q.kplus1 ~ 1', X2_0='Q.kplus1 ~ 1', X3_0='Q.kplus1 ~ 1', X4_0='Q.kplus1 ~ 1',  
-                                 Y_0='Q.kplus1 ~ X1_0 + X2_0 + X3_0 + X4_0 + A_0',
-                                 X1_1='Q.kplus1 ~ 1', X2_1='Q.kplus1 ~ 1', X3_1='Q.kplus1 ~ 1', X4_1='Q.kplus1 ~ 1',  
-                                 Y_1='Q.kplus1 ~ X1_0 + X2_0 + X3_0 + X4_0 +X1_1 + X2_1 + X3_1 + X4_1 + A_0 + A_1',
-                                 X1_2='Q.kplus1 ~ 1', X2_2='Q.kplus1 ~ 1', X3_2='Q.kplus1 ~ 1', X4_2='Q.kplus1 ~ 1', 
-                                 Y_2='Q.kplus1 ~ X1_1 + X2_1 + X3_1 + X4_1 + X1_2 + X2_2 + X3_2 + X4_2 +A_0 + A_1 + A_2'),
-                       gform = c(A_0 = 'A_0 ~ X1_0 + X2_0 + X3_0 + X4_0', 
-                                 A_1='A_1 ~ A_0 + X1_1 + X2_1 + X3_1 + X4_1',
-                                 A_2='A_2 ~ A_1 + X1_2 + X2_2 + X3_2 + X4_2'),
-                       gbounds = c(0,1),
-                       Yrange = c(a,b),
-                       survivalOutcome = FALSE, 
-                       regimes = regime_data,
-                       working.msm = 'Y ~ cumA',
-                       msm.weights = NULL,
-                       observation.weights = NULL,
-                       summary.measures = summary_measures,
-                       final.Ynodes = c('Y_0', 'Y_1', 'Y_2')
-      )
       
       ##################### IPW - MSM ##################################
       
@@ -603,31 +581,7 @@ simulation_code <- function(iters, transformed = FALSE, sample_size, conf,seeds)
     fitting_data_CA0 <- switch_data[switch_data$t == 0,]
     fitting_data_CA0$CA <- 0
     
-    c((b-a)*plogis(c(1,3)%*%msm$coefficients) + a - ((b-a)*plogis(c(1,0)%*%msm$coefficients) + a), 
-      (b-a)*plogis(c(1,3)%*%msm_cali$coefficients) + a - ((b-a)*plogis(c(1,0)%*%msm_cali$coefficients) + a),
-      c(1,3)%*%msm_transformed$coefficients - c(1,0)%*%msm_transformed$coefficients,
-      c(1,3)%*%msm_transformed_cali$coefficients - c(1,0)%*%msm_transformed_cali$coefficients,
-      (b-a)*plogis(c(1,3)%*%tmle$beta) + a - ((b-a)*plogis(c(1,0)%*%tmle$beta) + a),
-      mean(predict.glm(PP_pooled, newdata = fitting_data_CA3, type = 'response')) - mean(predict.glm(PP_pooled, newdata = fitting_data_CA0, type = 'response')),
-      predict.glm(PP_strat, newdata = data.frame(CA = 3), type = 'response') - predict.glm(PP_strat, newdata = data.frame(CA = 0), type = 'response'),
-      predict.glm(PP_cali, newdata = data.frame(CA = 3), type = 'response') - predict.glm(PP_cali, newdata = data.frame(CA = 0), type = 'response'),
-      (b-a)*plogis(c(1,3)%*%msm$coefficients) + a , 
-      (b-a)*plogis(c(1,3)%*%msm_cali$coefficients) + a ,
-      c(1,3)%*%msm_transformed$coefficients ,
-      c(1,3)%*%msm_transformed_cali$coefficients ,
-      (b-a)*plogis(c(1,3)%*%tmle$beta) + a ,
-      mean(predict.glm(PP_pooled, newdata = fitting_data_CA3, type = 'response')) ,
-      predict.glm(PP_strat, newdata = data.frame(CA = 3), type = 'response'),
-      predict.glm(PP_cali, newdata = data.frame(CA = 3), type = 'response'),
-      (b-a)*plogis(c(1,0)%*%msm$coefficients) + a , 
-      (b-a)*plogis(c(1,0)%*%msm_cali$coefficients) + a ,
-      c(1,0)%*%msm_transformed$coefficients ,
-      c(1,0)%*%msm_transformed_cali$coefficients ,
-      (b-a)*plogis(c(1,0)%*%tmle$beta) + a ,
-      mean(predict.glm(PP_pooled, newdata = fitting_data_CA0, type = 'response')) ,
-      predict.glm(PP_strat, newdata = data.frame(CA = 0), type = 'response'),
-      predict.glm(PP_cali, newdata = data.frame(CA = 0), type = 'response'),
-      PP_strat$coefficients[1],
+    c(PP_strat$coefficients[1],
       PP_cali$coefficients[1], 
       PP_cali_aggr$coefficients[1], 
       msm_transformed$coefficients[1],
@@ -649,122 +603,60 @@ simulation_code <- function(iters, transformed = FALSE, sample_size, conf,seeds)
   print(proc.time() - time)
   
   cat('\n')
-  rownames(simulation) <- c('Manual LTMLE-MSM with MSM fitted on Q*_0', 
-                            'Manual calibrated LTMLE-MSM with MSM fitted on Q*_0',
-                            'Manual LTMLE-MSM with MSM fitted on transformed Q*_0',
-                            'Manual calibrated LTMLE-MSM with MSM fitted on transformed Q*_0',
-                            'Package ltmleMSM', 
-                            'IPW-MSM, pooled treatment model', 
-                            'IPW-MSM, stratified treatment model',
-                            'Calibrated IPW-MSM, stratified treatment model',
-                            'Manual LTMLE-MSM with MSM fitted on Q*_0', 
-                            'Manual calibrated LTMLE-MSM with MSM fitted on Q*_0',
-                            'Manual LTMLE-MSM with MSM fitted on transformed Q*_0',
-                            'Manual calibrated LTMLE-MSM with MSM fitted on transformed Q*_0',
-                            'Package ltmleMSM', 
-                            'IPW-MSM, pooled treatment model', 
-                            'IPW-MSM, stratified treatment model',
-                            'Calibrated IPW-MSM, stratified treatment model',
-                            'Manual LTMLE-MSM with MSM fitted on Q*_0', 
-                            'Manual calibrated LTMLE-MSM with MSM fitted on Q*_0',
-                            'Manual LTMLE-MSM with MSM fitted on transformed Q*_0',
-                            'Manual calibrated LTMLE-MSM with MSM fitted on transformed Q*_0',
-                            'Package ltmleMSM', 
-                            'IPW-MSM, pooled treatment model', 
-                            'IPW-MSM, stratified treatment model',
-                            'Calibrated IPW-MSM, stratified treatment model',
-                            'IPW-MSM, stratified treatment model',
-                            'Calibrated IPW-MSM, stratified treatment model',
-                            'Aggregated calibrated IPW-MSM, stratified treatment model',
-                            'Manual LTMLE-MSM with MSM fitted on transformed Q*_0',
-                            'Manual calibrated LTMLE-MSM with MSM fitted on transformed Q*_0',
-                            'Manual aggregated calibrated LTMLE-MSM with MSM fitted on transformed Q*_0',
-                            'IPW-MSM, stratified treatment model',
-                            'Calibrated IPW-MSM, stratified treatment model',
-                            'Aggregated calibrated IPW-MSM, stratified treatment model',
-                            'Manual LTMLE-MSM with MSM fitted on transformed Q*_0',
-                            'Manual calibrated LTMLE-MSM with MSM fitted on transformed Q*_0',
-                            'Manual aggregated calibrated LTMLE-MSM with MSM fitted on transformed Q*_0'
-                            )
-  # cat(paste('Estimation of ATE_2 = E(Y_2(always treated )) - E(Y_2(never treated))\n'))
-  # cat('Bias: \n')
-  # print(rowMeans(simulation, na.rm = TRUE)[1:8]-30, digits = 3)
-  # 
-  # cat('SD: \n')
-  # print(rowSds(simulation, na.rm = TRUE)[1:8], digits = 3)
-  # 
-  # cat('rootMSE: \n')
-  # print(sqrt((rowMeans(simulation, na.rm = TRUE)[1:8]-30)^2+ rowSds(simulation, na.rm = TRUE)[1:8]^2), digits = 3)
-  # 
-  # cat(paste('Estimation of E(Y_2(always treated ))\n'))
-  # cat('Bias: \n')
-  # print(rowMeans(simulation, na.rm = TRUE)[9:16]-230, digits = 3)
-  # 
-  # cat('SD: \n')
-  # print(rowSds(simulation, na.rm = TRUE)[9:16], digits = 3)
-  # 
-  # cat('rootMSE: \n')
-  # print(sqrt((rowMeans(simulation, na.rm = TRUE)[9:16]-230)^2+ rowSds(simulation, na.rm = TRUE)[9:16]^2), digits = 3)
-  # 
-  # cat(paste('Estimation of E(Y_2(never treated ))\n'))
-  # cat('Bias: \n')
-  # print(rowMeans(simulation, na.rm = TRUE)[17:24]-200, digits = 3)
-  # 
-  # cat('SD: \n')
-  # print(rowSds(simulation, na.rm = TRUE)[17:24], digits = 3)
-  # 
-  # cat('rootMSE: \n')
-  # print(sqrt((rowMeans(simulation, na.rm = TRUE)[17:24]-200)^2+ rowSds(simulation, na.rm = TRUE)[17:24]^2), digits = 3)
+  rownames(simulation) <- c('MLE',
+                            'CMLE',
+                            'Aggr. CMLE',
+                            'MLE LTMLE',
+                            'CMLE LTMLE',
+                            'Aggr. CMLE LTMLE',
+                            'MLE',
+                            'CMLE',
+                            'Aggr. CMLE',
+                            'MLE LTMLE',
+                            'CMLE LTMLE',
+                            'Aggr. CMLE LTMLE'
+  )
   
+  results <- cbind(rowMeans(simulation, na.rm = TRUE)[1:6]-200, rowMeans(simulation, na.rm = TRUE)[7:12]-10,
+                   rowSds(simulation, na.rm = TRUE)[1:6], rowSds(simulation, na.rm = TRUE)[7:12],
+                   sqrt((rowMeans(simulation, na.rm = TRUE)[1:6]-200)^2+ rowSds(simulation, na.rm = TRUE)[1:6]^2),
+                   sqrt((rowMeans(simulation, na.rm = TRUE)[7:12]-10)^2+ rowSds(simulation, na.rm = TRUE)[7:12]^2))
   
-  results <- cbind(rowMeans(simulation, na.rm = TRUE)[25:30]-200, rowMeans(simulation, na.rm = TRUE)[31:36]-10,
-                   rowSds(simulation, na.rm = TRUE)[25:30], rowSds(simulation, na.rm = TRUE)[31:36],
-                   sqrt((rowMeans(simulation, na.rm = TRUE)[25:30]-200)^2+ rowSds(simulation, na.rm = TRUE)[25:30]^2),
-                   sqrt((rowMeans(simulation, na.rm = TRUE)[31:36]-10)^2+ rowSds(simulation, na.rm = TRUE)[31:36]^2))
-  
-  return(print(xtable(results, type = "latex")))
+  return(results)
 }
-
 
 iters = 1000
 registerDoParallel(cores = 10)
 
 
 cat(paste('Table 2 results \n'))
-simulation_code(iters = iters, sample_size = 200, conf = -0.2, seeds = seeds)
-# simulation_code(iters = iters, sample_size = 1000, conf = -0.2, seeds = seeds)
-# simulation_code(iters = iters, sample_size = 2500, conf = -0.2, seeds = seeds)
-# 
-# simulation_code(iters = iters, transformed = TRUE, sample_size = 200, conf = -0.2, seeds = seeds)
-# simulation_code(iters = iters, transformed = TRUE,sample_size = 1000, conf = -0.2, seeds = seeds)
-# simulation_code(iters = iters, transformed = TRUE,sample_size = 2500, conf = -0.2, seeds = seeds)
-# 
-# cat(paste('Table 3 results \n'))
-# simulation_code(iters = iters, sample_size = 200, conf = -5, seeds = seeds)
-# simulation_code(iters = iters, sample_size = 1000, conf = -5, seeds = seeds)
-# simulation_code(iters = iters, sample_size = 2500, conf = -5, seeds = seeds)
-# 
-# simulation_code(iters = iters, transformed = TRUE, sample_size = 200, conf = -5, seeds = seeds)
-# simulation_code(iters = iters, transformed = TRUE,sample_size = 1000, conf = -5, seeds = seeds)
-# simulation_code(iters = iters, transformed = TRUE,sample_size = 2500, conf = -5, seeds = seeds)
+print(xtable(cbind(simulation_code(iters = iters, sample_size = 300, conf = 0.2, seeds = seeds),
+                   simulation_code(iters = iters, transformed = TRUE, sample_size = 300, conf = 0.2, seeds = seeds)),
+             type = "latex"))
+print(xtable(cbind(simulation_code(iters = iters, sample_size = 500, conf = 0.2, seeds = seeds),
+                   simulation_code(iters = iters, transformed = TRUE, sample_size = 500, conf = 0.2, seeds = seeds)),
+             type = "latex"))
+print(xtable(cbind(simulation_code(iters = iters, sample_size = 1000, conf = 0.2, seeds = seeds),
+                   simulation_code(iters = iters, transformed = TRUE, sample_size = 1000, conf = 0.2, seeds = seeds)),
+             type = "latex"))
+print(xtable(cbind(simulation_code(iters = iters, sample_size = 2500, conf = 0.2, seeds = seeds),
+                   simulation_code(iters = iters, transformed = TRUE, sample_size = 2500, conf = 0.2, seeds = seeds)),
+             type = "latex"))
+cat(paste('%-------------------------------------------- \n'))
+cat(paste('Table 3 results \n'))
+print(xtable(cbind(simulation_code(iters = iters, sample_size = 300,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_prev_d1_2 = -5, treat_prev_d0_2 = -5.1),
+                   simulation_code(iters = iters, transformed = TRUE, sample_size = 300,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_prev_d1_2 = -5, treat_prev_d0_2 = -5.1)),
+             type = "latex"))
+print(xtable(cbind(simulation_code(iters = iters, sample_size = 500,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_prev_d1_2 = -5, treat_prev_d0_2 = -5.1),
+                   simulation_code(iters = iters, transformed = TRUE, sample_size = 500,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_prev_d1_2 = -5, treat_prev_d0_2 = -5.1)),
+             type = "latex"))
+print(xtable(cbind(simulation_code(iters = iters, sample_size = 1000,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_prev_d1_2 = -5, treat_prev_d0_2 = -5.1),
+                   simulation_code(iters = iters, transformed = TRUE, sample_size = 1000,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_prev_d1_2 = -5, treat_prev_d0_2 = -5.1)),
+             type = "latex"))
+print(xtable(cbind(simulation_code(iters = iters, sample_size = 2500,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_prev_d1_2 = -5, treat_prev_d0_2 = -5.1),
+                   simulation_code(iters = iters, transformed = TRUE, sample_size = 2500,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_prev_d1_2 = -5, treat_prev_d0_2 = -5.1)),
+             type = "latex"))
 
 
-# cat(paste('Estimation of beta_0 (true value = 200)\n'))
-# cat('Bias: \n')
-# print(rowMeans(simulation, na.rm = TRUE)[25:30]-200, digits = 3)
-# 
-# cat('SD: \n')
-# print(rowSds(simulation, na.rm = TRUE)[25:30], digits = 3)
-# 
-# cat('rootMSE: \n')
-# print(sqrt((rowMeans(simulation, na.rm = TRUE)[25:30]-200)^2+ rowSds(simulation, na.rm = TRUE)[25:30]^2), digits = 3)
-# 
-# cat(paste('Estimation of beta_1 (true value = 10)\n'))
-# cat('Bias: \n')
-# print(rowMeans(simulation, na.rm = TRUE)[31:36]-10, digits = 3)
-# 
-# cat('SD: \n')
-# print(rowSds(simulation, na.rm = TRUE)[31:36], digits = 3)
-# 
-# cat('rootMSE: \n')
-# print(sqrt((rowMeans(simulation, na.rm = TRUE)[31:36]-10)^2+ rowSds(simulation, na.rm = TRUE)[31:36]^2), digits = 3)
+
+
