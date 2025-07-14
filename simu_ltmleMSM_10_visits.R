@@ -443,7 +443,7 @@ simulation_code <- function(iters, transformed = FALSE, sample_size = 300,seeds,
 iters = 1000
 registerDoParallel(cores = 10)
 
-
+sink("10_visits_simu.txt")
 cat(paste('Table 4 results \n'))
 print(xtable(cbind(simulation_code(iters = iters, sample_size = 300, conf = 0.2, seeds = seeds),
                    simulation_code(iters = iters, transformed = TRUE, sample_size = 300, conf = 0.2, seeds = seeds)),
@@ -487,5 +487,5 @@ print(xtable(cbind(simulation_code(iters = iters, sample_size = 2500,  seeds = s
                                    treat_prev_d1 = c(2,-0.5,-3,-5.5,-8,-10.5,-13,-15.5,-18),
                                    treat_prev_d0 = c(-4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55))),
              type = "latex"))
-
+sink()
 
