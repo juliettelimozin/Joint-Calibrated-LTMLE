@@ -181,6 +181,7 @@ simulation_code <- function(iters, transformed = FALSE, sample_size = 300,seeds,
       
       Qstars_cali_aggr <- vector("list", 10 * 10)
       dim(Qstars_cali_aggr) <- c(10, 10)
+      
       ########### t = 9 ##########
       
       for (k in 0:9){
@@ -193,28 +194,28 @@ simulation_code <- function(iters, transformed = FALSE, sample_size = 300,seeds,
           if (k == j){
             if(j > 0){ 
               formula_string <- paste0('Y_',j,' ~ A_',j,' + A_',j-1, '+ X1_',j,' + X2_',j,' + X3_',j,' +X4_',j,' + X1_',j-1, ' + X2_',j-1, ' + X3_',j-1, ' +X4_',j-1)
-              fitting_data <- data.frame(c(rep(1,sample_size), rep(0,sample_size)),c(rep(1, sample_size), rep(0, sample_size)))
-              colnames(fitting_data) <- paste0("A_", j:(j-1))
+              predict_data <- data.frame(c(rep(1,sample_size), rep(0,sample_size)),c(rep(1, sample_size), rep(0, sample_size)))
+              colnames(predict_data) <- paste0("A_", j:(j-1))
               for (l in j:(j-1)){
-                fitting_data[, paste0('X1_',l)] <- rep(wideSimdata[[paste0('X1_',l)]], 2)
-                fitting_data[, paste0('X2_',l)] <- rep(wideSimdata[[paste0('X2_',l)]], 2)
-                fitting_data[, paste0('X3_',l)] <- rep(wideSimdata[[paste0('X3_',l)]], 2)
-                fitting_data[, paste0('X4_',l)] <- rep(wideSimdata[[paste0('X4_',l)]], 2)
+                predict_data[, paste0('X1_',l)] <- rep(wideSimdata[[paste0('X1_',l)]], 2)
+                predict_data[, paste0('X2_',l)] <- rep(wideSimdata[[paste0('X2_',l)]], 2)
+                predict_data[, paste0('X3_',l)] <- rep(wideSimdata[[paste0('X3_',l)]], 2)
+                predict_data[, paste0('X4_',l)] <- rep(wideSimdata[[paste0('X4_',l)]], 2)
               }
               
             } else {
               formula_string <- paste0('Y_',j,' ~ A_',j, '+ X1_',j,' + X2_',j,' + X3_',j,' +X4_',j)
-              fitting_data <- data.frame(c(rep(1,sample_size), rep(0,sample_size)))
-              colnames(fitting_data) <- paste0("A_", j)
-              fitting_data[, paste0('X1_',j)] <- rep(wideSimdata[[paste0('X1_',j)]], 2)
-              fitting_data[, paste0('X2_',j)] <- rep(wideSimdata[[paste0('X2_',j)]], 2)
-              fitting_data[, paste0('X3_',j)] <- rep(wideSimdata[[paste0('X3_',j)]], 2)
-              fitting_data[, paste0('X4_',j)] <- rep(wideSimdata[[paste0('X4_',j)]], 2)
+              predict_data <- data.frame(c(rep(1,sample_size), rep(0,sample_size)))
+              colnames(predict_data) <- paste0("A_", j)
+              predict_data[, paste0('X1_',j)] <- rep(wideSimdata[[paste0('X1_',j)]], 2)
+              predict_data[, paste0('X2_',j)] <- rep(wideSimdata[[paste0('X2_',j)]], 2)
+              predict_data[, paste0('X3_',j)] <- rep(wideSimdata[[paste0('X3_',j)]], 2)
+              predict_data[, paste0('X4_',j)] <- rep(wideSimdata[[paste0('X4_',j)]], 2)
               
             }
             Qform <- glm(data = wideSimdata, formula = as.formula(formula_string))
             
-            logitQforms[[(k+1),(j+1)]] <- qlogis((predict.glm(Qform, newdata = fitting_data)-a)/(b-a))
+            logitQforms[[(k+1),(j+1)]] <- qlogis((predict.glm(Qform, newdata = predict_data)-a)/(b-a))
             
             
             
@@ -332,11 +333,9 @@ simulation_code <- function(iters, transformed = FALSE, sample_size = 300,seeds,
           }
         }
       }
-      
-      Y <- unlist(Qstars[, 1])
       ################# Fit MSM ##########################
       
-      msm_fitting_data <- data.frame(id = rep(1:sample_size,6), 
+      msm_fitting_data <- data.frame(id = rep(1:sample_size,20), 
                                      t = c(rep(0,sample_size*2), 
                                            rep(1,sample_size*2), 
                                            rep(2,sample_size*2),
@@ -487,5 +486,5 @@ print(xtable(cbind(simulation_code(iters = iters, sample_size = 2500,  seeds = s
                                    treat_prev_d1 = c(2,-0.5,-3,-5.5,-8,-10.5,-13,-15.5,-18),
                                    treat_prev_d0 = c(-4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55))),
              type = "latex"))
-sink()
+b
 
