@@ -435,7 +435,12 @@ simulation_code <- function(iters, transformed = FALSE, sample_size = 300,seeds,
                    sqrt((rowMeans(simulation, na.rm = TRUE)[1:6]-200)^2+ rowSds(simulation, na.rm = TRUE)[1:6]^2),
                    sqrt((rowMeans(simulation, na.rm = TRUE)[7:12]-10)^2+ rowSds(simulation, na.rm = TRUE)[7:12]^2))
   
-  return(results)
+  always_treat_Y <- cbind(rowMeans(simulation[1:6,] + 3*simulation[7:12,], na.rm = TRUE)-230,
+                          rowSds(simulation[1:6,] + 3*simulation[7:12,], na.rm = TRUE),
+                          sqrt((rowMeans(simulation[1:6,] + 3*simulation[7:12,], na.rm = TRUE)-230)^2 + rowSds(simulation[1:6,] + 3*simulation[7:12,], na.rm = TRUE)^2))
+  
+  return(list(MSM = results,
+              EYT = always_treat_Y))
 }
 
 
@@ -443,48 +448,97 @@ iters = 1000
 registerDoParallel(cores = 10)
 
 sink("10_visits_simu.txt")
+
+low_300_correct <- simulation_code(iters = iters, sample_size = 300, conf = 0.2, seeds = seeds)
+low_300_trans <- simulation_code(iters = iters, transformed = TRUE, sample_size = 300, conf = 0.2, seeds = seeds)
+low_500_correct <- simulation_code(iters = iters, sample_size = 500, conf = 0.2, seeds = seeds)
+low_500_trans <- simulation_code(iters = iters, transformed = TRUE, sample_size = 500, conf = 0.2, seeds = seeds)
+low_1000_correct <- simulation_code(iters = iters, sample_size = 1000, conf = 0.2, seeds = seeds)
+low_1000_trans <- simulation_code(iters = iters, transformed = TRUE, sample_size = 1000, conf = 0.2, seeds = seeds)
+low_2500_correct <- simulation_code(iters = iters, sample_size = 2500, conf = 0.2, seeds = seeds)
+low_2500_trans <- simulation_code(iters = iters, transformed = TRUE, sample_size = 2500, conf = 0.2, seeds = seeds)
+
+high_300_correct <- simulation_code(iters = iters, sample_size = 300,  seeds = seeds,conf = 2.5, 
+                                    treat_prev_d1 = c(2,-0.5,-3,-5.5,-8,-10.5,-13,-15.5,-18), 
+                                    treat_prev_d0 = c(-4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55))
+high_300_trans <- simulation_code(iters = iters, transformed = TRUE, sample_size = 300,  seeds = seeds,conf = 2.5, 
+                                  treat_prev_d1 = c(2,-0.5,-3,-5.5,-8,-10.5,-13,-15.5,-18), 
+                                  treat_prev_d0 = c(-4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55))
+high_500_correct <- simulation_code(iters = iters, sample_size = 500,  seeds = seeds,conf = 2.5,
+                                    treat_prev_d1 = c(2,-0.5,-3,-5.5,-8,-10.5,-13,-15.5,-18),
+                                    treat_prev_d0 = c(-4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55))
+high_500_trans <- simulation_code(iters = iters, transformed = TRUE, sample_size = 500,  seeds = seeds,conf = 2.5,
+                                  treat_prev_d1 = c(2,-0.5,-3,-5.5,-8,-10.5,-13,-15.5,-18),
+                                  treat_prev_d0 = c(-4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55))
+high_1000_correct <- simulation_code(iters = iters, sample_size = 1000,  seeds = seeds,conf = 2.5,
+                                     treat_prev_d1 = c(2,-0.5,-3,-5.5,-8,-10.5,-13,-15.5,-18),
+                                     treat_prev_d0 = c(-4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55))
+high_1000_trans <- simulation_code(iters = iters, transformed = TRUE, sample_size = 1000,  seeds = seeds,conf = 2.5,
+                                   treat_prev_d1 = c(2,-0.5,-3,-5.5,-8,-10.5,-13,-15.5,-18),
+                                   treat_prev_d0 = c(-4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55))
+high_2500_correct <- simulation_code(iters = iters, sample_size = 2500,  seeds = seeds,conf = 2.5,
+                                     treat_prev_d1 = c(2,-0.5,-3,-5.5,-8,-10.5,-13,-15.5,-18),
+                                     treat_prev_d0 = c(-4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55))
+high_2500_trans <- simulation_code(iters = iters, transformed = TRUE, sample_size = 2500,  seeds = seeds,conf = 2.5,
+                                   treat_prev_d1 = c(2,-0.5,-3,-5.5,-8,-10.5,-13,-15.5,-18),
+                                   treat_prev_d0 = c(-4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55))
+
 cat(paste('Table 4 results \n'))
-print(xtable(cbind(simulation_code(iters = iters, sample_size = 300, conf = 0.2, seeds = seeds),
-                   simulation_code(iters = iters, transformed = TRUE, sample_size = 300, conf = 0.2, seeds = seeds)),
+
+print(xtable(cbind(low_300_correct$MSM,
+                   low_300_trans$MSM),
              type = "latex"))
-print(xtable(cbind(simulation_code(iters = iters, sample_size = 500, conf = 0.2, seeds = seeds),
-                   simulation_code(iters = iters, transformed = TRUE, sample_size = 500, conf = 0.2, seeds = seeds)),
+print(xtable(cbind(low_500_correct$MSM,
+                   low_500_trans$MSM),
              type = "latex"))
-print(xtable(cbind(simulation_code(iters = iters, sample_size = 1000, conf = 0.2, seeds = seeds),
-                   simulation_code(iters = iters, transformed = TRUE, sample_size = 1000, conf = 0.2, seeds = seeds)),
+print(xtable(cbind(low_1000_correct$MSM,
+                   low_1000_trans$MSM),
              type = "latex"))
-print(xtable(cbind(simulation_code(iters = iters, sample_size = 2500, conf = 0.2, seeds = seeds),
-                   simulation_code(iters = iters, transformed = TRUE, sample_size = 2500, conf = 0.2, seeds = seeds)),
+print(xtable(cbind(low_2500_correct$MSM,
+                   low_2500_trans$MSM),
              type = "latex"))
-cat(paste('%-------------------------------------------- \n'))
+cat(paste('%---------------------------------------------------------------------------------- \n'))
 cat(paste('Table 5 results \n'))
-print(xtable(cbind(simulation_code(iters = iters, sample_size = 300,  seeds = seeds,conf = 2.5, 
-                                   treat_prev_d1 = c(2,-0.5,-3,-5.5,-8,-10.5,-13,-15.5,-18), 
-                                   treat_prev_d0 = c(-4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55)),
-                   simulation_code(iters = iters, transformed = TRUE, sample_size = 300,  seeds = seeds,conf = 2.5, 
-                                   treat_prev_d1 = c(2,-0.5,-3,-5.5,-8,-10.5,-13,-15.5,-18), 
-                                   treat_prev_d0 = c(-4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55))),
+print(xtable(cbind(high_300_correct$MSM,
+                   high_300_trans$MSM),
              type = "latex"))
-print(xtable(cbind(simulation_code(iters = iters, sample_size = 500,  seeds = seeds,conf = 2.5,
-                                   treat_prev_d1 = c(2,-0.5,-3,-5.5,-8,-10.5,-13,-15.5,-18),
-                                   treat_prev_d0 = c(-4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55)),
-                   simulation_code(iters = iters, transformed = TRUE, sample_size = 500,  seeds = seeds,conf = 2.5,
-                                   treat_prev_d1 = c(2,-0.5,-3,-5.5,-8,-10.5,-13,-15.5,-18),
-                                   treat_prev_d0 = c(-4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55))),
+print(xtable(cbind(high_500_correct$MSM,
+                   high_500_trans$MSM),
              type = "latex"))
-print(xtable(cbind(simulation_code(iters = iters, sample_size = 1000,  seeds = seeds,conf = 2.5,
-                                   treat_prev_d1 = c(2,-0.5,-3,-5.5,-8,-10.5,-13,-15.5,-18),
-                                   treat_prev_d0 = c(-4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55)),
-                   simulation_code(iters = iters, transformed = TRUE, sample_size = 1000,  seeds = seeds,conf = 2.5,
-                                   treat_prev_d1 = c(2,-0.5,-3,-5.5,-8,-10.5,-13,-15.5,-18),
-                                   treat_prev_d0 = c(-4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55))),
+print(xtable(cbind(high_1000_correct$MSM,
+                   high_1000_trans$MSM),
              type = "latex"))
-print(xtable(cbind(simulation_code(iters = iters, sample_size = 2500,  seeds = seeds,conf = 2.5,
-                                   treat_prev_d1 = c(2,-0.5,-3,-5.5,-8,-10.5,-13,-15.5,-18),
-                                   treat_prev_d0 = c(-4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55)),
-                   simulation_code(iters = iters, transformed = TRUE, sample_size = 2500,  seeds = seeds,conf = 2.5,
-                                   treat_prev_d1 = c(2,-0.5,-3,-5.5,-8,-10.5,-13,-15.5,-18),
-                                   treat_prev_d0 = c(-4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55, -4.55))),
+print(xtable(cbind(high_2500_correct$MSM,
+                   high_2500_trans$MSM),
              type = "latex"))
-b
+
+cat(paste('%---------------------------------------------------------------------------------- \n'))
+
+cat(paste('Always-treated results \n'))
+print(xtable(cbind(low_300_correct$EYT,
+                   low_300_trans$EYT),
+             type = "latex"))
+print(xtable(cbind(low_500_correct$EYT,
+                   low_500_trans$EYT),
+             type = "latex"))
+print(xtable(cbind(low_1000_correct$EYT,
+                   low_1000_trans$EYT),
+             type = "latex"))
+print(xtable(cbind(low_2500_correct$EYT,
+                   low_2500_trans$EYT),
+             type = "latex"))
+cat(paste('%---------------------------------------------------------------------------------- \n'))
+
+print(xtable(cbind(high_300_correct$EYT,
+                   high_300_trans$EYT),
+             type = "latex"))
+print(xtable(cbind(high_500_correct$EYT,
+                   high_500_trans$EYT),
+             type = "latex"))
+print(xtable(cbind(high_1000_correct$EYT,
+                   high_1000_trans$EYT),
+             type = "latex"))
+print(xtable(cbind(high_2500_correct$EYT,
+                   high_2500_trans$EYT),
+             type = "latex"))
 

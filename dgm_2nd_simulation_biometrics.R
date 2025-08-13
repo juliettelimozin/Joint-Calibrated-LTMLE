@@ -93,8 +93,8 @@ DATA_GEN<-function(ns, #ns=number of patients
   TX3<-log(abs(X3))+4
   
   TX4<-1/(1+exp(X4))
-  
-  DATA<-data.frame(ID,t=rep(0:2,ns),A,Ap,CA,X1,X2,X3,X4,TX1,TX2,TX3,TX4,Y)
+  C <- rep(0,3*ns)
+  DATA<-data.frame(ID,t=rep(0:2,ns),A,Ap,CA,X1,X2,X3,X4,TX1,TX2,TX3,TX4,Y,C)
   
   DATA
 }
