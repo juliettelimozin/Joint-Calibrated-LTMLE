@@ -668,7 +668,7 @@ aggregated_calibration_from_baseline<-function(simdatafinal, var=c('X1', 'X2', '
     }
     DMATRvec2_RC<-apply(DMATRvec1_RC,2,lagfun2_RC) #((T-1)*RC_1*RA_1*H_1, (T-2)*RC_2*RA_2*H_2, 0) = (T-t)*RC_t*RA_t*H_t, t =1,2
     
-    DMATR12_RC <- (1-simdata$C)*DMATRvec1_RC - DMATRvec2_RC #I(t > 0) *RC_t*[(T - t+1)*RA_t-1*H_{t-1} -(T-t)*RA_t*H_t]
+    DMATR12_RC <- (1-simdatafinal$C)*DMATRvec1_RC - DMATRvec2_RC #I(t > 0) *RC_t*[(T - t+1)*RA_t-1*H_{t-1} -(T-t)*RA_t*H_t]
     
     DMATR12_RC$tall <- simdatafinal$tall+1
     DMATR12_RC$sub <- simdatafinal$sub

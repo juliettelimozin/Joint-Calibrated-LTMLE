@@ -155,7 +155,7 @@ simulation_code <- function(iters, transformed = FALSE, sample_size,seeds,conf =
       #ftable(con4)
       
       ########## Manual LTMLE MSM ############
-      wideSimdata <- data.table::dcast(setDT(simdata), ID ~ t, value.var = c("A", "X1", "X2","X3", "X4", "CA", "Y", "weights", "Cweights", "Cweights_aggr"))
+      wideSimdata <- data.table::dcast(setDT(simdata), ID ~ t, value.var = c("A", "X1", "X2","X3", "X4", "CA", "Y","C", "weights", "Cweights", "Cweights_aggr"))
       
       wideSimdata$g_treat_1_pooled <- plogis(as.matrix(cbind(rep(1,sample_size), rep(1,sample_size), wideSimdata$X1_1, wideSimdata$X2_1,wideSimdata$X3_1, wideSimdata$X4_1)) %*% treatment_model_pooled$coefficients)
       wideSimdata$g_treat_2_pooled <- plogis(as.matrix(cbind(rep(1,sample_size), rep(1,sample_size), wideSimdata$X1_2, wideSimdata$X2_2,wideSimdata$X3_2, wideSimdata$X4_2)) %*% treatment_model_pooled$coefficients)
@@ -169,11 +169,13 @@ simulation_code <- function(iters, transformed = FALSE, sample_size,seeds,conf =
       wideSimdata$Y_1_scaled = (wideSimdata$Y_1-a)/(b-a)
       wideSimdata$Y_0_scaled = (wideSimdata$Y_0-a)/(b-a)
       
-      
+      wideSimdata$RC_0 <- 1.0
+      wideSimdata$RC_1 <- 1-wideSimdata$C_0
+      wideSimdata$RC_2 <- ifelse(wideSimdata$RC_1 == 0, 0, 1-wideSimdata$C_1 )
       
       ########### t = 2 ##########
       
-      Q2_2_fit <- glm(data = wideSimdata, formula = Y_2_scaled ~ A_2 + A_1 + X1_2 + X2_2 + X3_2 +X4_2 + X1_1 + X2_1 + X3_1 +X4_1, family = 'quasibinomial')
+      Q2_2_fit <- glm(data = wideSimdata[wideSimdata$RC_2 ==1,], formula = Y_2_scaled ~ A_2 + A_1 + X1_2 + X2_2 + X3_2 +X4_2 + X1_1 + X2_1 + X3_1 +X4_1, family = 'quasibinomial')
       
       logitQ2_2 <- predict.glm(Q2_2_fit, newdata = data.frame(A_2 = c(rep(1,sample_size), rep(0,sample_size)),
                                                               A_1 = c(rep(1, sample_size), rep(0, sample_size)),
@@ -188,6 +190,7 @@ simulation_code <- function(iters, transformed = FALSE, sample_size,seeds,conf =
       
       #------------- update Q2_2-----------------------
       regimen_ind <- c(as.numeric(wideSimdata$CA_2 ==3), as.numeric(wideSimdata$CA_2 ==0))
+      regimen_ind[is.na(regimen_ind)] <- 0
       weight <- rep(wideSimdata$weights_2,2)
       Cweight <- rep(wideSimdata$Cweights_2,2)
       Cweight_aggr <- rep(wideSimdata$Cweights_aggr_2,2)
@@ -300,6 +303,7 @@ simulation_code <- function(iters, transformed = FALSE, sample_size,seeds,conf =
       
       #------------- update Q1_1-----------------------
       regimen_ind = c(as.numeric(wideSimdata$CA_1 ==2), as.numeric(wideSimdata$CA_1 ==0))
+      regimen_ind[is.na(regimen_ind)] <- 0
       weight <- rep(wideSimdata$weights_1,2)
       Cweight <- rep(wideSimdata$Cweights_1,2)
       Cweight_aggr <- rep(wideSimdata$Cweights_aggr_1,2)
@@ -469,6 +473,7 @@ simulation_code <- function(iters, transformed = FALSE, sample_size,seeds,conf =
       
       #------------- update Q0_0-----------------------
       regimen_ind = c(as.numeric(wideSimdata$CA_0 ==1), as.numeric(wideSimdata$CA_0 ==0))
+      regimen_ind[is.na(regimen_ind)] <- 0
       weight <- rep(wideSimdata$weights_0,2)
       Cweight <- rep(wideSimdata$Cweights_0,2)
       Cweight_aggr <- rep(wideSimdata$Cweights_aggr_0,2)
@@ -604,14 +609,6 @@ simulation_code <- function(iters, transformed = FALSE, sample_size,seeds,conf =
       switch_data$X3 <- ave(switch_data$X3, switch_data$ID, FUN = first)
       switch_data$X4 <- ave(switch_data$X4, switch_data$ID, FUN = first)
       
-      switch_data$weight <- 1.0
-      switch_data[switch_data$t == 1& switch_data$A == 1,]$weight <- 1/(wideSimdata[switch_data[switch_data$t == 1& switch_data$A == 1,],]$g_treat_1_pooled)
-      switch_data[switch_data$t == 2& switch_data$A == 1,]$weight <- 1/(wideSimdata[switch_data[switch_data$t == 2& switch_data$A == 1,],]$g_treat_1_pooled*wideSimdata[switch_data[switch_data$t == 2& switch_data$A == 1,],]$g_treat_2_pooled)
-      
-      switch_data[switch_data$t == 1& switch_data$A == 0,]$weight <- 1/(wideSimdata[switch_data[switch_data$t == 1& switch_data$A == 0,],]$g_control_1_pooled)
-      switch_data[switch_data$t == 2& switch_data$A == 0,]$weight <- 1/(wideSimdata[switch_data[switch_data$t == 2& switch_data$A == 0,],]$g_control_1_pooled*wideSimdata[switch_data[switch_data$t == 2& switch_data$A == 0,],]$g_control_2_pooled)
-      
-      PP_pooled <- glm(Y ~ CA + X1 + X2 + X3 + X4, data = switch_data, weights = weight, family = 'gaussian')
       PP_strat <- glm(Y ~ CA, data = switch_data, weights = weights, family = 'gaussian')
       PP_cali <- glm(Y ~ CA, data = switch_data, weights = Cweights, family = 'gaussian')
       PP_cali_aggr <- glm(Y ~ CA, data = switch_data, weights = Cweights_aggr, family = 'gaussian')
@@ -665,39 +662,74 @@ simulation_code <- function(iters, transformed = FALSE, sample_size,seeds,conf =
                    sqrt((rowMeans(simulation, na.rm = TRUE)[1:6]-200)^2+ rowSds(simulation, na.rm = TRUE)[1:6]^2),
                    sqrt((rowMeans(simulation, na.rm = TRUE)[7:12]-10)^2+ rowSds(simulation, na.rm = TRUE)[7:12]^2))
   
-  return(results)
+  always_treat_Y <- cbind(rowMeans(simulation[1:6,] + 3*simulation[7:12,], na.rm = TRUE)-230,
+                          rowSds(simulation[1:6,] + 3*simulation[7:12,], na.rm = TRUE),
+                          sqrt((rowMeans(simulation[1:6,] + 3*simulation[7:12,], na.rm = TRUE)-230)^2 + rowSds(simulation[1:6,] + 3*simulation[7:12,], na.rm = TRUE)^2))
+  
+  return(list(MSM = results,
+              EYT = always_treat_Y))
 }
 
 iters = 1000
 registerDoParallel(cores = 10)
 
+sink("3_visits_with_censoring_logit_models.txt")
 
 cat(paste('Table 2 results \n'))
-print(xtable(cbind(simulation_code(iters = iters, sample_size = 300, conf = 0.2, seeds = seeds),
-                   simulation_code(iters = iters, transformed = TRUE, sample_size = 300, conf = 0.2, seeds = seeds)),
+print(xtable(cbind(simulation_code(iters = iters, sample_size = 300, conf = 0.2, seeds = seeds)$MSM,
+                   simulation_code(iters = iters, transformed = TRUE, sample_size = 300, conf = 0.2, seeds = seeds)$MSM),
              type = "latex"))
-print(xtable(cbind(simulation_code(iters = iters, sample_size = 500, conf = 0.2, seeds = seeds),
-                   simulation_code(iters = iters, transformed = TRUE, sample_size = 500, conf = 0.2, seeds = seeds)),
+print(xtable(cbind(simulation_code(iters = iters, sample_size = 500, conf = 0.2, seeds = seeds)$MSM,
+                   simulation_code(iters = iters, transformed = TRUE, sample_size = 500, conf = 0.2, seeds = seeds)$MSM),
              type = "latex"))
-print(xtable(cbind(simulation_code(iters = iters, sample_size = 1000, conf = 0.2, seeds = seeds),
-                   simulation_code(iters = iters, transformed = TRUE, sample_size = 1000, conf = 0.2, seeds = seeds)),
+print(xtable(cbind(simulation_code(iters = iters, sample_size = 1000, conf = 0.2, seeds = seeds)$MSM,
+                   simulation_code(iters = iters, transformed = TRUE, sample_size = 1000, conf = 0.2, seeds = seeds)$MSM),
              type = "latex"))
-print(xtable(cbind(simulation_code(iters = iters, sample_size = 2500, conf = 0.2, seeds = seeds),
-                   simulation_code(iters = iters, transformed = TRUE, sample_size = 2500, conf = 0.2, seeds = seeds)),
+print(xtable(cbind(simulation_code(iters = iters, sample_size = 2500, conf = 0.2, seeds = seeds)$MSM,
+                   simulation_code(iters = iters, transformed = TRUE, sample_size = 2500, conf = 0.2, seeds = seeds)$MSM),
+             type = "latex"))
+
+cat(paste('E(Y_T) results \n'))
+
+print(xtable(cbind(simulation_code(iters = iters, sample_size = 300, conf = 0.2, seeds = seeds)$EYT,
+                   simulation_code(iters = iters, transformed = TRUE, sample_size = 300, conf = 0.2, seeds = seeds)$EYT),
+             type = "latex"))
+print(xtable(cbind(simulation_code(iters = iters, sample_size = 500, conf = 0.2, seeds = seeds)$EYT,
+                   simulation_code(iters = iters, transformed = TRUE, sample_size = 500, conf = 0.2, seeds = seeds)$EYT),
+             type = "latex"))
+print(xtable(cbind(simulation_code(iters = iters, sample_size = 1000, conf = 0.2, seeds = seeds)$EYT,
+                   simulation_code(iters = iters, transformed = TRUE, sample_size = 1000, conf = 0.2, seeds = seeds)$EYT),
+             type = "latex"))
+print(xtable(cbind(simulation_code(iters = iters, sample_size = 2500, conf = 0.2, seeds = seeds)$EYT,
+                   simulation_code(iters = iters, transformed = TRUE, sample_size = 2500, conf = 0.2, seeds = seeds)$EYT),
              type = "latex"))
 cat(paste('%-------------------------------------------- \n'))
 cat(paste('Table 3 results \n'))
-print(xtable(cbind(simulation_code(iters = iters, sample_size = 300,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_prev_d1_2 = -5, treat_prev_d0_2 = -5.1),
-                   simulation_code(iters = iters, transformed = TRUE, sample_size = 300,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_prev_d1_2 = -5, treat_prev_d0_2 = -5.1)),
+print(xtable(cbind(simulation_code(iters = iters, sample_size = 300,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_prev_d1_2 = -5, treat_prev_d0_2 = -5.1)$MSM,
+                   simulation_code(iters = iters, transformed = TRUE, sample_size = 300,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_prev_d1_2 = -5, treat_prev_d0_2 = -5.1)$MSM),
              type = "latex"))
-print(xtable(cbind(simulation_code(iters = iters, sample_size = 500,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_prev_d1_2 = -5, treat_prev_d0_2 = -5.1),
-                   simulation_code(iters = iters, transformed = TRUE, sample_size = 500,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_prev_d1_2 = -5, treat_prev_d0_2 = -5.1)),
+print(xtable(cbind(simulation_code(iters = iters, sample_size = 500,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_prev_d1_2 = -5, treat_prev_d0_2 = -5.1)$MSM,
+                   simulation_code(iters = iters, transformed = TRUE, sample_size = 500,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_prev_d1_2 = -5, treat_prev_d0_2 = -5.1)$MSM),
              type = "latex"))
-print(xtable(cbind(simulation_code(iters = iters, sample_size = 1000,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_prev_d1_2 = -5, treat_prev_d0_2 = -5.1),
-                   simulation_code(iters = iters, transformed = TRUE, sample_size = 1000,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_prev_d1_2 = -5, treat_prev_d0_2 = -5.1)),
+print(xtable(cbind(simulation_code(iters = iters, sample_size = 1000,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_prev_d1_2 = -5, treat_prev_d0_2 = -5.1)$MSM,
+                   simulation_code(iters = iters, transformed = TRUE, sample_size = 1000,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_prev_d1_2 = -5, treat_prev_d0_2 = -5.1)$MSM),
              type = "latex"))
-print(xtable(cbind(simulation_code(iters = iters, sample_size = 2500,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_prev_d1_2 = -5, treat_prev_d0_2 = -5.1),
-                   simulation_code(iters = iters, transformed = TRUE, sample_size = 2500,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_prev_d1_2 = -5, treat_prev_d0_2 = -5.1)),
+print(xtable(cbind(simulation_code(iters = iters, sample_size = 2500,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_prev_d1_2 = -5, treat_prev_d0_2 = -5.1)$MSM,
+                   simulation_code(iters = iters, transformed = TRUE, sample_size = 2500,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_prev_d1_2 = -5, treat_prev_d0_2 = -5.1)$MSM),
+             type = "latex"))
+
+cat(paste('E(Y_T) results \n'))
+print(xtable(cbind(simulation_code(iters = iters, sample_size = 300,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_prev_d1_2 = -5, treat_prev_d0_2 = -5.1)$EYT,
+                   simulation_code(iters = iters, transformed = TRUE, sample_size = 300,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_prev_d1_2 = -5, treat_prev_d0_2 = -5.1)$EYT),
+             type = "latex"))
+print(xtable(cbind(simulation_code(iters = iters, sample_size = 500,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_prev_d1_2 = -5, treat_prev_d0_2 = -5.1)$EYT,
+                   simulation_code(iters = iters, transformed = TRUE, sample_size = 500,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_prev_d1_2 = -5, treat_prev_d0_2 = -5.1)$EYT),
+             type = "latex"))
+print(xtable(cbind(simulation_code(iters = iters, sample_size = 1000,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_prev_d1_2 = -5, treat_prev_d0_2 = -5.1)$EYT,
+                   simulation_code(iters = iters, transformed = TRUE, sample_size = 1000,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_prev_d1_2 = -5, treat_prev_d0_2 = -5.1)$EYT),
+             type = "latex"))
+print(xtable(cbind(simulation_code(iters = iters, sample_size = 2500,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_prev_d1_2 = -5, treat_prev_d0_2 = -5.1)$EYT,
+                   simulation_code(iters = iters, transformed = TRUE, sample_size = 2500,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_prev_d1_2 = -5, treat_prev_d0_2 = -5.1)$EYT),
              type = "latex"))
 
 

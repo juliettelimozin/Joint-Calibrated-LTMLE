@@ -1,16 +1,11 @@
-
-> cat(paste('Table 2 results \n'))
 Table 2 results 
-
-> print(xtable(cbind(simulation_code(iters = iters, sample_size = 300, conf = 0.2, seeds = seeds)$MSM,
-+                    simulation_code(iters = it .... [TRUNCATED] 
 [1] "Correct covariates"
 Transformed?  FALSE  
 Sample size =  300  
 Confounding =  0.2  
 Time taken for iters =  1000  
    user  system elapsed 
-228.341   4.078  25.551 
+197.114   0.652  20.594 
 
 [1] "Transformed covariates"
 Transformed?  TRUE  
@@ -18,10 +13,10 @@ Sample size =  300
 Confounding =  0.2  
 Time taken for iters =  1000  
    user  system elapsed 
-232.542   2.129  24.414 
+206.162   0.768  22.023 
 
 % latex table generated in R 4.4.3 by xtable 1.8-4 package
-% Mon Aug 11 15:08:07 2025
+% Thu Aug 14 10:56:34 2025
 \begin{table}[ht]
 \centering
 \begin{tabular}{rrrrrrrrrrrrr}
@@ -37,16 +32,13 @@ MLE & -0.05 & 0.07 & 1.57 & 1.01 & 1.57 & 1.01 & -1.61 & 1.49 & 1.67 & 1.15 & 2.
    \hline
 \end{tabular}
 \end{table}
-
-> print(xtable(cbind(simulation_code(iters = iters, sample_size = 500, conf = 0.2, seeds = seeds)$MSM,
-+                    simulation_code(iters = it .... [TRUNCATED] 
 [1] "Correct covariates"
 Transformed?  FALSE  
 Sample size =  500  
 Confounding =  0.2  
 Time taken for iters =  1000  
    user  system elapsed 
-295.375   3.731  32.831 
+242.574   1.064  25.355 
 
 [1] "Transformed covariates"
 Transformed?  TRUE  
@@ -54,10 +46,10 @@ Sample size =  500
 Confounding =  0.2  
 Time taken for iters =  1000  
    user  system elapsed 
-296.597   2.496  32.200 
+250.831   1.004  26.432 
 
 % latex table generated in R 4.4.3 by xtable 1.8-4 package
-% Mon Aug 11 15:09:12 2025
+% Thu Aug 14 10:57:26 2025
 \begin{table}[ht]
 \centering
 \begin{tabular}{rrrrrrrrrrrrr}
@@ -73,16 +65,13 @@ MLE & -0.04 & 0.01 & 1.12 & 0.75 & 1.13 & 0.75 & -1.60 & 1.45 & 1.33 & 0.81 & 2.
    \hline
 \end{tabular}
 \end{table}
-
-> print(xtable(cbind(simulation_code(iters = iters, sample_size = 1000, conf = 0.2, seeds = seeds)$MSM,
-+                    simulation_code(iters = i .... [TRUNCATED] 
 [1] "Correct covariates"
 Transformed?  FALSE  
 Sample size =  1000  
 Confounding =  0.2  
 Time taken for iters =  1000  
    user  system elapsed 
-458.801   3.372  47.298 
+362.831   0.620  37.901 
 
 [1] "Transformed covariates"
 Transformed?  TRUE  
@@ -90,10 +79,10 @@ Sample size =  1000
 Confounding =  0.2  
 Time taken for iters =  1000  
    user  system elapsed 
-558.951   4.872  64.940 
+377.932   0.736  39.744 
 
 % latex table generated in R 4.4.3 by xtable 1.8-4 package
-% Mon Aug 11 15:11:04 2025
+% Thu Aug 14 10:58:43 2025
 \begin{table}[ht]
 \centering
 \begin{tabular}{rrrrrrrrrrrrr}
@@ -109,27 +98,24 @@ MLE & 0.00 & -0.00 & 0.84 & 0.54 & 0.84 & 0.54 & -1.44 & 1.35 & 1.82 & 1.14 & 2.
    \hline
 \end{tabular}
 \end{table}
-
-> print(xtable(cbind(simulation_code(iters = iters, sample_size = 2500, conf = 0.2, seeds = seeds)$MSM,
-+                    simulation_code(iters = i .... [TRUNCATED] 
 [1] "Correct covariates"
 Transformed?  FALSE  
 Sample size =  2500  
 Confounding =  0.2  
 Time taken for iters =  1000  
-    user   system  elapsed 
-1324.874   10.835  143.328 
+   user  system elapsed 
+723.527   1.559  75.877 
 
 [1] "Transformed covariates"
 Transformed?  TRUE  
 Sample size =  2500  
 Confounding =  0.2  
 Time taken for iters =  1000  
-    user   system  elapsed 
-1358.954    7.826  160.478 
+   user  system elapsed 
+770.441   1.465  81.172 
 
 % latex table generated in R 4.4.3 by xtable 1.8-4 package
-% Mon Aug 11 15:16:08 2025
+% Thu Aug 14 11:01:20 2025
 \begin{table}[ht]
 \centering
 \begin{tabular}{rrrrrrrrrrrrr}
@@ -145,19 +131,14 @@ MLE & 0.01 & -0.01 & 0.51 & 0.34 & 0.51 & 0.34 & -1.33 & 1.27 & 2.92 & 1.55 & 3.
    \hline
 \end{tabular}
 \end{table}
-
-> cat(paste('E(Y_T) results \n'))
 E(Y_T) results 
-
-> print(xtable(cbind(simulation_code(iters = iters, sample_size = 300, conf = 0.2, seeds = seeds)$EYT,
-+                    simulation_code(iters = it .... [TRUNCATED] 
 [1] "Correct covariates"
 Transformed?  FALSE  
 Sample size =  300  
 Confounding =  0.2  
 Time taken for iters =  1000  
    user  system elapsed 
-353.605   5.790  38.762 
+210.257   0.591  22.270 
 
 [1] "Transformed covariates"
 Transformed?  TRUE  
@@ -165,10 +146,10 @@ Sample size =  300
 Confounding =  0.2  
 Time taken for iters =  1000  
    user  system elapsed 
-365.398   5.669  40.547 
+218.476   0.812  23.453 
 
 % latex table generated in R 4.4.3 by xtable 1.8-4 package
-% Mon Aug 11 15:17:28 2025
+% Thu Aug 14 11:02:06 2025
 \begin{table}[ht]
 \centering
 \begin{tabular}{rrrrrrr}
@@ -184,16 +165,13 @@ MLE & 0.17 & 2.34 & 2.35 & 2.88 & 2.64 & 3.91 \\
    \hline
 \end{tabular}
 \end{table}
-
-> print(xtable(cbind(simulation_code(iters = iters, sample_size = 500, conf = 0.2, seeds = seeds)$EYT,
-+                    simulation_code(iters = it .... [TRUNCATED] 
 [1] "Correct covariates"
 Transformed?  FALSE  
 Sample size =  500  
 Confounding =  0.2  
 Time taken for iters =  1000  
    user  system elapsed 
-454.793   6.623  49.905 
+243.509   0.788  25.690 
 
 [1] "Transformed covariates"
 Transformed?  TRUE  
@@ -201,10 +179,10 @@ Sample size =  500
 Confounding =  0.2  
 Time taken for iters =  1000  
    user  system elapsed 
-446.859   5.030  51.634 
+252.577   0.711  26.776 
 
 % latex table generated in R 4.4.3 by xtable 1.8-4 package
-% Mon Aug 11 15:19:09 2025
+% Thu Aug 14 11:02:59 2025
 \begin{table}[ht]
 \centering
 \begin{tabular}{rrrrrrr}
@@ -220,16 +198,13 @@ MLE & -0.01 & 1.78 & 1.78 & 2.75 & 1.88 & 3.34 \\
    \hline
 \end{tabular}
 \end{table}
-
-> print(xtable(cbind(simulation_code(iters = iters, sample_size = 1000, conf = 0.2, seeds = seeds)$EYT,
-+                    simulation_code(iters = i .... [TRUNCATED] 
 [1] "Correct covariates"
 Transformed?  FALSE  
 Sample size =  1000  
 Confounding =  0.2  
 Time taken for iters =  1000  
    user  system elapsed 
-659.621   6.207  75.747 
+364.144   0.732  38.229 
 
 [1] "Transformed covariates"
 Transformed?  TRUE  
@@ -237,10 +212,10 @@ Sample size =  1000
 Confounding =  0.2  
 Time taken for iters =  1000  
    user  system elapsed 
-689.274   6.478  78.537 
+381.784   1.060  40.025 
 
 % latex table generated in R 4.4.3 by xtable 1.8-4 package
-% Mon Aug 11 15:21:43 2025
+% Thu Aug 14 11:04:17 2025
 \begin{table}[ht]
 \centering
 \begin{tabular}{rrrrrrr}
@@ -256,27 +231,24 @@ MLE & -0.01 & 1.26 & 1.26 & 2.61 & 2.31 & 3.48 \\
    \hline
 \end{tabular}
 \end{table}
-
-> print(xtable(cbind(simulation_code(iters = iters, sample_size = 2500, conf = 0.2, seeds = seeds)$EYT,
-+                    simulation_code(iters = i .... [TRUNCATED] 
 [1] "Correct covariates"
 Transformed?  FALSE  
 Sample size =  2500  
 Confounding =  0.2  
 Time taken for iters =  1000  
-    user   system  elapsed 
-1409.179    9.234  155.315 
+   user  system elapsed 
+727.684   1.349  75.384 
 
 [1] "Transformed covariates"
 Transformed?  TRUE  
 Sample size =  2500  
 Confounding =  0.2  
 Time taken for iters =  1000  
-    user   system  elapsed 
-1456.664    7.686  162.546 
+   user  system elapsed 
+763.558   1.540  79.788 
 
 % latex table generated in R 4.4.3 by xtable 1.8-4 package
-% Mon Aug 11 15:27:01 2025
+% Thu Aug 14 11:06:52 2025
 \begin{table}[ht]
 \centering
 \begin{tabular}{rrrrrrr}
@@ -292,21 +264,15 @@ MLE & -0.02 & 0.80 & 0.80 & 2.50 & 3.01 & 3.91 \\
    \hline
 \end{tabular}
 \end{table}
-
-> cat(paste('%-------------------------------------------- \n'))
 %-------------------------------------------- 
-
-> cat(paste('Table 3 results \n'))
 Table 3 results 
-
-> print(xtable(cbind(simulation_code(iters = iters, sample_size = 300,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_pre .... [TRUNCATED] 
 [1] "Correct covariates"
 Transformed?  FALSE  
 Sample size =  300  
 Confounding =  5  
 Time taken for iters =  1000  
    user  system elapsed 
-448.611   4.614  47.244 
+252.077   0.880  26.635 
 
 [1] "Transformed covariates"
 Transformed?  TRUE  
@@ -314,10 +280,10 @@ Sample size =  300
 Confounding =  5  
 Time taken for iters =  1000  
    user  system elapsed 
-422.833   4.676  45.089 
+245.875   0.688  25.717 
 
 % latex table generated in R 4.4.3 by xtable 1.8-4 package
-% Mon Aug 11 15:28:34 2025
+% Thu Aug 14 11:07:44 2025
 \begin{table}[ht]
 \centering
 \begin{tabular}{rrrrrrrrrrrrr}
@@ -333,15 +299,13 @@ MLE & -2.83 & 2.95 & 4.64 & 2.80 & 5.43 & 4.07 & -4.32 & 4.04 & 2.14 & 1.46 & 4.
    \hline
 \end{tabular}
 \end{table}
-
-> print(xtable(cbind(simulation_code(iters = iters, sample_size = 500,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_pre .... [TRUNCATED] 
 [1] "Correct covariates"
 Transformed?  FALSE  
 Sample size =  500  
 Confounding =  5  
 Time taken for iters =  1000  
    user  system elapsed 
-542.591   6.233  57.626 
+285.664   0.668  29.549 
 
 [1] "Transformed covariates"
 Transformed?  TRUE  
@@ -349,10 +313,10 @@ Sample size =  500
 Confounding =  5  
 Time taken for iters =  1000  
    user  system elapsed 
-501.597   5.076  54.623 
+284.183   1.012  29.176 
 
 % latex table generated in R 4.4.3 by xtable 1.8-4 package
-% Mon Aug 11 15:30:26 2025
+% Thu Aug 14 11:08:43 2025
 \begin{table}[ht]
 \centering
 \begin{tabular}{rrrrrrrrrrrrr}
@@ -368,15 +332,13 @@ MLE & -2.46 & 2.40 & 4.87 & 2.90 & 5.46 & 3.77 & -4.32 & 4.08 & 1.54 & 1.08 & 4.
    \hline
 \end{tabular}
 \end{table}
-
-> print(xtable(cbind(simulation_code(iters = iters, sample_size = 1000,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_pr .... [TRUNCATED] 
 [1] "Correct covariates"
 Transformed?  FALSE  
 Sample size =  1000  
 Confounding =  5  
 Time taken for iters =  1000  
    user  system elapsed 
-730.403   7.016  84.910 
+415.899   1.132  42.709 
 
 [1] "Transformed covariates"
 Transformed?  TRUE  
@@ -384,10 +346,10 @@ Sample size =  1000
 Confounding =  5  
 Time taken for iters =  1000  
    user  system elapsed 
-746.583   6.885  85.312 
+418.223   0.852  42.726 
 
 % latex table generated in R 4.4.3 by xtable 1.8-4 package
-% Mon Aug 11 15:33:16 2025
+% Thu Aug 14 11:10:09 2025
 \begin{table}[ht]
 \centering
 \begin{tabular}{rrrrrrrrrrrrr}
@@ -403,26 +365,24 @@ MLE & -2.17 & 2.27 & 5.16 & 3.10 & 5.60 & 3.85 & -4.28 & 4.00 & 1.08 & 0.82 & 4.
    \hline
 \end{tabular}
 \end{table}
-
-> print(xtable(cbind(simulation_code(iters = iters, sample_size = 2500,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_pr .... [TRUNCATED] 
 [1] "Correct covariates"
 Transformed?  FALSE  
 Sample size =  2500  
 Confounding =  5  
 Time taken for iters =  1000  
-    user   system  elapsed 
-1522.566    8.882  168.639 
+   user  system elapsed 
+821.344   1.321  84.151 
 
 [1] "Transformed covariates"
 Transformed?  TRUE  
 Sample size =  2500  
 Confounding =  5  
 Time taken for iters =  1000  
-    user   system  elapsed 
-1333.491   10.020  157.267 
+   user  system elapsed 
+839.808   1.504  86.367 
 
 % latex table generated in R 4.4.3 by xtable 1.8-4 package
-% Mon Aug 11 15:38:42 2025
+% Thu Aug 14 11:12:59 2025
 \begin{table}[ht]
 \centering
 \begin{tabular}{rrrrrrrrrrrrr}
@@ -438,18 +398,14 @@ MLE & -1.85 & 1.86 & 4.24 & 2.72 & 4.63 & 3.29 & -4.28 & 3.97 & 0.74 & 0.64 & 4.
    \hline
 \end{tabular}
 \end{table}
-
-> cat(paste('E(Y_T) results \n'))
 E(Y_T) results 
-
-> print(xtable(cbind(simulation_code(iters = iters, sample_size = 300,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_pre .... [TRUNCATED] 
 [1] "Correct covariates"
 Transformed?  FALSE  
 Sample size =  300  
 Confounding =  5  
 Time taken for iters =  1000  
    user  system elapsed 
-446.280   5.797  46.760 
+250.749   0.764  25.924 
 
 [1] "Transformed covariates"
 Transformed?  TRUE  
@@ -457,10 +413,10 @@ Sample size =  300
 Confounding =  5  
 Time taken for iters =  1000  
    user  system elapsed 
-396.031   4.778  45.056 
+245.462   0.780  25.483 
 
 % latex table generated in R 4.4.3 by xtable 1.8-4 package
-% Mon Aug 11 15:40:14 2025
+% Thu Aug 14 11:13:51 2025
 \begin{table}[ht]
 \centering
 \begin{tabular}{rrrrrrr}
@@ -476,15 +432,13 @@ MLE & 6.02 & 6.21 & 8.65 & 7.80 & 3.35 & 8.49 \\
    \hline
 \end{tabular}
 \end{table}
-
-> print(xtable(cbind(simulation_code(iters = iters, sample_size = 500,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_pre .... [TRUNCATED] 
 [1] "Correct covariates"
 Transformed?  FALSE  
 Sample size =  500  
 Confounding =  5  
 Time taken for iters =  1000  
    user  system elapsed 
-508.542   4.732  57.946 
+287.707   0.760  29.610 
 
 [1] "Transformed covariates"
 Transformed?  TRUE  
@@ -492,10 +446,10 @@ Sample size =  500
 Confounding =  5  
 Time taken for iters =  1000  
    user  system elapsed 
-492.899   5.573  56.006 
+285.859   1.104  29.486 
 
 % latex table generated in R 4.4.3 by xtable 1.8-4 package
-% Mon Aug 11 15:42:08 2025
+% Thu Aug 14 11:14:50 2025
 \begin{table}[ht]
 \centering
 \begin{tabular}{rrrrrrr}
@@ -511,15 +465,13 @@ MLE & 4.73 & 6.38 & 7.94 & 7.91 & 2.53 & 8.31 \\
    \hline
 \end{tabular}
 \end{table}
-
-> print(xtable(cbind(simulation_code(iters = iters, sample_size = 1000,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_pr .... [TRUNCATED] 
 [1] "Correct covariates"
 Transformed?  FALSE  
 Sample size =  1000  
 Confounding =  5  
 Time taken for iters =  1000  
    user  system elapsed 
-745.676   7.592  85.375 
+410.971   0.792  42.023 
 
 [1] "Transformed covariates"
 Transformed?  TRUE  
@@ -527,10 +479,10 @@ Sample size =  1000
 Confounding =  5  
 Time taken for iters =  1000  
    user  system elapsed 
-817.956   7.035  86.075 
+415.583   0.672  42.445 
 
 % latex table generated in R 4.4.3 by xtable 1.8-4 package
-% Mon Aug 11 15:44:59 2025
+% Thu Aug 14 11:16:14 2025
 \begin{table}[ht]
 \centering
 \begin{tabular}{rrrrrrr}
@@ -546,26 +498,24 @@ MLE & 4.65 & 6.48 & 7.97 & 7.73 & 2.02 & 7.99 \\
    \hline
 \end{tabular}
 \end{table}
-
-> print(xtable(cbind(simulation_code(iters = iters, sample_size = 2500,  seeds = seeds,conf = 5, treat_prev_d1_1 = 0.1, treat_prev_d0_1 = -5, treat_pr .... [TRUNCATED] 
 [1] "Correct covariates"
 Transformed?  FALSE  
 Sample size =  2500  
 Confounding =  5  
 Time taken for iters =  1000  
-    user   system  elapsed 
-1559.332    8.517  171.500 
+   user  system elapsed 
+810.886   1.571  82.898 
 
 [1] "Transformed covariates"
 Transformed?  TRUE  
 Sample size =  2500  
 Confounding =  5  
 Time taken for iters =  1000  
-    user   system  elapsed 
-1608.031   10.067  176.920 
+   user  system elapsed 
+827.677   1.568  84.020 
 
 % latex table generated in R 4.4.3 by xtable 1.8-4 package
-% Mon Aug 11 15:50:48 2025
+% Thu Aug 14 11:19:01 2025
 \begin{table}[ht]
 \centering
 \begin{tabular}{rrrrrrr}
