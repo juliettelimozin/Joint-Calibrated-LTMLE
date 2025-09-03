@@ -5,7 +5,7 @@ Sample size =  300
 Confounding =  0.2  
 Time taken for iters =  1000  
    user  system elapsed 
-408.415   1.924  42.309 
+743.727   0.920  76.132 
 
 [1] "Transformed covariates"
 Transformed?  TRUE  
@@ -13,10 +13,10 @@ Sample size =  300
 Confounding =  0.2  
 Time taken for iters =  1000  
    user  system elapsed 
-459.830   1.080  47.571 
+830.542   0.991  85.294 
 
-% latex table generated in R 4.4.3 by xtable 1.8-4 package
-% Thu Aug 14 13:58:02 2025
+% latex table generated in R 4.5.1 by xtable 1.8-4 package
+% Tue Aug 26 14:49:41 2025
 \begin{table}[ht]
 \centering
 \begin{tabular}{rrrrrrrrrrrrr}
@@ -29,6 +29,10 @@ MLE & -0.06 & 0.08 & 1.65 & 1.10 & 1.65 & 1.11 & -1.60 & 1.49 & 1.78 & 1.19 & 2.
   MLE LTMLE & 0.00 & 0.04 & 1.53 & 1.03 & 1.53 & 1.03 & -1.73 & 1.54 & 1.64 & 1.11 & 2.38 & 1.90 \\ 
   CMLE LTMLE & 0.01 & 0.03 & 1.54 & 1.03 & 1.54 & 1.03 & -1.46 & 1.31 & 1.58 & 1.10 & 2.15 & 1.71 \\ 
   Aggr. CMLE LTMLE & -0.07 & 0.10 & 1.60 & 1.04 & 1.60 & 1.04 & -1.71 & 1.55 & 1.59 & 1.07 & 2.33 & 1.88 \\ 
+  CMLE LTMLE treat. only & 0.01 & 0.04 & 1.54 & 1.03 & 1.54 & 1.03 & -1.65 & 1.47 & 1.57 & 1.07 & 2.27 & 1.82 \\ 
+  Aggr. CMLE LTMLE treat. only & -0.02 & 0.06 & 1.54 & 1.03 & 1.54 & 1.04 & -1.67 & 1.52 & 1.59 & 1.09 & 2.31 & 1.87 \\ 
+  CMLE LTMLE censoring only & 0.01 & 0.04 & 1.54 & 1.05 & 1.54 & 1.05 & -1.58 & 1.43 & 1.67 & 1.17 & 2.30 & 1.85 \\ 
+  Aggr. CMLE LTMLE censoring only & 0.01 & 0.04 & 1.54 & 1.04 & 1.54 & 1.04 & -1.72 & 1.54 & 1.63 & 1.12 & 2.37 & 1.90 \\ 
    \hline
 \end{tabular}
 \end{table}
@@ -38,18 +42,18 @@ Sample size =  500
 Confounding =  0.2  
 Time taken for iters =  1000  
    user  system elapsed 
-544.419   1.112  55.857 
+967.946   1.012  99.145 
 
 [1] "Transformed covariates"
 Transformed?  TRUE  
 Sample size =  500  
 Confounding =  0.2  
 Time taken for iters =  1000  
-   user  system elapsed 
-574.583   1.080  58.518 
+    user   system  elapsed 
+1066.894    1.260  109.538 
 
-% latex table generated in R 4.4.3 by xtable 1.8-4 package
-% Thu Aug 14 13:59:56 2025
+% latex table generated in R 4.5.1 by xtable 1.8-4 package
+% Tue Aug 26 14:53:09 2025
 \begin{table}[ht]
 \centering
 \begin{tabular}{rrrrrrrrrrrrr}
@@ -62,6 +66,10 @@ MLE & -0.06 & 0.03 & 1.18 & 0.83 & 1.18 & 0.83 & -1.56 & 1.44 & 1.54 & 0.93 & 2.
   MLE LTMLE & -0.03 & 0.02 & 1.09 & 0.78 & 1.09 & 0.78 & -1.91 & 1.63 & 1.36 & 0.89 & 2.34 & 1.86 \\ 
   CMLE LTMLE & -0.02 & 0.01 & 1.08 & 0.78 & 1.09 & 0.78 & -1.57 & 1.36 & 1.14 & 0.82 & 1.94 & 1.58 \\ 
   Aggr. CMLE LTMLE & -0.06 & 0.05 & 1.14 & 0.79 & 1.14 & 0.79 & -1.73 & 1.55 & 1.15 & 0.81 & 2.08 & 1.75 \\ 
+  CMLE LTMLE treat. only & -0.03 & 0.01 & 1.09 & 0.78 & 1.09 & 0.78 & -1.78 & 1.54 & 1.16 & 0.82 & 2.12 & 1.74 \\ 
+  Aggr. CMLE LTMLE treat. only & -0.05 & 0.03 & 1.10 & 0.78 & 1.10 & 0.78 & -1.79 & 1.58 & 1.21 & 0.84 & 2.16 & 1.79 \\ 
+  CMLE LTMLE censoring only & -0.03 & 0.01 & 1.10 & 0.79 & 1.10 & 0.79 & -1.71 & 1.49 & 1.34 & 0.93 & 2.17 & 1.76 \\ 
+  Aggr. CMLE LTMLE censoring only & -0.03 & 0.01 & 1.09 & 0.78 & 1.09 & 0.78 & -1.89 & 1.62 & 1.35 & 0.90 & 2.33 & 1.85 \\ 
    \hline
 \end{tabular}
 \end{table}
@@ -70,19 +78,19 @@ Transformed?  FALSE
 Sample size =  1000  
 Confounding =  0.2  
 Time taken for iters =  1000  
-   user  system elapsed 
-788.625   1.375  80.685 
+    user   system  elapsed 
+1539.382    1.448  156.842 
 
 [1] "Transformed covariates"
 Transformed?  TRUE  
 Sample size =  1000  
 Confounding =  0.2  
 Time taken for iters =  1000  
-   user  system elapsed 
-912.309   1.236  93.543 
+    user   system  elapsed 
+1697.441    1.184  173.608 
 
-% latex table generated in R 4.4.3 by xtable 1.8-4 package
-% Thu Aug 14 14:02:51 2025
+% latex table generated in R 4.5.1 by xtable 1.8-4 package
+% Tue Aug 26 14:58:40 2025
 \begin{table}[ht]
 \centering
 \begin{tabular}{rrrrrrrrrrrrr}
@@ -95,6 +103,10 @@ MLE & -0.01 & 0.00 & 0.90 & 0.58 & 0.90 & 0.58 & -1.26 & 1.28 & 2.57 & 1.39 & 2.
   MLE LTMLE & -0.00 & -0.00 & 0.81 & 0.55 & 0.81 & 0.55 & -2.03 & 1.70 & 1.56 & 0.84 & 2.56 & 1.90 \\ 
   CMLE LTMLE & -0.00 & -0.00 & 0.81 & 0.54 & 0.81 & 0.54 & -1.58 & 1.38 & 0.85 & 0.58 & 1.80 & 1.50 \\ 
   Aggr. CMLE LTMLE & -0.03 & 0.01 & 0.85 & 0.57 & 0.85 & 0.57 & -1.70 & 1.52 & 0.90 & 0.62 & 1.92 & 1.64 \\ 
+  CMLE LTMLE treat. only & -0.00 & -0.00 & 0.81 & 0.54 & 0.81 & 0.54 & -1.81 & 1.56 & 0.98 & 0.66 & 2.06 & 1.69 \\ 
+  Aggr. CMLE LTMLE treat. only & -0.01 & 0.01 & 0.82 & 0.55 & 0.82 & 0.55 & -1.78 & 1.58 & 1.09 & 0.71 & 2.08 & 1.73 \\ 
+  CMLE LTMLE censoring only & -0.01 & -0.00 & 0.81 & 0.55 & 0.81 & 0.55 & -1.79 & 1.56 & 1.43 & 0.82 & 2.29 & 1.76 \\ 
+  Aggr. CMLE LTMLE censoring only & -0.00 & -0.00 & 0.81 & 0.55 & 0.81 & 0.55 & -1.94 & 1.67 & 1.40 & 0.80 & 2.39 & 1.85 \\ 
    \hline
 \end{tabular}
 \end{table}
@@ -104,7 +116,7 @@ Sample size =  2500
 Confounding =  0.2  
 Time taken for iters =  1000  
     user   system  elapsed 
-1682.887    5.812  173.137 
+3338.401    3.704  337.226 
 
 [1] "Transformed covariates"
 Transformed?  TRUE  
@@ -112,10 +124,10 @@ Sample size =  2500
 Confounding =  0.2  
 Time taken for iters =  1000  
     user   system  elapsed 
-1956.389    6.949  199.440 
+3696.173    3.976  373.957 
 
-% latex table generated in R 4.4.3 by xtable 1.8-4 package
-% Thu Aug 14 14:09:03 2025
+% latex table generated in R 4.5.1 by xtable 1.8-4 package
+% Tue Aug 26 15:10:31 2025
 \begin{table}[ht]
 \centering
 \begin{tabular}{rrrrrrrrrrrrr}
@@ -128,6 +140,10 @@ MLE & 0.00 & -0.01 & 0.54 & 0.37 & 0.54 & 0.37 & -1.03 & 1.15 & 4.49 & 2.07 & 4.
   MLE LTMLE & 0.01 & -0.01 & 0.51 & 0.35 & 0.51 & 0.35 & -2.50 & 1.97 & 2.78 & 1.29 & 3.74 & 2.36 \\ 
   CMLE LTMLE & 0.01 & -0.02 & 0.51 & 0.35 & 0.51 & 0.35 & -1.65 & 1.42 & 0.72 & 0.44 & 1.81 & 1.49 \\ 
   Aggr. CMLE LTMLE & 0.01 & -0.01 & 0.53 & 0.37 & 0.53 & 0.37 & -1.72 & 1.55 & 1.38 & 0.67 & 2.21 & 1.68 \\ 
+  CMLE LTMLE treat. only & 0.01 & -0.01 & 0.51 & 0.35 & 0.51 & 0.35 & -2.07 & 1.71 & 1.40 & 0.73 & 2.50 & 1.86 \\ 
+  Aggr. CMLE LTMLE treat. only & 0.00 & -0.01 & 0.51 & 0.35 & 0.51 & 0.35 & -2.08 & 1.76 & 1.92 & 0.96 & 2.84 & 2.00 \\ 
+  CMLE LTMLE censoring only & 0.01 & -0.02 & 0.51 & 0.35 & 0.51 & 0.35 & -2.05 & 1.75 & 2.20 & 1.12 & 3.01 & 2.07 \\ 
+  Aggr. CMLE LTMLE censoring only & 0.01 & -0.01 & 0.51 & 0.35 & 0.51 & 0.35 & -2.43 & 1.94 & 2.83 & 1.31 & 3.73 & 2.34 \\ 
    \hline
 \end{tabular}
 \end{table}
@@ -138,7 +154,7 @@ Sample size =  300
 Confounding =  0.2  
 Time taken for iters =  1000  
    user  system elapsed 
-417.641   1.092  43.839 
+750.678   0.860  76.547 
 
 [1] "Transformed covariates"
 Transformed?  TRUE  
@@ -146,10 +162,10 @@ Sample size =  300
 Confounding =  0.2  
 Time taken for iters =  1000  
    user  system elapsed 
-501.042   1.424  51.556 
+826.705   0.904  84.938 
 
-% latex table generated in R 4.4.3 by xtable 1.8-4 package
-% Thu Aug 14 14:10:39 2025
+% latex table generated in R 4.5.1 by xtable 1.8-4 package
+% Tue Aug 26 15:13:12 2025
 \begin{table}[ht]
 \centering
 \begin{tabular}{rrrrrrr}
@@ -162,6 +178,10 @@ MLE & 0.18 & 2.55 & 2.56 & 2.87 & 2.77 & 3.99 \\
   MLE LTMLE & 0.13 & 2.35 & 2.35 & 2.88 & 2.48 & 3.80 \\ 
   CMLE LTMLE & 0.12 & 2.35 & 2.36 & 2.48 & 2.46 & 3.49 \\ 
   Aggr. CMLE LTMLE & 0.22 & 2.37 & 2.38 & 2.93 & 2.40 & 3.79 \\ 
+  CMLE LTMLE treat. only & 0.13 & 2.34 & 2.34 & 2.77 & 2.39 & 3.66 \\ 
+  Aggr. CMLE LTMLE treat. only & 0.16 & 2.36 & 2.37 & 2.89 & 2.44 & 3.79 \\ 
+  CMLE LTMLE censoring only & 0.13 & 2.39 & 2.39 & 2.71 & 2.65 & 3.79 \\ 
+  Aggr. CMLE LTMLE censoring only & 0.14 & 2.36 & 2.36 & 2.89 & 2.49 & 3.82 \\ 
    \hline
 \end{tabular}
 \end{table}
@@ -171,18 +191,18 @@ Sample size =  500
 Confounding =  0.2  
 Time taken for iters =  1000  
    user  system elapsed 
-513.423   1.072  52.505 
+964.575   1.160  98.228 
 
 [1] "Transformed covariates"
 Transformed?  TRUE  
 Sample size =  500  
 Confounding =  0.2  
 Time taken for iters =  1000  
-   user  system elapsed 
-589.268   1.616  60.039 
+    user   system  elapsed 
+1066.111    1.124  108.512 
 
-% latex table generated in R 4.4.3 by xtable 1.8-4 package
-% Thu Aug 14 14:12:31 2025
+% latex table generated in R 4.5.1 by xtable 1.8-4 package
+% Tue Aug 26 15:16:39 2025
 \begin{table}[ht]
 \centering
 \begin{tabular}{rrrrrrr}
@@ -195,6 +215,10 @@ MLE & 0.02 & 1.96 & 1.96 & 2.75 & 2.03 & 3.42 \\
   MLE LTMLE & 0.02 & 1.83 & 1.83 & 2.97 & 1.99 & 3.58 \\ 
   CMLE LTMLE & 0.00 & 1.83 & 1.83 & 2.50 & 1.89 & 3.13 \\ 
   Aggr. CMLE LTMLE & 0.07 & 1.86 & 1.87 & 2.92 & 1.89 & 3.47 \\ 
+  CMLE LTMLE treat. only & 0.01 & 1.82 & 1.82 & 2.83 & 1.91 & 3.42 \\ 
+  Aggr. CMLE LTMLE treat. only & 0.04 & 1.83 & 1.83 & 2.94 & 1.93 & 3.52 \\ 
+  CMLE LTMLE censoring only & 0.02 & 1.86 & 1.86 & 2.77 & 2.13 & 3.50 \\ 
+  Aggr. CMLE LTMLE censoring only & 0.02 & 1.84 & 1.84 & 2.98 & 2.01 & 3.59 \\ 
    \hline
 \end{tabular}
 \end{table}
@@ -203,19 +227,19 @@ Transformed?  FALSE
 Sample size =  1000  
 Confounding =  0.2  
 Time taken for iters =  1000  
-   user  system elapsed 
-807.262   1.528  82.814 
+    user   system  elapsed 
+1537.624    1.216  157.137 
 
 [1] "Transformed covariates"
 Transformed?  TRUE  
 Sample size =  1000  
 Confounding =  0.2  
 Time taken for iters =  1000  
-   user  system elapsed 
-927.040   1.107  95.231 
+    user   system  elapsed 
+1699.753    1.132  174.654 
 
-% latex table generated in R 4.4.3 by xtable 1.8-4 package
-% Thu Aug 14 14:15:29 2025
+% latex table generated in R 4.5.1 by xtable 1.8-4 package
+% Tue Aug 26 15:22:11 2025
 \begin{table}[ht]
 \centering
 \begin{tabular}{rrrrrrr}
@@ -228,6 +252,10 @@ MLE & 0.01 & 1.36 & 1.36 & 2.57 & 2.40 & 3.52 \\
   MLE LTMLE & -0.00 & 1.28 & 1.28 & 3.08 & 1.83 & 3.58 \\ 
   CMLE LTMLE & -0.02 & 1.28 & 1.28 & 2.56 & 1.35 & 2.89 \\ 
   Aggr. CMLE LTMLE & 0.01 & 1.33 & 1.33 & 2.87 & 1.44 & 3.21 \\ 
+  CMLE LTMLE treat. only & -0.01 & 1.28 & 1.28 & 2.87 & 1.51 & 3.24 \\ 
+  Aggr. CMLE LTMLE treat. only & 0.00 & 1.28 & 1.28 & 2.96 & 1.59 & 3.36 \\ 
+  CMLE LTMLE censoring only & -0.01 & 1.28 & 1.28 & 2.89 & 1.94 & 3.49 \\ 
+  Aggr. CMLE LTMLE censoring only & -0.01 & 1.28 & 1.28 & 3.07 & 1.85 & 3.58 \\ 
    \hline
 \end{tabular}
 \end{table}
@@ -237,7 +265,7 @@ Sample size =  2500
 Confounding =  0.2  
 Time taken for iters =  1000  
     user   system  elapsed 
-1643.705    3.992  167.171 
+3348.556    4.084  338.379 
 
 [1] "Transformed covariates"
 Transformed?  TRUE  
@@ -245,10 +273,10 @@ Sample size =  2500
 Confounding =  0.2  
 Time taken for iters =  1000  
     user   system  elapsed 
-1986.274    6.960  202.378 
+3716.178    3.807  377.645 
 
-% latex table generated in R 4.4.3 by xtable 1.8-4 package
-% Thu Aug 14 14:21:39 2025
+% latex table generated in R 4.5.1 by xtable 1.8-4 package
+% Tue Aug 26 15:34:07 2025
 \begin{table}[ht]
 \centering
 \begin{tabular}{rrrrrrr}
@@ -261,6 +289,10 @@ MLE & -0.03 & 0.87 & 0.87 & 2.43 & 2.94 & 3.82 \\
   MLE LTMLE & -0.03 & 0.82 & 0.82 & 3.42 & 2.42 & 4.19 \\ 
   CMLE LTMLE & -0.04 & 0.82 & 0.82 & 2.61 & 0.95 & 2.77 \\ 
   Aggr. CMLE LTMLE & -0.03 & 0.86 & 0.86 & 2.92 & 1.04 & 3.10 \\ 
+  CMLE LTMLE treat. only & -0.03 & 0.82 & 0.82 & 3.07 & 1.44 & 3.39 \\ 
+  Aggr. CMLE LTMLE treat. only & -0.03 & 0.83 & 0.83 & 3.19 & 1.73 & 3.63 \\ 
+  CMLE LTMLE censoring only & -0.04 & 0.82 & 0.82 & 3.19 & 2.58 & 4.10 \\ 
+  Aggr. CMLE LTMLE censoring only & -0.03 & 0.82 & 0.82 & 3.40 & 2.39 & 4.16 \\ 
    \hline
 \end{tabular}
 \end{table}
@@ -272,7 +304,7 @@ Sample size =  300
 Confounding =  5  
 Time taken for iters =  1000  
    user  system elapsed 
-501.521   0.876  51.745 
+880.737   1.303  91.304 
 
 [1] "Transformed covariates"
 Transformed?  TRUE  
@@ -280,10 +312,10 @@ Sample size =  300
 Confounding =  5  
 Time taken for iters =  1000  
    user  system elapsed 
-494.825   0.852  50.297 
+888.230   1.092  90.293 
 
-% latex table generated in R 4.4.3 by xtable 1.8-4 package
-% Thu Aug 14 14:23:21 2025
+% latex table generated in R 4.5.1 by xtable 1.8-4 package
+% Tue Aug 26 15:37:09 2025
 \begin{table}[ht]
 \centering
 \begin{tabular}{rrrrrrrrrrrrr}
@@ -296,6 +328,10 @@ MLE & -2.88 & 2.96 & 4.85 & 2.98 & 5.64 & 4.20 & -4.27 & 4.03 & 2.34 & 1.57 & 4.
   MLE LTMLE & -0.10 & 0.02 & 3.58 & 2.42 & 3.58 & 2.42 & -4.51 & 3.77 & 1.99 & 1.43 & 4.93 & 4.03 \\ 
   CMLE LTMLE & 0.08 & -0.05 & 4.28 & 2.91 & 4.28 & 2.91 & -3.45 & 3.10 & 2.12 & 1.42 & 4.05 & 3.41 \\ 
   Aggr. CMLE LTMLE & -2.38 & 2.27 & 3.40 & 2.17 & 4.15 & 3.14 & -4.08 & 3.83 & 1.89 & 1.29 & 4.50 & 4.04 \\ 
+  CMLE LTMLE treat. only & -0.01 & -0.04 & 3.81 & 2.47 & 3.81 & 2.47 & -4.03 & 3.48 & 1.83 & 1.32 & 4.43 & 3.72 \\ 
+  Aggr. CMLE LTMLE treat. only & -1.50 & 1.50 & 3.42 & 2.24 & 3.73 & 2.70 & -4.09 & 3.72 & 1.89 & 1.33 & 4.51 & 3.95 \\ 
+  CMLE LTMLE censoring only & -0.09 & 0.00 & 3.56 & 2.35 & 3.56 & 2.35 & -4.08 & 3.47 & 2.04 & 1.45 & 4.56 & 3.77 \\ 
+  Aggr. CMLE LTMLE censoring only & -0.07 & -0.02 & 3.48 & 2.32 & 3.48 & 2.32 & -4.47 & 3.75 & 1.91 & 1.38 & 4.86 & 4.00 \\ 
    \hline
 \end{tabular}
 \end{table}
@@ -304,19 +340,19 @@ Transformed?  FALSE
 Sample size =  500  
 Confounding =  5  
 Time taken for iters =  1000  
-   user  system elapsed 
-587.354   0.960  60.426 
+    user   system  elapsed 
+1082.727    1.492  110.537 
 
 [1] "Transformed covariates"
 Transformed?  TRUE  
 Sample size =  500  
 Confounding =  5  
 Time taken for iters =  1000  
-   user  system elapsed 
-617.715   1.160  62.990 
+    user   system  elapsed 
+1132.212    1.456  115.802 
 
-% latex table generated in R 4.4.3 by xtable 1.8-4 package
-% Thu Aug 14 14:25:24 2025
+% latex table generated in R 4.5.1 by xtable 1.8-4 package
+% Tue Aug 26 15:40:55 2025
 \begin{table}[ht]
 \centering
 \begin{tabular}{rrrrrrrrrrrrr}
@@ -329,6 +365,10 @@ MLE & -2.48 & 2.44 & 5.01 & 2.99 & 5.59 & 3.86 & -4.28 & 4.09 & 1.69 & 1.20 & 4.
   MLE LTMLE & 0.12 & -0.18 & 3.49 & 2.43 & 3.49 & 2.43 & -4.67 & 3.90 & 1.48 & 1.13 & 4.89 & 4.06 \\ 
   CMLE LTMLE & 0.26 & -0.24 & 3.58 & 2.44 & 3.59 & 2.45 & -3.68 & 3.25 & 1.52 & 1.09 & 3.98 & 3.43 \\ 
   Aggr. CMLE LTMLE & -1.98 & 1.87 & 3.05 & 2.09 & 3.64 & 2.80 & -4.19 & 3.90 & 1.42 & 1.05 & 4.42 & 4.04 \\ 
+  CMLE LTMLE treat. only & 0.18 & -0.18 & 3.29 & 2.25 & 3.29 & 2.26 & -4.21 & 3.62 & 1.37 & 1.08 & 4.43 & 3.77 \\ 
+  Aggr. CMLE LTMLE treat. only & -1.16 & 1.15 & 3.16 & 2.24 & 3.36 & 2.52 & -4.25 & 3.83 & 1.42 & 1.08 & 4.48 & 3.98 \\ 
+  CMLE LTMLE censoring only & 0.14 & -0.17 & 3.43 & 2.31 & 3.43 & 2.31 & -4.26 & 3.61 & 1.52 & 1.19 & 4.52 & 3.80 \\ 
+  Aggr. CMLE LTMLE censoring only & 0.17 & -0.21 & 3.32 & 2.29 & 3.33 & 2.30 & -4.64 & 3.89 & 1.44 & 1.12 & 4.85 & 4.05 \\ 
    \hline
 \end{tabular}
 \end{table}
@@ -337,19 +377,19 @@ Transformed?  FALSE
 Sample size =  1000  
 Confounding =  5  
 Time taken for iters =  1000  
-   user  system elapsed 
-884.756   0.841  90.701 
+    user   system  elapsed 
+1655.936    2.232  169.727 
 
 [1] "Transformed covariates"
 Transformed?  TRUE  
 Sample size =  1000  
 Confounding =  5  
 Time taken for iters =  1000  
-   user  system elapsed 
-982.237   1.315  99.298 
+    user   system  elapsed 
+1793.042    1.769  183.307 
 
-% latex table generated in R 4.4.3 by xtable 1.8-4 package
-% Thu Aug 14 14:28:34 2025
+% latex table generated in R 4.5.1 by xtable 1.8-4 package
+% Tue Aug 26 15:46:48 2025
 \begin{table}[ht]
 \centering
 \begin{tabular}{rrrrrrrrrrrrr}
@@ -362,6 +402,10 @@ MLE & -2.33 & 2.37 & 5.02 & 2.97 & 5.54 & 3.80 & -4.24 & 4.02 & 1.18 & 0.91 & 4.
   MLE LTMLE & 0.05 & 0.00 & 3.33 & 2.34 & 3.33 & 2.34 & -4.68 & 3.86 & 1.04 & 0.80 & 4.79 & 3.94 \\ 
   CMLE LTMLE & 0.03 & -0.00 & 2.92 & 2.01 & 2.92 & 2.01 & -3.67 & 3.28 & 1.04 & 0.74 & 3.81 & 3.36 \\ 
   Aggr. CMLE LTMLE & -1.76 & 1.75 & 2.74 & 1.88 & 3.25 & 2.57 & -4.14 & 3.84 & 0.96 & 0.73 & 4.25 & 3.91 \\ 
+  CMLE LTMLE treat. only & 0.08 & -0.02 & 2.86 & 1.97 & 2.86 & 1.97 & -4.20 & 3.62 & 0.95 & 0.73 & 4.31 & 3.69 \\ 
+  Aggr. CMLE LTMLE treat. only & -1.04 & 1.13 & 2.94 & 2.09 & 3.12 & 2.38 & -4.21 & 3.78 & 0.99 & 0.75 & 4.33 & 3.86 \\ 
+  CMLE LTMLE censoring only & 0.03 & 0.03 & 3.25 & 2.29 & 3.25 & 2.29 & -4.27 & 3.59 & 1.06 & 0.83 & 4.40 & 3.68 \\ 
+  Aggr. CMLE LTMLE censoring only & 0.06 & -0.01 & 3.17 & 2.26 & 3.17 & 2.26 & -4.65 & 3.86 & 1.00 & 0.78 & 4.76 & 3.94 \\ 
    \hline
 \end{tabular}
 \end{table}
@@ -371,7 +415,7 @@ Sample size =  2500
 Confounding =  5  
 Time taken for iters =  1000  
     user   system  elapsed 
-1754.994    5.865  179.374 
+3493.282    4.956  356.110 
 
 [1] "Transformed covariates"
 Transformed?  TRUE  
@@ -379,10 +423,10 @@ Sample size =  2500
 Confounding =  5  
 Time taken for iters =  1000  
     user   system  elapsed 
-2071.549    5.148  214.417 
+3879.870    4.344  397.151 
 
-% latex table generated in R 4.4.3 by xtable 1.8-4 package
-% Thu Aug 14 14:35:08 2025
+% latex table generated in R 4.5.1 by xtable 1.8-4 package
+% Tue Aug 26 15:59:21 2025
 \begin{table}[ht]
 \centering
 \begin{tabular}{rrrrrrrrrrrrr}
@@ -395,6 +439,10 @@ MLE & -1.90 & 1.93 & 4.17 & 2.72 & 4.58 & 3.33 & -4.19 & 3.97 & 1.04 & 0.75 & 4.
   MLE LTMLE & 0.08 & -0.05 & 2.84 & 2.07 & 2.84 & 2.07 & -4.77 & 3.88 & 0.82 & 0.72 & 4.84 & 3.94 \\ 
   CMLE LTMLE & 0.11 & -0.09 & 2.38 & 1.70 & 2.38 & 1.71 & -3.76 & 3.34 & 0.70 & 0.51 & 3.82 & 3.38 \\ 
   Aggr. CMLE LTMLE & -1.43 & 1.44 & 2.25 & 1.63 & 2.67 & 2.18 & -4.15 & 3.84 & 0.67 & 0.52 & 4.20 & 3.87 \\ 
+  CMLE LTMLE treat. only & 0.12 & -0.06 & 2.37 & 1.70 & 2.38 & 1.70 & -4.31 & 3.66 & 0.68 & 0.55 & 4.36 & 3.70 \\ 
+  Aggr. CMLE LTMLE treat. only & -0.85 & 0.93 & 2.41 & 1.85 & 2.55 & 2.07 & -4.29 & 3.78 & 0.75 & 0.64 & 4.36 & 3.84 \\ 
+  CMLE LTMLE censoring only & 0.10 & -0.06 & 2.84 & 2.02 & 2.84 & 2.02 & -4.34 & 3.60 & 0.74 & 0.59 & 4.40 & 3.65 \\ 
+  Aggr. CMLE LTMLE censoring only & 0.12 & -0.09 & 2.69 & 1.98 & 2.70 & 1.98 & -4.72 & 3.87 & 0.70 & 0.57 & 4.77 & 3.91 \\ 
    \hline
 \end{tabular}
 \end{table}
@@ -405,7 +453,7 @@ Sample size =  300
 Confounding =  5  
 Time taken for iters =  1000  
    user  system elapsed 
-497.930   0.795  50.969 
+876.452   1.108  89.104 
 
 [1] "Transformed covariates"
 Transformed?  TRUE  
@@ -413,10 +461,10 @@ Sample size =  300
 Confounding =  5  
 Time taken for iters =  1000  
    user  system elapsed 
-491.740   0.816  50.134 
+891.702   1.072  90.863 
 
-% latex table generated in R 4.4.3 by xtable 1.8-4 package
-% Thu Aug 14 14:36:49 2025
+% latex table generated in R 4.5.1 by xtable 1.8-4 package
+% Tue Aug 26 16:02:21 2025
 \begin{table}[ht]
 \centering
 \begin{tabular}{rrrrrrr}
@@ -429,6 +477,10 @@ MLE & 6.02 & 6.54 & 8.89 & 7.82 & 3.51 & 8.57 \\
   MLE LTMLE & -0.05 & 5.51 & 5.51 & 6.79 & 3.32 & 7.56 \\ 
   CMLE LTMLE & -0.07 & 6.72 & 6.72 & 5.84 & 3.13 & 6.62 \\ 
   Aggr. CMLE LTMLE & 4.44 & 4.86 & 6.58 & 7.41 & 2.96 & 7.98 \\ 
+  CMLE LTMLE treat. only & -0.14 & 5.54 & 5.54 & 6.40 & 3.06 & 7.10 \\ 
+  Aggr. CMLE LTMLE treat. only & 3.00 & 5.03 & 5.86 & 7.06 & 3.04 & 7.68 \\ 
+  CMLE LTMLE censoring only & -0.08 & 5.31 & 5.31 & 6.34 & 3.40 & 7.20 \\ 
+  Aggr. CMLE LTMLE censoring only & -0.13 & 5.25 & 5.25 & 6.79 & 3.23 & 7.52 \\ 
    \hline
 \end{tabular}
 \end{table}
@@ -437,19 +489,19 @@ Transformed?  FALSE
 Sample size =  500  
 Confounding =  5  
 Time taken for iters =  1000  
-   user  system elapsed 
-585.944   0.812  59.984 
+    user   system  elapsed 
+1082.875    1.344  110.016 
 
 [1] "Transformed covariates"
 Transformed?  TRUE  
 Sample size =  500  
 Confounding =  5  
 Time taken for iters =  1000  
-   user  system elapsed 
-612.575   0.980  62.813 
+    user   system  elapsed 
+1133.240    1.540  116.414 
 
-% latex table generated in R 4.4.3 by xtable 1.8-4 package
-% Thu Aug 14 14:38:52 2025
+% latex table generated in R 4.5.1 by xtable 1.8-4 package
+% Tue Aug 26 16:06:08 2025
 \begin{table}[ht]
 \centering
 \begin{tabular}{rrrrrrr}
@@ -462,6 +514,10 @@ MLE & 4.84 & 6.64 & 8.22 & 8.00 & 2.78 & 8.47 \\
   MLE LTMLE & -0.41 & 5.51 & 5.53 & 7.05 & 2.68 & 7.54 \\ 
   CMLE LTMLE & -0.46 & 5.75 & 5.77 & 6.07 & 2.48 & 6.56 \\ 
   Aggr. CMLE LTMLE & 3.64 & 4.78 & 6.01 & 7.51 & 2.47 & 7.91 \\ 
+  CMLE LTMLE treat. only & -0.36 & 5.20 & 5.21 & 6.64 & 2.55 & 7.11 \\ 
+  Aggr. CMLE LTMLE treat. only & 2.29 & 5.15 & 5.63 & 7.23 & 2.56 & 7.67 \\ 
+  CMLE LTMLE censoring only & -0.38 & 5.23 & 5.25 & 6.58 & 2.84 & 7.16 \\ 
+  Aggr. CMLE LTMLE censoring only & -0.45 & 5.22 & 5.24 & 7.03 & 2.66 & 7.52 \\ 
    \hline
 \end{tabular}
 \end{table}
@@ -470,19 +526,19 @@ Transformed?  FALSE
 Sample size =  1000  
 Confounding =  5  
 Time taken for iters =  1000  
-   user  system elapsed 
-883.710   0.977  91.029 
+    user   system  elapsed 
+1659.021    1.296  168.614 
 
 [1] "Transformed covariates"
 Transformed?  TRUE  
 Sample size =  1000  
 Confounding =  5  
 Time taken for iters =  1000  
-   user  system elapsed 
-983.829   1.624  99.809 
+    user   system  elapsed 
+1786.146    1.864  182.526 
 
-% latex table generated in R 4.4.3 by xtable 1.8-4 package
-% Thu Aug 14 14:42:03 2025
+% latex table generated in R 4.5.1 by xtable 1.8-4 package
+% Tue Aug 26 16:11:59 2025
 \begin{table}[ht]
 \centering
 \begin{tabular}{rrrrrrr}
@@ -495,6 +551,10 @@ MLE & 4.77 & 6.22 & 7.84 & 7.81 & 2.18 & 8.11 \\
   MLE LTMLE & 0.06 & 5.51 & 5.51 & 6.91 & 1.92 & 7.17 \\ 
   CMLE LTMLE & 0.03 & 4.65 & 4.65 & 6.17 & 1.73 & 6.41 \\ 
   Aggr. CMLE LTMLE & 3.50 & 4.29 & 5.53 & 7.40 & 1.77 & 7.60 \\ 
+  CMLE LTMLE treat. only & 0.02 & 4.57 & 4.57 & 6.65 & 1.78 & 6.88 \\ 
+  Aggr. CMLE LTMLE treat. only & 2.36 & 4.87 & 5.41 & 7.13 & 1.80 & 7.35 \\ 
+  CMLE LTMLE censoring only & 0.13 & 5.44 & 5.44 & 6.48 & 2.03 & 6.79 \\ 
+  Aggr. CMLE LTMLE censoring only & 0.03 & 5.34 & 5.34 & 6.92 & 1.89 & 7.18 \\ 
    \hline
 \end{tabular}
 \end{table}
@@ -504,7 +564,7 @@ Sample size =  2500
 Confounding =  5  
 Time taken for iters =  1000  
     user   system  elapsed 
-1775.673    5.779  181.969 
+3495.795    3.460  354.009 
 
 [1] "Transformed covariates"
 Transformed?  TRUE  
@@ -512,10 +572,10 @@ Sample size =  2500
 Confounding =  5  
 Time taken for iters =  1000  
     user   system  elapsed 
-2091.903    6.701  216.384 
+3871.810    4.525  392.753 
 
-% latex table generated in R 4.4.3 by xtable 1.8-4 package
-% Thu Aug 14 14:48:41 2025
+% latex table generated in R 4.5.1 by xtable 1.8-4 package
+% Tue Aug 26 16:24:26 2025
 \begin{table}[ht]
 \centering
 \begin{tabular}{rrrrrrr}
@@ -528,6 +588,10 @@ MLE & 3.89 & 5.99 & 7.14 & 7.71 & 1.74 & 7.91 \\
   MLE LTMLE & -0.07 & 4.78 & 4.79 & 6.86 & 1.89 & 7.11 \\ 
   CMLE LTMLE & -0.15 & 3.97 & 3.97 & 6.27 & 1.18 & 6.38 \\ 
   Aggr. CMLE LTMLE & 2.89 & 3.83 & 4.79 & 7.37 & 1.26 & 7.47 \\ 
+  CMLE LTMLE treat. only & -0.07 & 3.91 & 3.91 & 6.68 & 1.36 & 6.81 \\ 
+  Aggr. CMLE LTMLE treat. only & 1.95 & 4.39 & 4.80 & 7.06 & 1.63 & 7.25 \\ 
+  CMLE LTMLE censoring only & -0.09 & 4.61 & 4.61 & 6.47 & 1.46 & 6.63 \\ 
+  Aggr. CMLE LTMLE censoring only & -0.13 & 4.57 & 4.57 & 6.88 & 1.39 & 7.02 \\ 
    \hline
 \end{tabular}
 \end{table}

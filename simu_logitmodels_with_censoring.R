@@ -109,8 +109,38 @@ simulation_code <- function(iters, transformed = FALSE, sample_size,seeds,conf =
                                                                             c_var = c("X1", "X2", "X3", "X4", "t", "tX1", "tX2", "tX3", "tX4"),
                                                                             weights_var = 'weight')
       
+      calibrate_always_treated_treat_only <- calibration_by_time_from_baseline(simdata, 
+                                                                    var = c("X1", "X2", "X3", "X4"), 
+                                                                    censor = FALSE, 
+                                                                    c_var = c("X1", "X2", "X3", "X4"),
+                                                                    weights_var = 'weight')
+      calibrate_always_treated_aggr_treat_only <- aggregated_calibration_from_baseline(simdata, 
+                                                                            var = c("X1", "X2", "X3", "X4", "t", "tX1", "tX2", "tX3", "tX4"), 
+                                                                            censor = FALSE, 
+                                                                            c_var = c("X1", "X2", "X3", "X4", "t", "tX1", "tX2", "tX3", "tX4"),
+                                                                            weights_var = 'weight')
+      
+      calibrate_always_treated_censor_only <- calibration_by_time_from_baseline(simdata, 
+                                                                                calibrate_treat = FALSE,
+                                                                    var = c("X1", "X2", "X3", "X4"), 
+                                                                    censor = TRUE, 
+                                                                    c_var = c("X1", "X2", "X3", "X4"),
+                                                                    weights_var = 'weight')
+      calibrate_always_treated_aggr_censor_only <- aggregated_calibration_from_baseline(simdata, 
+                                                                            calibrate_treat = FALSE,
+                                                                            var = c("X1", "X2", "X3", "X4", "t", "tX1", "tX2", "tX3", "tX4"), 
+                                                                            censor = TRUE, 
+                                                                            c_var = c("X1", "X2", "X3", "X4", "t", "tX1", "tX2", "tX3", "tX4"),
+                                                                            weights_var = 'weight')
+      
       simdata$Cweights <- calibrate_always_treated$data$Cweights
       simdata$Cweights_aggr <- calibrate_always_treated_aggr$data$Cweights
+      
+      simdata$Cweights_treat_only <- calibrate_always_treated_treat_only$data$Cweights
+      simdata$Cweights_aggr_treat_only <- calibrate_always_treated_aggr_treat_only$data$Cweights
+      
+      simdata$Cweights_censor_only <- calibrate_always_treated_censor_only$data$Cweights
+      simdata$Cweights_aggr_censor_only <- calibrate_always_treated_aggr_censor_only$data$Cweights
       
       simdata$RA <- 1
       simdata[simdata$t == 0 & !(simdata$CA == 0),]$RA <- 0
@@ -128,8 +158,38 @@ simulation_code <- function(iters, transformed = FALSE, sample_size,seeds,conf =
                                                                            c_var = c("X1", "X2", "X3", "X4", "t", "tX1", "tX2", "tX3", "tX4"),
                                                                            weights_var = 'Cweights_aggr')
       
+      calibrate_never_treated_treat_only <- calibration_by_time_from_baseline(simdata, 
+                                                                   var = c("X1", "X2", "X3", "X4"), 
+                                                                   censor = FALSE, 
+                                                                   c_var = c("X1", "X2", "X3", "X4"),
+                                                                   weights_var = 'Cweights_treat_only')
+      calibrate_never_treated_aggr_treat_only <- aggregated_calibration_from_baseline(simdata, 
+                                                                           var = c("X1", "X2", "X3", "X4", "t", "tX1", "tX2", "tX3", "tX4"), 
+                                                                           censor = FALSE, 
+                                                                           c_var = c("X1", "X2", "X3", "X4", "t", "tX1", "tX2", "tX3", "tX4"),
+                                                                           weights_var = 'Cweights_aggr_treat_only')
+      
+      calibrate_never_treated_censor_only <- calibration_by_time_from_baseline(simdata, 
+                                                                               calibrate_treat = FALSE,
+                                                                   var = c("X1", "X2", "X3", "X4"), 
+                                                                   censor = TRUE, 
+                                                                   c_var = c("X1", "X2", "X3", "X4"),
+                                                                   weights_var = 'Cweights_censor_only')
+      calibrate_never_treated_aggr_censor_only <- aggregated_calibration_from_baseline(simdata, 
+                                                                                       calibrate_treat = FALSE,
+                                                                           var = c("X1", "X2", "X3", "X4", "t", "tX1", "tX2", "tX3", "tX4"), 
+                                                                           censor = TRUE, 
+                                                                           c_var = c("X1", "X2", "X3", "X4", "t", "tX1", "tX2", "tX3", "tX4"),
+                                                                           weights_var = 'Cweights_aggr_censor_only')
+      
       simdata$Cweights <- calibrate_never_treated$data$Cweights
       simdata$Cweights_aggr <- calibrate_never_treated_aggr$data$Cweights
+      
+      simdata$Cweights_treat_only <- calibrate_never_treated_treat_only$data$Cweights
+      simdata$Cweights_aggr_treat_only <- calibrate_never_treated_aggr_treat_only$data$Cweights
+      
+      simdata$Cweights_censor_only <- calibrate_never_treated_censor_only$data$Cweights
+      simdata$Cweights_aggr_censor_only <- calibrate_never_treated_aggr_censor_only$data$Cweights
       
       simdata$weights <- simdata$weight
       
@@ -155,7 +215,10 @@ simulation_code <- function(iters, transformed = FALSE, sample_size,seeds,conf =
       #ftable(con4)
       
       ########## Manual LTMLE MSM ############
-      wideSimdata <- data.table::dcast(setDT(simdata), ID ~ t, value.var = c("A", "X1", "X2","X3", "X4", "CA", "Y","C", "weights", "Cweights", "Cweights_aggr"))
+      wideSimdata <- data.table::dcast(setDT(simdata), ID ~ t, value.var = c("A", "X1", "X2","X3", "X4", "CA", "Y","C", 
+                                                                             "weights", "Cweights", "Cweights_aggr",
+                                                                             "Cweights_treat_only", "Cweights_aggr_treat_only",
+                                                                             "Cweights_censor_only", "Cweights_aggr_censor_only"))
       
       wideSimdata$g_treat_1_pooled <- plogis(as.matrix(cbind(rep(1,sample_size), rep(1,sample_size), wideSimdata$X1_1, wideSimdata$X2_1,wideSimdata$X3_1, wideSimdata$X4_1)) %*% treatment_model_pooled$coefficients)
       wideSimdata$g_treat_2_pooled <- plogis(as.matrix(cbind(rep(1,sample_size), rep(1,sample_size), wideSimdata$X1_2, wideSimdata$X2_2,wideSimdata$X3_2, wideSimdata$X4_2)) %*% treatment_model_pooled$coefficients)
@@ -192,8 +255,14 @@ simulation_code <- function(iters, transformed = FALSE, sample_size,seeds,conf =
       regimen_ind <- c(as.numeric(wideSimdata$CA_2 ==3), as.numeric(wideSimdata$CA_2 ==0))
       regimen_ind[is.na(regimen_ind)] <- 0
       weight <- rep(wideSimdata$weights_2,2)
+      
       Cweight <- rep(wideSimdata$Cweights_2,2)
+      Cweight_treat_only <- rep(wideSimdata$Cweights_treat_only_2,2)
+      Cweight_censor_only <- rep(wideSimdata$Cweights_censor_only_2,2)
+      
       Cweight_aggr <- rep(wideSimdata$Cweights_aggr_2,2)
+      Cweight_aggr_treat_only <- rep(wideSimdata$Cweights_aggr_treat_only_2,2)
+      Cweight_aggr_censor_only <- rep(wideSimdata$Cweights_aggr_censor_only_2,2)
       
       update_data <- data.frame(id = rep(wideSimdata$ID,2),
                                 Y_2 = rep(wideSimdata$Y_2_scaled, 2), 
@@ -219,12 +288,40 @@ simulation_code <- function(iters, transformed = FALSE, sample_size,seeds,conf =
       
       Q2_2star_cali_aggr <- predict.glm(Q2_2star_fit_cali_aggr, newdata = update_data, type = 'response')
       
+      Q2_2star_fit_cali_treat_only <- glm(Y_2 ~ intercept + cumA + offset(off) - 1, family = 'quasibinomial', 
+                               data = update_data[regimen_ind == 1,],
+                               weights = as.vector(Cweight_treat_only[regimen_ind == 1]))
+      
+      Q2_2star_cali_treat_only <- predict.glm(Q2_2star_fit_cali_treat_only, newdata = update_data, type = 'response')
+      
+      Q2_2star_fit_cali_aggr_treat_only <- glm(Y_2 ~ intercept + cumA + offset(off) - 1, family = 'quasibinomial', 
+                                    data = update_data[regimen_ind == 1,],
+                                    weights = as.vector(Cweight_aggr_treat_only[regimen_ind == 1]))
+      
+      Q2_2star_cali_aggr_treat_only <- predict.glm(Q2_2star_fit_cali_aggr_treat_only, newdata = update_data, type = 'response')
+      
+      Q2_2star_fit_cali_censor_only <- glm(Y_2 ~ intercept + cumA + offset(off) - 1, family = 'quasibinomial', 
+                               data = update_data[regimen_ind == 1,],
+                               weights = as.vector(Cweight_censor_only[regimen_ind == 1]))
+      
+      Q2_2star_cali_censor_only <- predict.glm(Q2_2star_fit_cali_censor_only, newdata = update_data, type = 'response')
+      
+      Q2_2star_fit_cali_aggr_censor_only <- glm(Y_2 ~ intercept + cumA + offset(off) - 1, family = 'quasibinomial', 
+                                    data = update_data[regimen_ind == 1,],
+                                    weights = as.vector(Cweight_aggr_censor_only[regimen_ind == 1]))
+      
+      Q2_2star_cali_aggr_censor_only <- predict.glm(Q2_2star_fit_cali_aggr_censor_only, newdata = update_data, type = 'response')
+      
       ########### t = 1 ##########
       #------------- Get Q2_1, Q1_1 ---------------------
       fitting_data <- data.frame(ID = rep(wideSimdata$ID,2), 
                                  Q2_2star = Q2_2star, 
                                  Q2_2star_cali = Q2_2star_cali,
                                  Q2_2star_cali_aggr = Q2_2star_cali_aggr,
+                                 Q2_2star_cali_treat_only = Q2_2star_cali_treat_only,
+                                 Q2_2star_cali_aggr_treat_only = Q2_2star_cali_aggr_treat_only,
+                                 Q2_2star_cali_censor_only = Q2_2star_cali_censor_only,
+                                 Q2_2star_cali_aggr_censor_only = Q2_2star_cali_aggr_censor_only,
                                  CA_1 = rep(wideSimdata$CA_1, 2),
                                  A_1 = rep(wideSimdata$A_1, 2),
                                  A_0 = rep(wideSimdata$A_0, 2),
@@ -287,6 +384,78 @@ simulation_code <- function(iters, transformed = FALSE, sample_size,seeds,conf =
                                                                           X4_1 = wideSimdata$X4_1), 
                                                      type = 'link')))
       
+      Q2_1_fit_d1_cali_treat_only <- glm(data = fitting_data[1:sample_size,], formula = Q2_2star_cali_treat_only ~ CA_1 + X1_1 + X2_1 + X3_1 + X4_1, family = 'quasibinomial')
+      Q2_1_fit_d0_cali_treat_only <- glm(data = fitting_data[(sample_size+1):(sample_size*2),], formula = Q2_2star_cali_treat_only ~ CA_1 + X1_1 + X2_1 + X3_1 + X4_1, family = 'quasibinomial')
+      
+      logitQ2_1_cali_treat_only <- as.matrix(c(predict.glm(Q2_1_fit_d1_cali_treat_only, 
+                                                newdata = data.frame(CA_1 = rep(2,sample_size),
+                                                                     X1_1 = wideSimdata$X1_1, 
+                                                                     X2_1 = wideSimdata$X2_1,
+                                                                     X3_1 = wideSimdata$X3_1, 
+                                                                     X4_1 = wideSimdata$X4_1), 
+                                                type = 'link'),
+                                    predict.glm(Q2_1_fit_d0_cali_treat_only, 
+                                                newdata = data.frame(CA_1 = rep(0,sample_size),
+                                                                     X1_1 = wideSimdata$X1_1, 
+                                                                     X2_1 = wideSimdata$X2_1,
+                                                                     X3_1 = wideSimdata$X3_1, 
+                                                                     X4_1 = wideSimdata$X4_1), 
+                                                type = 'link')))
+      
+      Q2_1_fit_d1_cali_aggr_treat_only <- glm(data = fitting_data[1:sample_size,], formula = Q2_2star_cali_aggr_treat_only ~ CA_1 + X1_1 + X2_1 + X3_1 + X4_1, family = 'quasibinomial')
+      Q2_1_fit_d0_cali_aggr_treat_only <- glm(data = fitting_data[(sample_size+1):(sample_size*2),], formula = Q2_2star_cali_aggr_treat_only ~ CA_1 + X1_1 + X2_1 + X3_1 + X4_1, family = 'quasibinomial')
+      
+      logitQ2_1_cali_aggr_treat_only <- as.matrix(c(predict.glm(Q2_1_fit_d1_cali_aggr_treat_only, 
+                                                     newdata = data.frame(CA_1 = rep(2,sample_size),
+                                                                          X1_1 = wideSimdata$X1_1, 
+                                                                          X2_1 = wideSimdata$X2_1,
+                                                                          X3_1 = wideSimdata$X3_1, 
+                                                                          X4_1 = wideSimdata$X4_1), 
+                                                     type = 'link'),
+                                         predict.glm(Q2_1_fit_d0_cali_aggr_treat_only, 
+                                                     newdata = data.frame(CA_1 = rep(0,sample_size),
+                                                                          X1_1 = wideSimdata$X1_1, 
+                                                                          X2_1 = wideSimdata$X2_1,
+                                                                          X3_1 = wideSimdata$X3_1, 
+                                                                          X4_1 = wideSimdata$X4_1), 
+                                                     type = 'link')))
+      
+      Q2_1_fit_d1_cali_censor_only <- glm(data = fitting_data[1:sample_size,], formula = Q2_2star_cali_censor_only ~ CA_1 + X1_1 + X2_1 + X3_1 + X4_1, family = 'quasibinomial')
+      Q2_1_fit_d0_cali_censor_only <- glm(data = fitting_data[(sample_size+1):(sample_size*2),], formula = Q2_2star_cali_censor_only ~ CA_1 + X1_1 + X2_1 + X3_1 + X4_1, family = 'quasibinomial')
+      
+      logitQ2_1_cali_censor_only <- as.matrix(c(predict.glm(Q2_1_fit_d1_cali_censor_only, 
+                                                           newdata = data.frame(CA_1 = rep(2,sample_size),
+                                                                                X1_1 = wideSimdata$X1_1, 
+                                                                                X2_1 = wideSimdata$X2_1,
+                                                                                X3_1 = wideSimdata$X3_1, 
+                                                                                X4_1 = wideSimdata$X4_1), 
+                                                           type = 'link'),
+                                               predict.glm(Q2_1_fit_d0_cali_censor_only, 
+                                                           newdata = data.frame(CA_1 = rep(0,sample_size),
+                                                                                X1_1 = wideSimdata$X1_1, 
+                                                                                X2_1 = wideSimdata$X2_1,
+                                                                                X3_1 = wideSimdata$X3_1, 
+                                                                                X4_1 = wideSimdata$X4_1), 
+                                                           type = 'link')))
+      
+      Q2_1_fit_d1_cali_aggr_censor_only <- glm(data = fitting_data[1:sample_size,], formula = Q2_2star_cali_aggr_censor_only ~ CA_1 + X1_1 + X2_1 + X3_1 + X4_1, family = 'quasibinomial')
+      Q2_1_fit_d0_cali_aggr_censor_only <- glm(data = fitting_data[(sample_size+1):(sample_size*2),], formula = Q2_2star_cali_aggr_censor_only ~ CA_1 + X1_1 + X2_1 + X3_1 + X4_1, family = 'quasibinomial')
+      
+      logitQ2_1_cali_aggr_censor_only <- as.matrix(c(predict.glm(Q2_1_fit_d1_cali_aggr_censor_only, 
+                                                                newdata = data.frame(CA_1 = rep(2,sample_size),
+                                                                                     X1_1 = wideSimdata$X1_1, 
+                                                                                     X2_1 = wideSimdata$X2_1,
+                                                                                     X3_1 = wideSimdata$X3_1, 
+                                                                                     X4_1 = wideSimdata$X4_1), 
+                                                                type = 'link'),
+                                                    predict.glm(Q2_1_fit_d0_cali_aggr_censor_only, 
+                                                                newdata = data.frame(CA_1 = rep(0,sample_size),
+                                                                                     X1_1 = wideSimdata$X1_1, 
+                                                                                     X2_1 = wideSimdata$X2_1,
+                                                                                     X3_1 = wideSimdata$X3_1, 
+                                                                                     X4_1 = wideSimdata$X4_1), 
+                                                                type = 'link')))
+      
       Q1_1_fit <- glm(data = wideSimdata, formula = Y_1_scaled ~ A_1 + A_0 + X1_1 + X2_1 + X3_1 + X4_1 + X1_0 + X2_0 + X3_0 + X4_0, family = 'quasibinomial')
       
       logitQ1_1 <- predict.glm(Q1_1_fit, newdata = data.frame(A_1 = c(rep(1,sample_size), rep(0,sample_size)),
@@ -306,7 +475,12 @@ simulation_code <- function(iters, transformed = FALSE, sample_size,seeds,conf =
       regimen_ind[is.na(regimen_ind)] <- 0
       weight <- rep(wideSimdata$weights_1,2)
       Cweight <- rep(wideSimdata$Cweights_1,2)
+      Cweight_treat_only <- rep(wideSimdata$Cweights_treat_only_1,2)
+      Cweight_censor_only <- rep(wideSimdata$Cweights_censor_only_1,2)
+      
       Cweight_aggr <- rep(wideSimdata$Cweights_aggr_1,2)
+      Cweight_aggr_treat_only <- rep(wideSimdata$Cweights_aggr_treat_only_1,2)
+      Cweight_aggr_censor_only <- rep(wideSimdata$Cweights_aggr_censor_only_1,2)
       
       update_data <- data.frame(id = rep(wideSimdata$ID,2),
                                 Y_1 = rep(wideSimdata$Y_1_scaled, 2), 
@@ -332,15 +506,47 @@ simulation_code <- function(iters, transformed = FALSE, sample_size,seeds,conf =
       
       Q1_1star_cali_aggr <- predict.glm(Q1_1star_fit_cali_aggr, newdata = update_data, type = 'response')
       
+      Q1_1star_fit_cali_treat_only <- glm(Y_1 ~ intercept + cumA + offset(off) - 1, family = 'quasibinomial', 
+                               data = update_data[regimen_ind == 1,],
+                               weights = as.vector(Cweight_treat_only[regimen_ind == 1]))
+      
+      Q1_1star_cali_treat_only <- predict.glm(Q1_1star_fit_cali_treat_only, newdata = update_data, type = 'response')
+      
+      Q1_1star_fit_cali_aggr_treat_only <- glm(Y_1 ~ intercept + cumA + offset(off) - 1, family = 'quasibinomial', 
+                                    data = update_data[regimen_ind == 1,],
+                                    weights = as.vector(Cweight_aggr_treat_only[regimen_ind == 1]))
+      
+      Q1_1star_cali_aggr_treat_only <- predict.glm(Q1_1star_fit_cali_aggr_treat_only, newdata = update_data, type = 'response')
+      
+      Q1_1star_fit_cali_censor_only <- glm(Y_1 ~ intercept + cumA + offset(off) - 1, family = 'quasibinomial', 
+                                          data = update_data[regimen_ind == 1,],
+                                          weights = as.vector(Cweight_censor_only[regimen_ind == 1]))
+      
+      Q1_1star_cali_censor_only <- predict.glm(Q1_1star_fit_cali_censor_only, newdata = update_data, type = 'response')
+      
+      Q1_1star_fit_cali_aggr_censor_only <- glm(Y_1 ~ intercept + cumA + offset(off) - 1, family = 'quasibinomial', 
+                                               data = update_data[regimen_ind == 1,],
+                                               weights = as.vector(Cweight_aggr_censor_only[regimen_ind == 1]))
+      
+      Q1_1star_cali_aggr_censor_only <- predict.glm(Q1_1star_fit_cali_aggr_censor_only, newdata = update_data, type = 'response')
+      
       #------------- update Q2_1-----------------------
       
       update_data <- data.frame(id = rep(wideSimdata$ID,2),
                                 Q2_2star = Q2_2star,
                                 Q2_2star_cali = Q2_2star_cali,
                                 Q2_2star_cali_aggr = Q2_2star_cali_aggr,
+                                Q2_2star_cali_treat_only = Q2_2star_cali_treat_only,
+                                Q2_2star_cali_aggr_treat_only = Q2_2star_cali_aggr_treat_only,
+                                Q2_2star_cali_censor_only = Q2_2star_cali_censor_only,
+                                Q2_2star_cali_aggr_censor_only = Q2_2star_cali_aggr_censor_only,
                                 off = logitQ2_1,
                                 off_cali = logitQ2_1_cali,
                                 off_cali_aggr = logitQ2_1_cali_aggr,
+                                off_cali_treat_only = logitQ2_1_cali_treat_only,
+                                off_cali_aggr_treat_only = logitQ2_1_cali_aggr_treat_only,
+                                off_cali_censor_only = logitQ2_1_cali_censor_only,
+                                off_cali_aggr_censor_only = logitQ2_1_cali_aggr_censor_only,
                                 intercept = rep(1,sample_size*2), 
                                 cumA = c(rep(3,sample_size), rep(0,sample_size)))
       
@@ -362,6 +568,30 @@ simulation_code <- function(iters, transformed = FALSE, sample_size,seeds,conf =
       
       Q2_1star_cali_aggr <- predict.glm(Q2_1star_fit_cali_aggr, newdata = update_data, type = 'response')
       
+      Q2_1star_fit_cali_treat_only <- glm(Q2_2star_cali_treat_only ~ intercept + cumA + offset(off_cali_treat_only) - 1, family = 'quasibinomial', 
+                               data = update_data[regimen_ind == 1,],
+                               weights = as.vector(Cweight_treat_only[regimen_ind == 1]))
+      
+      Q2_1star_cali_treat_only <- predict.glm(Q2_1star_fit_cali_treat_only, newdata = update_data, type = 'response')
+      
+      Q2_1star_fit_cali_aggr_treat_only <- glm(Q2_2star_cali_aggr_treat_only ~ intercept + cumA + offset(off_cali_aggr_treat_only) - 1, family = 'quasibinomial', 
+                                    data = update_data[regimen_ind == 1,],
+                                    weights = as.vector(Cweight_aggr_treat_only[regimen_ind == 1]))
+      
+      Q2_1star_cali_aggr_treat_only <- predict.glm(Q2_1star_fit_cali_aggr_treat_only, newdata = update_data, type = 'response')
+      
+      Q2_1star_fit_cali_censor_only <- glm(Q2_2star_cali_censor_only ~ intercept + cumA + offset(off_cali_censor_only) - 1, family = 'quasibinomial', 
+                                          data = update_data[regimen_ind == 1,],
+                                          weights = as.vector(Cweight_censor_only[regimen_ind == 1]))
+      
+      Q2_1star_cali_censor_only <- predict.glm(Q2_1star_fit_cali_censor_only, newdata = update_data, type = 'response')
+      
+      Q2_1star_fit_cali_aggr_censor_only <- glm(Q2_2star_cali_aggr_censor_only ~ intercept + cumA + offset(off_cali_aggr_censor_only) - 1, family = 'quasibinomial', 
+                                               data = update_data[regimen_ind == 1,],
+                                               weights = as.vector(Cweight_aggr_censor_only[regimen_ind == 1]))
+      
+      Q2_1star_cali_aggr_censor_only <- predict.glm(Q2_1star_fit_cali_aggr_censor_only, newdata = update_data, type = 'response')
+      
       ########### t = 0 ##########
       #------------- Get Q4_0, Q3_0, Q2_0, Q1_0, Q0_0 ---------------------
       fitting_data <- data.frame(ID = rep(wideSimdata$ID,2), 
@@ -369,8 +599,16 @@ simulation_code <- function(iters, transformed = FALSE, sample_size,seeds,conf =
                                  Q1_1star = Q1_1star, 
                                  Q2_1star_cali = Q2_1star_cali, 
                                  Q2_1star_cali_aggr = Q2_1star_cali_aggr,
+                                 Q2_1star_cali_treat_only = Q2_1star_cali_treat_only, 
+                                 Q2_1star_cali_aggr_treat_only = Q2_1star_cali_aggr_treat_only,
+                                 Q2_1star_cali_censor_only  = Q2_1star_cali_censor_only , 
+                                 Q2_1star_cali_aggr_censor_only  = Q2_1star_cali_aggr_censor_only ,
                                  Q1_1star_cali = Q1_1star_cali, 
                                  Q1_1star_cali_aggr = Q1_1star_cali_aggr, 
+                                 Q1_1star_cali_treat_only = Q1_1star_cali_treat_only, 
+                                 Q1_1star_cali_aggr_treat_only = Q1_1star_cali_aggr_treat_only, 
+                                 Q1_1star_cali_censor_only = Q1_1star_cali_censor_only, 
+                                 Q1_1star_cali_aggr_censor_only = Q1_1star_cali_aggr_censor_only, 
                                  A_0 = rep(wideSimdata$A_0, 2),
                                  X1_0 = rep(wideSimdata$X1_0, 2), 
                                  X2_0 = rep(wideSimdata$X2_0, 2),
@@ -407,6 +645,45 @@ simulation_code <- function(iters, transformed = FALSE, sample_size,seeds,conf =
                                          predict.glm(Q2_0_fit_d0_cali_aggr,
                                                      newdata = data.frame(A_0 = rep(0,sample_size)),
                                                      type = 'link')))
+      
+      Q2_0_fit_d1_cali_treat_only <- glm(data = fitting_data[1:sample_size,], formula = Q2_1star_cali_treat_only ~ A_0, family = 'quasibinomial')
+      Q2_0_fit_d0_cali_treat_only <- glm(data = fitting_data[(sample_size+1):(sample_size*2),], formula = Q2_1star_cali_treat_only ~ A_0, family = 'quasibinomial')
+      
+      logitQ2_0_cali_treat_only <- as.matrix(c(predict.glm(Q2_0_fit_d1_cali_treat_only, 
+                                                newdata = data.frame(A_0 = rep(1,sample_size)),
+                                                type = 'link'),
+                                    predict.glm(Q2_0_fit_d0_cali_treat_only,
+                                                newdata = data.frame(A_0 = rep(0,sample_size)),
+                                                type = 'link')))
+      
+      Q2_0_fit_d1_cali_aggr_treat_only <- glm(data = fitting_data[1:sample_size,], formula = Q2_1star_cali_aggr_treat_only ~ A_0, family = 'quasibinomial')
+      Q2_0_fit_d0_cali_aggr_treat_only <- glm(data = fitting_data[(sample_size+1):(sample_size*2),], formula = Q2_1star_cali_aggr_treat_only ~ A_0, family = 'quasibinomial')
+      
+      logitQ2_0_cali_aggr_treat_only <- as.matrix(c(predict.glm(Q2_0_fit_d1_cali_aggr_treat_only, 
+                                                     newdata = data.frame(A_0 = rep(1,sample_size)),
+                                                     type = 'link'),
+                                         predict.glm(Q2_0_fit_d0_cali_aggr_treat_only,
+                                                     newdata = data.frame(A_0 = rep(0,sample_size)),
+                                                     type = 'link')))
+      Q2_0_fit_d1_cali_censor_only <- glm(data = fitting_data[1:sample_size,], formula = Q2_1star_cali_censor_only ~ A_0, family = 'quasibinomial')
+      Q2_0_fit_d0_cali_censor_only <- glm(data = fitting_data[(sample_size+1):(sample_size*2),], formula = Q2_1star_cali_censor_only ~ A_0, family = 'quasibinomial')
+      
+      logitQ2_0_cali_censor_only <- as.matrix(c(predict.glm(Q2_0_fit_d1_cali_censor_only, 
+                                                           newdata = data.frame(A_0 = rep(1,sample_size)),
+                                                           type = 'link'),
+                                               predict.glm(Q2_0_fit_d0_cali_censor_only,
+                                                           newdata = data.frame(A_0 = rep(0,sample_size)),
+                                                           type = 'link')))
+      
+      Q2_0_fit_d1_cali_aggr_censor_only <- glm(data = fitting_data[1:sample_size,], formula = Q2_1star_cali_aggr_censor_only ~ A_0, family = 'quasibinomial')
+      Q2_0_fit_d0_cali_aggr_censor_only <- glm(data = fitting_data[(sample_size+1):(sample_size*2),], formula = Q2_1star_cali_aggr_censor_only ~ A_0, family = 'quasibinomial')
+      
+      logitQ2_0_cali_aggr_censor_only <- as.matrix(c(predict.glm(Q2_0_fit_d1_cali_aggr_censor_only, 
+                                                                newdata = data.frame(A_0 = rep(1,sample_size)),
+                                                                type = 'link'),
+                                                    predict.glm(Q2_0_fit_d0_cali_aggr_censor_only,
+                                                                newdata = data.frame(A_0 = rep(0,sample_size)),
+                                                                type = 'link')))
       
       Q1_0_fit_d1 <- glm(data = fitting_data[1:sample_size,], formula = Q1_1star ~ A_0 + X1_0 + X2_0 + X3_0 + X4_0, family = 'quasibinomial')
       Q1_0_fit_d0 <- glm(data = fitting_data[(sample_size+1):(sample_size*2),], formula = Q1_1star ~ A_0 + X1_0 + X2_0 + X3_0 + X4_0, family = 'quasibinomial')
@@ -462,6 +739,79 @@ simulation_code <- function(iters, transformed = FALSE, sample_size,seeds,conf =
                                                                           X4_0 = wideSimdata$X4_0),
                                                      type = 'link')))
       
+      Q1_0_fit_d1_cali_treat_only <- glm(data = fitting_data[1:sample_size,], formula = Q1_1star_cali_treat_only ~ A_0 + X1_0 + X2_0 + X3_0 + X4_0 , family = 'quasibinomial')
+      Q1_0_fit_d0_cali_treat_only <- glm(data = fitting_data[(sample_size+1):(sample_size*2),], formula = Q1_1star_cali_treat_only ~ A_0 + X1_0 + X2_0 + X3_0 + X4_0, family = 'quasibinomial')
+      
+      logitQ1_0_cali_treat_only <- as.matrix(c(predict.glm(Q1_0_fit_d1_cali_treat_only, 
+                                                newdata = data.frame(A_0 = rep(1,sample_size),
+                                                                     X1_0 = wideSimdata$X1_0, 
+                                                                     X2_0 = wideSimdata$X2_0,
+                                                                     X3_0 = wideSimdata$X3_0, 
+                                                                     X4_0 = wideSimdata$X4_0),
+                                                type = 'link'),
+                                    predict.glm(Q1_0_fit_d0_cali_treat_only, 
+                                                newdata = data.frame(A_0 = rep(0,sample_size),
+                                                                     X1_0 = wideSimdata$X1_0, 
+                                                                     X2_0 = wideSimdata$X2_0,
+                                                                     X3_0 = wideSimdata$X3_0, 
+                                                                     X4_0 = wideSimdata$X4_0),
+                                                type = 'link')))
+      
+      Q1_0_fit_d1_cali_aggr_treat_only <- glm(data = fitting_data[1:sample_size,], formula = Q1_1star_cali_aggr_treat_only ~ A_0 + X1_0 + X2_0 + X3_0 + X4_0 , family = 'quasibinomial')
+      Q1_0_fit_d0_cali_aggr_treat_only <- glm(data = fitting_data[(sample_size+1):(sample_size*2),], formula = Q1_1star_cali_aggr_treat_only ~ A_0 + X1_0 + X2_0 + X3_0 + X4_0, family = 'quasibinomial')
+      
+      logitQ1_0_cali_aggr_treat_only <- as.matrix(c(predict.glm(Q1_0_fit_d1_cali_aggr_treat_only, 
+                                                     newdata = data.frame(A_0 = rep(1,sample_size),
+                                                                          X1_0 = wideSimdata$X1_0, 
+                                                                          X2_0 = wideSimdata$X2_0,
+                                                                          X3_0 = wideSimdata$X3_0, 
+                                                                          X4_0 = wideSimdata$X4_0),
+                                                     type = 'link'),
+                                         predict.glm(Q1_0_fit_d0_cali_aggr_treat_only, 
+                                                     newdata = data.frame(A_0 = rep(0,sample_size),
+                                                                          X1_0 = wideSimdata$X1_0, 
+                                                                          X2_0 = wideSimdata$X2_0,
+                                                                          X3_0 = wideSimdata$X3_0, 
+                                                                          X4_0 = wideSimdata$X4_0),
+                                                     type = 'link')))
+      
+      Q1_0_fit_d1_cali_censor_only <- glm(data = fitting_data[1:sample_size,], formula = Q1_1star_cali_censor_only ~ A_0 + X1_0 + X2_0 + X3_0 + X4_0 , family = 'quasibinomial')
+      Q1_0_fit_d0_cali_censor_only <- glm(data = fitting_data[(sample_size+1):(sample_size*2),], formula = Q1_1star_cali_censor_only ~ A_0 + X1_0 + X2_0 + X3_0 + X4_0, family = 'quasibinomial')
+      
+      logitQ1_0_cali_censor_only <- as.matrix(c(predict.glm(Q1_0_fit_d1_cali_censor_only, 
+                                                           newdata = data.frame(A_0 = rep(1,sample_size),
+                                                                                X1_0 = wideSimdata$X1_0, 
+                                                                                X2_0 = wideSimdata$X2_0,
+                                                                                X3_0 = wideSimdata$X3_0, 
+                                                                                X4_0 = wideSimdata$X4_0),
+                                                           type = 'link'),
+                                               predict.glm(Q1_0_fit_d0_cali_censor_only, 
+                                                           newdata = data.frame(A_0 = rep(0,sample_size),
+                                                                                X1_0 = wideSimdata$X1_0, 
+                                                                                X2_0 = wideSimdata$X2_0,
+                                                                                X3_0 = wideSimdata$X3_0, 
+                                                                                X4_0 = wideSimdata$X4_0),
+                                                           type = 'link')))
+      
+      Q1_0_fit_d1_cali_aggr_censor_only <- glm(data = fitting_data[1:sample_size,], formula = Q1_1star_cali_aggr_censor_only ~ A_0 + X1_0 + X2_0 + X3_0 + X4_0 , family = 'quasibinomial')
+      Q1_0_fit_d0_cali_aggr_censor_only <- glm(data = fitting_data[(sample_size+1):(sample_size*2),], formula = Q1_1star_cali_aggr_censor_only ~ A_0 + X1_0 + X2_0 + X3_0 + X4_0, family = 'quasibinomial')
+      
+      logitQ1_0_cali_aggr_censor_only <- as.matrix(c(predict.glm(Q1_0_fit_d1_cali_aggr_censor_only, 
+                                                                newdata = data.frame(A_0 = rep(1,sample_size),
+                                                                                     X1_0 = wideSimdata$X1_0, 
+                                                                                     X2_0 = wideSimdata$X2_0,
+                                                                                     X3_0 = wideSimdata$X3_0, 
+                                                                                     X4_0 = wideSimdata$X4_0),
+                                                                type = 'link'),
+                                                    predict.glm(Q1_0_fit_d0_cali_aggr_censor_only, 
+                                                                newdata = data.frame(A_0 = rep(0,sample_size),
+                                                                                     X1_0 = wideSimdata$X1_0, 
+                                                                                     X2_0 = wideSimdata$X2_0,
+                                                                                     X3_0 = wideSimdata$X3_0, 
+                                                                                     X4_0 = wideSimdata$X4_0),
+                                                                type = 'link')))
+      
+      
       Q0_0_fit <- glm(data = wideSimdata, formula = Y_0_scaled ~ A_0 + X1_0 + X2_0 + X3_0 + X4_0, family = 'quasibinomial')
       
       logitQ0_0 <- predict.glm(Q0_0_fit, newdata = data.frame(A_0 = c(rep(1,sample_size), rep(0,sample_size)), 
@@ -476,7 +826,12 @@ simulation_code <- function(iters, transformed = FALSE, sample_size,seeds,conf =
       regimen_ind[is.na(regimen_ind)] <- 0
       weight <- rep(wideSimdata$weights_0,2)
       Cweight <- rep(wideSimdata$Cweights_0,2)
+      Cweight_treat_only <- rep(wideSimdata$Cweights_treat_only_0,2)
+      Cweight_censor_only <- rep(wideSimdata$Cweights_censor_only_0,2)
+      
       Cweight_aggr <- rep(wideSimdata$Cweights_aggr_0,2)
+      Cweight_aggr_treat_only <- rep(wideSimdata$Cweights_aggr_treat_only_0,2)
+      Cweight_aggr_censor_only <- rep(wideSimdata$Cweights_aggr_censor_only_0,2)
       
       update_data <- data.frame(id = rep(wideSimdata$ID,2),
                                 Y_0 = rep(wideSimdata$Y_0_scaled, 2), 
@@ -502,15 +857,47 @@ simulation_code <- function(iters, transformed = FALSE, sample_size,seeds,conf =
       
       Q0_0star_cali_aggr <- predict.glm(Q0_0star_fit_cali_aggr, newdata = update_data, type = 'response')
       
+      Q0_0star_fit_cali_treat_only <- glm(Y_0 ~ intercept + cumA + offset(off) - 1, family = 'quasibinomial', 
+                               data = update_data[regimen_ind == 1,],
+                               weights = as.vector(Cweight_treat_only[regimen_ind == 1]))
+      
+      Q0_0star_cali_treat_only <- predict.glm(Q0_0star_fit_cali_treat_only, newdata = update_data, type = 'response')
+      
+      Q0_0star_fit_cali_aggr_treat_only <- glm(Y_0 ~ intercept + cumA + offset(off) - 1, family = 'quasibinomial', 
+                                    data = update_data[regimen_ind == 1,],
+                                    weights = as.vector(Cweight_aggr_treat_only[regimen_ind == 1]))
+      
+      Q0_0star_cali_aggr_treat_only <- predict.glm(Q0_0star_fit_cali_aggr_treat_only, newdata = update_data, type = 'response')
+      
+      Q0_0star_fit_cali_censor_only <- glm(Y_0 ~ intercept + cumA + offset(off) - 1, family = 'quasibinomial', 
+                                          data = update_data[regimen_ind == 1,],
+                                          weights = as.vector(Cweight_censor_only[regimen_ind == 1]))
+      
+      Q0_0star_cali_censor_only <- predict.glm(Q0_0star_fit_cali_censor_only, newdata = update_data, type = 'response')
+      
+      Q0_0star_fit_cali_aggr_censor_only <- glm(Y_0 ~ intercept + cumA + offset(off) - 1, family = 'quasibinomial', 
+                                               data = update_data[regimen_ind == 1,],
+                                               weights = as.vector(Cweight_aggr_censor_only[regimen_ind == 1]))
+      
+      Q0_0star_cali_aggr_censor_only <- predict.glm(Q0_0star_fit_cali_aggr_censor_only, newdata = update_data, type = 'response')
+      
       #------------- update Q2_0-----------------------
       
       update_data <- data.frame(id = rep(wideSimdata$ID,2),
                                 Q2_1star = Q2_1star,
                                 Q2_1star_cali = Q2_1star_cali,
                                 Q2_1star_cali_aggr = Q2_1star_cali_aggr,
+                                Q2_1star_cali_treat_only = Q2_1star_cali_treat_only,
+                                Q2_1star_cali_aggr_treat_only = Q2_1star_cali_aggr_treat_only,
+                                Q2_1star_cali_censor_only = Q2_1star_cali_censor_only,
+                                Q2_1star_cali_aggr_censor_only = Q2_1star_cali_aggr_censor_only,
                                 off = logitQ2_0,
                                 off_cali = logitQ2_0_cali,
                                 off_cali_aggr = logitQ2_0_cali_aggr,
+                                off_cali_treat_only = logitQ2_0_cali_treat_only,
+                                off_cali_aggr_treat_only = logitQ2_0_cali_aggr_treat_only,
+                                off_cali_censor_only = logitQ2_0_cali_censor_only,
+                                off_cali_aggr_censor_only = logitQ2_0_cali_aggr_censor_only,
                                 intercept = rep(1,sample_size*2), 
                                 cumA = c(rep(3,sample_size), rep(0,sample_size)))
       
@@ -532,15 +919,47 @@ simulation_code <- function(iters, transformed = FALSE, sample_size,seeds,conf =
       
       Q2_0star_cali_aggr <- predict.glm(Q2_0star_fit_cali_aggr, newdata = update_data, type = 'response')
       
+      Q2_0star_fit_cali_treat_only <- glm(Q2_1star_cali_treat_only ~ intercept + cumA + offset(off_cali_treat_only) - 1, family = 'quasibinomial', 
+                               data = update_data[regimen_ind == 1,],
+                               weights = as.vector(Cweight_treat_only[regimen_ind == 1]))
+      
+      Q2_0star_cali_treat_only <- predict.glm(Q2_0star_fit_cali_treat_only, newdata = update_data, type = 'response')
+      
+      Q2_0star_fit_cali_aggr_treat_only <- glm(Q2_1star_cali_aggr_treat_only ~ intercept + cumA + offset(off_cali_aggr_treat_only) - 1, family = 'quasibinomial', 
+                                    data = update_data[regimen_ind == 1,],
+                                    weights = as.vector(Cweight_aggr_treat_only[regimen_ind == 1]))
+      
+      Q2_0star_cali_aggr_treat_only <- predict.glm(Q2_0star_fit_cali_aggr_treat_only, newdata = update_data, type = 'response')
+      
+      Q2_0star_fit_cali_censor_only <- glm(Q2_1star_cali_censor_only ~ intercept + cumA + offset(off_cali_censor_only) - 1, family = 'quasibinomial', 
+                                          data = update_data[regimen_ind == 1,],
+                                          weights = as.vector(Cweight_censor_only[regimen_ind == 1]))
+      
+      Q2_0star_cali_censor_only <- predict.glm(Q2_0star_fit_cali_censor_only, newdata = update_data, type = 'response')
+      
+      Q2_0star_fit_cali_aggr_censor_only <- glm(Q2_1star_cali_aggr_censor_only ~ intercept + cumA + offset(off_cali_aggr_censor_only) - 1, family = 'quasibinomial', 
+                                               data = update_data[regimen_ind == 1,],
+                                               weights = as.vector(Cweight_aggr_censor_only[regimen_ind == 1]))
+      
+      Q2_0star_cali_aggr_censor_only <- predict.glm(Q2_0star_fit_cali_aggr_censor_only, newdata = update_data, type = 'response')
+      
       #------------- update Q1_0-----------------------
       
       update_data <- data.frame(id = rep(wideSimdata$ID,2),
                                 Q1_1star = Q1_1star,
                                 Q1_1star_cali = Q1_1star_cali,
                                 Q1_1star_cali_aggr = Q1_1star_cali_aggr,
+                                Q1_1star_cali_treat_only = Q1_1star_cali_treat_only,
+                                Q1_1star_cali_aggr_treat_only = Q1_1star_cali_aggr_treat_only,
+                                Q1_1star_cali_censor_only = Q1_1star_cali_censor_only,
+                                Q1_1star_cali_aggr_censor_only = Q1_1star_cali_aggr_censor_only,
                                 off = logitQ1_0,
                                 off_cali = logitQ1_0_cali,
                                 off_cali_aggr = logitQ1_0_cali_aggr,
+                                off_cali_treat_only = logitQ1_0_cali_treat_only,
+                                off_cali_aggr_treat_only = logitQ1_0_cali_aggr_treat_only,
+                                off_cali_censor_only = logitQ1_0_cali_censor_only,
+                                off_cali_aggr_censor_only = logitQ1_0_cali_aggr_censor_only,
                                 intercept = rep(1,sample_size*2), 
                                 cumA = c(rep(2,sample_size), rep(0,sample_size)))
       
@@ -562,6 +981,30 @@ simulation_code <- function(iters, transformed = FALSE, sample_size,seeds,conf =
       
       Q1_0star_cali_aggr <- predict.glm(Q1_0star_fit_cali_aggr, newdata = update_data, type = 'response')
       
+      Q1_0star_fit_cali_treat_only <- glm(Q1_1star_cali_treat_only ~ intercept + cumA + offset(off_cali_treat_only) - 1, family = 'quasibinomial', 
+                               data = update_data[regimen_ind == 1,],
+                               weights = as.vector(Cweight_treat_only[regimen_ind == 1]))
+      
+      Q1_0star_cali_treat_only <- predict.glm(Q1_0star_fit_cali_treat_only, newdata = update_data, type = 'response')
+      
+      Q1_0star_fit_cali_aggr_treat_only <- glm(Q1_1star_cali_aggr_treat_only ~ intercept + cumA + offset(off_cali_aggr_treat_only) - 1, family = 'quasibinomial', 
+                                    data = update_data[regimen_ind == 1,],
+                                    weights = as.vector(Cweight_aggr_treat_only[regimen_ind == 1]))
+      
+      Q1_0star_cali_aggr_treat_only <- predict.glm(Q1_0star_fit_cali_aggr_treat_only, newdata = update_data, type = 'response')
+      
+      Q1_0star_fit_cali_censor_only <- glm(Q1_1star_cali_censor_only ~ intercept + cumA + offset(off_cali_censor_only) - 1, family = 'quasibinomial', 
+                                          data = update_data[regimen_ind == 1,],
+                                          weights = as.vector(Cweight_censor_only[regimen_ind == 1]))
+      
+      Q1_0star_cali_censor_only <- predict.glm(Q1_0star_fit_cali_censor_only, newdata = update_data, type = 'response')
+      
+      Q1_0star_fit_cali_aggr_censor_only <- glm(Q1_1star_cali_aggr_censor_only ~ intercept + cumA + offset(off_cali_aggr_censor_only) - 1, family = 'quasibinomial', 
+                                               data = update_data[regimen_ind == 1,],
+                                               weights = as.vector(Cweight_aggr_censor_only[regimen_ind == 1]))
+      
+      Q1_0star_cali_aggr_censor_only <- predict.glm(Q1_0star_fit_cali_aggr_censor_only, newdata = update_data, type = 'response')
+      
       ################# Fit MSM ##########################
       
       msm_fitting_data <- data.frame(id = rep(1:sample_size,6), 
@@ -571,6 +1014,10 @@ simulation_code <- function(iters, transformed = FALSE, sample_size,seeds,conf =
                                      Y = c(Q0_0star, Q1_0star, Q2_0star), 
                                      Y_cali = c(Q0_0star_cali, Q1_0star_cali, Q2_0star_cali),
                                      Y_cali_aggr = c(Q0_0star_cali_aggr, Q1_0star_cali_aggr, Q2_0star_cali_aggr),
+                                     Y_cali_treat_only = c(Q0_0star_cali_treat_only, Q1_0star_cali_treat_only, Q2_0star_cali_treat_only),
+                                     Y_cali_aggr_treat_only = c(Q0_0star_cali_aggr_treat_only, Q1_0star_cali_aggr_treat_only, Q2_0star_cali_aggr_treat_only),
+                                     Y_cali_censor_only = c(Q0_0star_cali_censor_only, Q1_0star_cali_censor_only, Q2_0star_cali_censor_only),
+                                     Y_cali_aggr_censor_only = c(Q0_0star_cali_aggr_censor_only, Q1_0star_cali_aggr_censor_only, Q2_0star_cali_aggr_censor_only),
                                      cumA = c(rep(1,sample_size), rep(0,sample_size), 
                                               rep(2,sample_size), rep(0,sample_size), 
                                               rep(3,sample_size), rep(0,sample_size)))
@@ -578,6 +1025,10 @@ simulation_code <- function(iters, transformed = FALSE, sample_size,seeds,conf =
       msm <- glm(Y ~ cumA, data = msm_fitting_data, family = 'quasibinomial')
       msm_cali <- glm(Y_cali ~ cumA, data = msm_fitting_data, family = 'quasibinomial')
       msm_cali_aggr <- glm(Y_cali_aggr ~ cumA, data = msm_fitting_data, family = 'quasibinomial')
+      msm_cali_treat_only <- glm(Y_cali_treat_only ~ cumA, data = msm_fitting_data, family = 'quasibinomial')
+      msm_cali_aggr_treat_only <- glm(Y_cali_aggr_treat_only ~ cumA, data = msm_fitting_data, family = 'quasibinomial')
+      msm_cali_censor_only <- glm(Y_cali_censor_only ~ cumA, data = msm_fitting_data, family = 'quasibinomial')
+      msm_cali_aggr_censor_only <- glm(Y_cali_aggr_censor_only ~ cumA, data = msm_fitting_data, family = 'quasibinomial')
       
       msm_fitting_data_transformed <- data.frame(id = rep(1:sample_size,6), 
                                                  t = c(rep(0,sample_size*2), 
@@ -586,6 +1037,10 @@ simulation_code <- function(iters, transformed = FALSE, sample_size,seeds,conf =
                                                  Y = c(Q0_0star, Q1_0star, Q2_0star)*(b-a) + a, 
                                                  Y_cali = c(Q0_0star_cali, Q1_0star_cali, Q2_0star_cali)*(b-a) +a,
                                                  Y_cali_aggr = c(Q0_0star_cali_aggr, Q1_0star_cali_aggr, Q2_0star_cali_aggr)*(b-a)+a,
+                                                 Y_cali_treat_only = c(Q0_0star_cali_treat_only, Q1_0star_cali_treat_only, Q2_0star_cali_treat_only)*(b-a) +a,
+                                                 Y_cali_aggr_treat_only = c(Q0_0star_cali_aggr_treat_only, Q1_0star_cali_aggr_treat_only, Q2_0star_cali_aggr_treat_only)*(b-a) +a,
+                                                 Y_cali_censor_only = c(Q0_0star_cali_censor_only, Q1_0star_cali_censor_only, Q2_0star_cali_censor_only)*(b-a) +a,
+                                                 Y_cali_aggr_censor_only = c(Q0_0star_cali_aggr_censor_only, Q1_0star_cali_aggr_censor_only, Q2_0star_cali_aggr_censor_only)*(b-a) +a,
                                                  cumA = c(rep(1,sample_size), rep(0,sample_size), 
                                                           rep(2,sample_size), rep(0,sample_size), 
                                                           rep(3,sample_size), rep(0,sample_size)))
@@ -593,6 +1048,10 @@ simulation_code <- function(iters, transformed = FALSE, sample_size,seeds,conf =
       msm_transformed <- glm(Y ~ cumA, data = msm_fitting_data_transformed)
       msm_transformed_cali <- glm(Y_cali ~ cumA, data = msm_fitting_data_transformed)
       msm_transformed_cali_aggr <- glm(Y_cali_aggr ~ cumA, data = msm_fitting_data_transformed)
+      msm_transformed_cali_treat_only <- glm(Y_cali_treat_only ~ cumA, data = msm_fitting_data_transformed)
+      msm_transformed_cali_aggr_treat_only <- glm(Y_cali_aggr_treat_only ~ cumA, data = msm_fitting_data_transformed)
+      msm_transformed_cali_censor_only <- glm(Y_cali_censor_only ~ cumA, data = msm_fitting_data_transformed)
+      msm_transformed_cali_aggr_censor_only <- glm(Y_cali_aggr_censor_only ~ cumA, data = msm_fitting_data_transformed)
       
       
       ##################### IPW - MSM ##################################
@@ -615,24 +1074,26 @@ simulation_code <- function(iters, transformed = FALSE, sample_size,seeds,conf =
       
     }))
     
-    fitting_data_CA3 <- switch_data[switch_data$t == 0,]
-    fitting_data_CA3$CA <- 3
-    
-    fitting_data_CA0 <- switch_data[switch_data$t == 0,]
-    fitting_data_CA0$CA <- 0
-    
     c(PP_strat$coefficients[1],
       PP_cali$coefficients[1], 
       PP_cali_aggr$coefficients[1], 
       msm_transformed$coefficients[1],
       msm_transformed_cali$coefficients[1],
       msm_transformed_cali_aggr$coefficients[1],
+      msm_transformed_cali_treat_only$coefficients[1],
+      msm_transformed_cali_aggr_treat_only$coefficients[1],
+      msm_transformed_cali_censor_only$coefficients[1],
+      msm_transformed_cali_aggr_censor_only$coefficients[1],
       PP_strat$coefficients[2],
       PP_cali$coefficients[2],
       PP_cali_aggr$coefficients[2],
       msm_transformed$coefficients[2],
       msm_transformed_cali$coefficients[2],
-      msm_transformed_cali_aggr$coefficients[2]
+      msm_transformed_cali_aggr$coefficients[2],
+      msm_transformed_cali_treat_only$coefficients[2],
+      msm_transformed_cali_aggr_treat_only$coefficients[2],
+      msm_transformed_cali_censor_only$coefficients[2],
+      msm_transformed_cali_aggr_censor_only$coefficients[2]
     )
   }
   cat(paste('Transformed? ', transformed, ' \n'))
@@ -649,22 +1110,30 @@ simulation_code <- function(iters, transformed = FALSE, sample_size,seeds,conf =
                             'MLE LTMLE',
                             'CMLE LTMLE',
                             'Aggr. CMLE LTMLE',
+                            'CMLE LTMLE treat. only',
+                            'Aggr. CMLE LTMLE treat. only',
+                            'CMLE LTMLE censoring only',
+                            'Aggr. CMLE LTMLE censoring only',
                             'MLE',
                             'CMLE',
                             'Aggr. CMLE',
                             'MLE LTMLE',
                             'CMLE LTMLE',
-                            'Aggr. CMLE LTMLE'
+                            'Aggr. CMLE LTMLE',
+                            'CMLE LTMLE treat. only',
+                            'Aggr. CMLE LTMLE treat. only',
+                            'CMLE LTMLE censoring only',
+                            'Aggr. CMLE LTMLE censoring only'
   )
   
-  results <- cbind(rowMeans(simulation, na.rm = TRUE)[1:6]-200, rowMeans(simulation, na.rm = TRUE)[7:12]-10,
-                   rowSds(simulation, na.rm = TRUE)[1:6], rowSds(simulation, na.rm = TRUE)[7:12],
-                   sqrt((rowMeans(simulation, na.rm = TRUE)[1:6]-200)^2+ rowSds(simulation, na.rm = TRUE)[1:6]^2),
-                   sqrt((rowMeans(simulation, na.rm = TRUE)[7:12]-10)^2+ rowSds(simulation, na.rm = TRUE)[7:12]^2))
+  results <- cbind(rowMeans(simulation, na.rm = TRUE)[1:10]-200, rowMeans(simulation, na.rm = TRUE)[11:20]-10,
+                   rowSds(simulation, na.rm = TRUE)[1:10], rowSds(simulation, na.rm = TRUE)[11:20],
+                   sqrt((rowMeans(simulation, na.rm = TRUE)[1:10]-200)^2+ rowSds(simulation, na.rm = TRUE)[1:10]^2),
+                   sqrt((rowMeans(simulation, na.rm = TRUE)[11:20]-10)^2+ rowSds(simulation, na.rm = TRUE)[11:20]^2))
   
-  always_treat_Y <- cbind(rowMeans(simulation[1:6,] + 3*simulation[7:12,], na.rm = TRUE)-230,
-                          rowSds(simulation[1:6,] + 3*simulation[7:12,], na.rm = TRUE),
-                          sqrt((rowMeans(simulation[1:6,] + 3*simulation[7:12,], na.rm = TRUE)-230)^2 + rowSds(simulation[1:6,] + 3*simulation[7:12,], na.rm = TRUE)^2))
+  always_treat_Y <- cbind(rowMeans(simulation[1:10,] + 3*simulation[11:20,], na.rm = TRUE)-230,
+                          rowSds(simulation[1:10,] + 3*simulation[11:20,], na.rm = TRUE),
+                          sqrt((rowMeans(simulation[1:10,] + 3*simulation[11:20,], na.rm = TRUE)-230)^2 + rowSds(simulation[1:10,] + 3*simulation[11:20,], na.rm = TRUE)^2))
   
   return(list(MSM = results,
               EYT = always_treat_Y))

@@ -495,51 +495,56 @@ calibration_by_time_stabilised<-function(simdatafinal, var=c('A1', 'A1X1')){
        objective.Cali = wei1optAR$fvec)
 }
 
-calibration_by_time_from_baseline<-function(simdatafinal, var=c('X1', 'X2'),censor = FALSE,c_var = NULL, weights_var = 'weights'){
+calibration_by_time_from_baseline<-function(simdatafinal, calibrate_treat = TRUE, var=c('X1', 'X2'),censor = FALSE,c_var = NULL, weights_var = 'weights'){
   simdatafinal$weights <- simdatafinal[,weights_var]
   T <- max(simdatafinal$tall)
-  data1 <- simdatafinal[simdatafinal$tall == 0,]
-  data1 <- cbind(data1$RA, data1$RA*data1[, var]) #RC_0*RA_0*X_0 = RA_0*X_0
-  Tdata1<- t(data1)
-  data0 <- cbind(1,simdatafinal[simdatafinal$tall == 0, var]) #RC_0*RA_-1*W_-1*X_0 = X_0
-  RHS <- colSums(data0)
-  restrictions_weight1 <- function(w){
-    ##Objective function
-    lp3<-colSums(Tdata1*w)
-    we<-simdatafinal$weights[simdatafinal$tall == 0]*exp(lp3)
-    m3<-(colSums(data1*we) - RHS)/nrow(data1) ##Restrictions (6)
-    c(m3)
-  }
   
-  ##Hessian matrix
-  
-  N1MATAR<-Tdata1
-  N2MATAR<-data1
-  
-  DgAR1<-function(w){
+  if(calibrate_treat){
+    data1 <- simdatafinal[simdatafinal$tall == 0,]
+    data1 <- cbind(data1$RA, data1$RA*data1[, var]) #RC_0*RA_0*X_0 = RA_0*X_0
+    Tdata1<- t(data1)
+    data0 <- cbind(1,simdatafinal[simdatafinal$tall == 0, var]) #RC_0*RA_-1*W_-1*X_0 = X_0
+    RHS <- colSums(data0)
+    restrictions_weight1 <- function(w){
+      ##Objective function
+      lp3<-colSums(Tdata1*w)
+      we<-simdatafinal$weights[simdatafinal$tall == 0]*exp(lp3)
+      m3<-(colSums(data1*we) - RHS)/nrow(data1) ##Restrictions (6)
+      c(m3)
+    }
     
-    lp3<-colSums(Tdata1*w)
-    we<-simdatafinal$weights[simdatafinal$tall == 0]*exp(lp3)
-    MAT<-N2MATAR*we
-    MAT1<-diag(length(w))
-    for (k in 1:length(w)){
-      MAT1[,k]<-colMeans(N1MATAR[k,]*MAT)}
-    MAT1
+    ##Hessian matrix
+    
+    N1MATAR<-Tdata1
+    N2MATAR<-data1
+    
+    DgAR1<-function(w){
+      
+      lp3<-colSums(Tdata1*w)
+      we<-simdatafinal$weights[simdatafinal$tall == 0]*exp(lp3)
+      MAT<-N2MATAR*we
+      MAT1<-diag(length(w))
+      for (k in 1:length(w)){
+        MAT1[,k]<-colMeans(N1MATAR[k,]*MAT)}
+      MAT1
+    }
+    
+    wei1optAR<-nleqslv::nleqslv(rep(0,dim(data1)[2]),restrictions_weight1,DgAR1,method="Broyden",
+                                control=list(maxit=10000,ftol=10^(-16),xtol=10^(-16)), jacobian=T)
+    
+    weconsAR<-function(w){
+      lp3<-colSums(Tdata1*w)
+      we<-simdatafinal$weights[simdatafinal$tall==0]*exp(lp3)
+      return(we)
+    }
+    
+    CALW1<-weconsAR(wei1optAR$x)
+    
+    simdatafinal$Cweights<-simdatafinal$weights
+    simdatafinal$Cweights[simdatafinal$tall == 0]<-CALW1
+  } else {
+    simdatafinal$Cweights<-simdatafinal$weights
   }
-  
-  wei1optAR<-nleqslv::nleqslv(rep(0,dim(data1)[2]),restrictions_weight1,DgAR1,method="Broyden",
-                              control=list(maxit=10000,ftol=10^(-16),xtol=10^(-16)), jacobian=T)
-  
-  weconsAR<-function(w){
-    lp3<-colSums(Tdata1*w)
-    we<-simdatafinal$weights[simdatafinal$tall==0]*exp(lp3)
-    return(we)
-  }
-  
-  CALW1<-weconsAR(wei1optAR$x)
-  
-  simdatafinal$Cweights<-simdatafinal$weights
-  simdatafinal$Cweights[simdatafinal$tall == 0]<-CALW1
   
   if (censor == TRUE){
     c_var <- paste0("lag",c_var) #Create H_k-1
@@ -559,7 +564,11 @@ calibration_by_time_from_baseline<-function(simdatafinal, var=c('X1', 'X2'),cens
     if(censor == TRUE){
       data1RC <- cbind(simdatafinal[simdatafinal$tall == k,]$lagRA, simdatafinal[simdatafinal$tall == k,]$lagRA*simdatafinal[simdatafinal$tall == k, c_var]) 
       #RA_k-1*RC_k*H_k-1
-      Tdata1<- t(cbind(data1RA, data1RC))
+      if (calibrate_treat){
+        Tdata1<- t(cbind(data1RA, data1RC))
+      } else {
+        Tdata1<- t(data1RC)
+      }
     } else{
       Tdata1 <- t(data1RA)
     }
@@ -574,10 +583,15 @@ calibration_by_time_from_baseline<-function(simdatafinal, var=c('X1', 'X2'),cens
       data0RC <- simdatafinal[simdatafinal$tall == k-1,]
       data0RC <- cbind(data0RC$RA*data0RC$Cweights, data0RC$RA*data0RC$Cweights*data0RC[, c_var_lead]) #RA_k-1*RC_k-1*W_k-1*H_k-1
       RHS_RC <- colSums(data0RC)
-      RHS <- c(RHS_RA, RHS_RC)
+      if(calibrate_treat){
+        RHS <- c(RHS_RA, RHS_RC)
+      } else {
+        RHS <- RHS_RC
+      }
     } else{
       RHS <- RHS_RA
     }
+    
     
     restrictions_weightk <- function(w){
       ##Objective function
@@ -618,11 +632,11 @@ calibration_by_time_from_baseline<-function(simdatafinal, var=c('X1', 'X2'),cens
     
   }
   list(data = simdatafinal, 
-       objective.IPW =  restrictions_weight1(rep(0,dim(data1)[2])), 
-       objective.Cali = wei1optAR$fvec)
+       objective.IPW =  NA, 
+       objective.Cali = NA)
 }
 
-aggregated_calibration_from_baseline<-function(simdatafinal, var=c('X1', 'X2', 'X3', 'X4'),censor = FALSE,c_var = NULL, weights_var = 'weight')  
+aggregated_calibration_from_baseline<-function(simdatafinal, calibrate_treat = TRUE, var=c('X1', 'X2', 'X3', 'X4'),censor = FALSE,c_var = NULL, weights_var = 'weight')  
 {
   simdatafinal$weights <- simdatafinal[,weights_var]
   ##restrictions (7) #########
@@ -681,19 +695,27 @@ aggregated_calibration_from_baseline<-function(simdatafinal, var=c('X1', 'X2', '
     DMATR12_RA$tall <- simdatafinal$tall
     DMATR12_RA$sub <- simdatafinal$sub
     
-    
-    DMATRO<-merge(DMATR12_RA, DMATR12_RC, by = c('sub', 'tall'), all.x = TRUE) 
-    
+    if(calibrate_treat){
+      DMATRO<-merge(DMATR12_RA, DMATR12_RC, by = c('sub', 'tall'), all.x = TRUE) 
+      
+      
+    } else {
+      DMATRO <- merge(simdatafinal[,c('sub', 'tall')],DMATR12_RC[DMATR12_RC$tall < maxlen,],by = c('sub', 'tall'), all.x = TRUE) 
+    }
     DMATRO <- DMATRO[order(DMATRO$sub, DMATRO$tall),]
     
     row.names(DMATRO) <- row.names(simdatafinal)
-    
     DMATRO <- DMATRO[,-1:-2]
     
     DMATRO[is.na(DMATRO)] <- 0.0
     
-    Baselinecond<-c(maxlen*colSums(DMATR2_RA[indT0,]),  #(T+1)sum_{i = 1}^N X_0
-                    rep(0,dim(DMATR2_RC[indT0,])[2])) # 0
+    if(calibrate_treat){
+      Baselinecond<-c(maxlen*colSums(DMATR2_RA[indT0,]),  #(T+1)sum_{i = 1}^N X_0
+                      rep(0,dim(DMATR2_RC[indT0,])[2])) # 0
+    } else {
+      Baselinecond<- rep(0,dim(DMATR2_RC[indT0,])[2]) # 0
+    }
+    
   } else {
     DMATRO <- DMATR12_RA
     Baselinecond<-maxlen*colSums(DMATR2_RA[indT0,])

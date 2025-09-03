@@ -98,7 +98,7 @@ DATA_GEN_censored<-function(ns, #ns=number of patients
   
   Dprob<-1/(1+exp(2.5 -0.5*X1[seq2] +0.5*X2[seq2] -0.2*X3[seq2] +0.2*X4[seq2])) ##Probability of dropout
   
-  C[seq2]<-rbinom(ns,1,Dprob)
+  C[seq2]<-as.numeric(C[seq1] == 0)*rbinom(ns,1,Dprob) + as.numeric(C[seq1] == 1)
   
   indfun<-function(n){
     if (sum(n)==0) {rep(0,3)}
