@@ -31,7 +31,7 @@ transformed = FALSE
 set.seed(160625)
 seeds <- floor(runif(1000)*10^8)
 
-iters = 2
+iters = 1000
 registerDoParallel(cores = 10)
 
 combine_matrices <- function(x, y) {
@@ -106,3 +106,5 @@ simulation <- foreach(i = 1:iters, .combine=combine_matrices) %dopar% {
   
   list(modified_bootstrap_CIs = modified_bootstrap_CIs, normal_bootstrap_CIs = normal_bootstrap_CIs)
 }
+
+saveRDS(simulation, file = 'ci_coverage_simu_result.rds')
