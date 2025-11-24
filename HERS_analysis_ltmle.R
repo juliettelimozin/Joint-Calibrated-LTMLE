@@ -22,16 +22,16 @@ set.seed(160625)
 # Data preparation
 simdata <- HERS
 
-simdata$Y <- as.factor(simdata$Y)
+simdata$C <- simdata$C + simdata$Y
 simdata$t <- simdata$visit - 8
 simdata$SITE2 <- as.integer(simdata$SITE2)
 simdata$SITE3 <- as.integer(simdata$SITE3)
 simdata$WHITE <- as.integer(simdata$WHITE)
 simdata$OTHER <- as.integer(simdata$OTHER)
 
-simdata$CD4 <- (sqrt(as.numeric(simdata$CD4)) - mean(sqrt(simdata$CD4)))/sd(sqrt(simdata$CD4))
-simdata$CD4_1 <- (sqrt(as.numeric(simdata$CD4_1)) - mean(sqrt(simdata$CD4_1)))/sd(sqrt(simdata$CD4_1))
-simdata$CD4_2 <- (sqrt(as.numeric(simdata$CD4_2)) - mean(sqrt(simdata$CD4_2)))/sd(sqrt(simdata$CD4_2))
+simdata$sqrtCD4 <- (sqrt(as.numeric(simdata$CD4)) - mean(sqrt(simdata$CD4)))/sd(sqrt(simdata$CD4))
+simdata$sqrtCD4_1 <- (sqrt(as.numeric(simdata$CD4_1)) - mean(sqrt(simdata$CD4_1)))/sd(sqrt(simdata$CD4_1))
+simdata$sqrtCD4_2 <- (sqrt(as.numeric(simdata$CD4_2)) - mean(sqrt(simdata$CD4_2)))/sd(sqrt(simdata$CD4_2))
 
 simdata$viral <- (log10(simdata$viral) - mean(log10(simdata$viral)))/sd(log10(simdata$viral))
 simdata$viral_1 <- (log10(simdata$viral_1) - mean(log10(simdata$viral_1)))/sd(log10(simdata$viral_1))
@@ -48,7 +48,7 @@ simdata$Ap <- simdata$haart_1
 simdata$App <- simdata$haart_2
 simdata[,'ID'] <- simdata$id
 simdata <- simdata %>% 
-  dplyr::select(ID, t, A, Ap, App,CAp, CD4, CD4_1,CD4_2,
+  dplyr::select(ID, t, A, Ap, App,CAp, CD4, CD4_1,CD4_2,sqrtCD4, sqrtCD4_1,sqrtCD4_2,
                 viral,viral_1,viral_2,HIVsym,HIVsym_1,HIVsym_2,
                 SITE2, SITE3, WHITE, OTHER, Y, C)
 simdata$eligible <- as.numeric(simdata$CAp == 0)
@@ -56,11 +56,11 @@ simdata$CA <-ave(simdata$A,simdata$ID,FUN=cumsum)
 
 simdata <- as.data.frame(simdata)
 
+################# MODIFIED TMLE ######################################
 # Point estimate 
-point_estimate_TMLE <-  MyLtmleMSM(simdata)
-point_estimate_modifiedTMLE <- MyLtmleMSM_modified(simdata, initial_Q_t = NA, refit_weights = TRUE)
+point_estimate_modifiedTMLE <- MyLtmleMSM_modified_hers(simdata, initial_Q_t = NA, refit_weights = TRUE)
 
-simdata_with_weights <- point_estimate_modifiedTMLE$simdata
+simdata_with_weights <- point_estimate_modifiedTMLE$data_with_weights
 ########## Bootstrap ############
 bootstrap_iter = 500
 boot_samples <- vector("list", bootstrap_iter)
@@ -77,33 +77,267 @@ for (b in 1:bootstrap_iter) {
 
 ############################# MODIFIED BOOTSTRAP TMLE #############################
 
-
-
-modified_bootstrap_LTMLE <-as.data.frame(matrix(,length(point_estimate_modifiedTMLE$estimates),bootstrap_iter))
-
 registerDoParallel(cores = 10)
-modified_bootstrap_LTMLE <- foreach(k = 1:bootstrap_iter, .combine=cbind) %dopar% {
+
+time <- proc.time()
+
+modified_bootstrap_LTMLE <- foreach(k = 1:bootstrap_iter, .combine = function(x, y) {
+  # combine list of results
+  list(
+    coeffs = rbind(x$coeffs, y$coeffs),
+    EY = rbind(x$EY, y$EY)
+  )
+}, .init = list(coeffs = NULL, EY = NULL)) %dopar% {
   
   boot_design_data <- boot_samples[[k]]
   
-  bootstrap_tmle <- MyLtmleMSM_modified(simdata = boot_design_data,initial_Q_t = point_estimate_modifiedTMLE$Q_t, refit_weights = FALSE)
+  bootstrap_tmle <- MyLtmleMSM_modified_hers(simdata = boot_design_data,initial_Q_t = point_estimate_modifiedTMLE$Q_fits, refit_weights = FALSE)
   
-  bootstrap_tmle$estimates
+  list(coeffs = bootstrap_tmle$MSM_estimates, EY = bootstrap_tmle$counterfactual_means)
 }
 
-modified_bootstrap_CIs <- cbind(rowQuantiles(modified_bootstrap_LTMLE, probs = 0.025), rowQuantiles(modified_bootstrap_LTMLE, probs = 0.975))
 
-############################# NORMAL BOOTSTRAP TMLE #############################
+coeffs_boot <- modified_bootstrap_LTMLE$coeffs
 
-normal_bootstrap_LTMLE <-as.data.frame(matrix(,length(point_estimate_TMLE$estimates),bootstrap_iter))
-normal_bootstrap_LTMLE <- foreach(k = 1:bootstrap_iter, .combine=cbind) %dopar% {
+modified_bootstrap_CIs_coeffs_LB <- rbind(colQuantiles(coeffs_boot[rownames(coeffs_boot) == "MLE LTMLE",], probs = 0.025),
+                                          colQuantiles(coeffs_boot[rownames(coeffs_boot) == "CMLE LTMLE treat. only",], probs = 0.025),
+                                          colQuantiles(coeffs_boot[rownames(coeffs_boot) == "Aggr. CMLE LTMLE treat. only",], probs = 0.025),
+                                          colQuantiles(coeffs_boot[rownames(coeffs_boot) == "CMLE LTMLE",], probs = 0.025),
+                                          colQuantiles(coeffs_boot[rownames(coeffs_boot) == "Aggr. CMLE LTMLE",], probs = 0.025))
+
+rownames(modified_bootstrap_CIs_coeffs_LB) <- c('MLE LTMLE',
+                                                'CMLE LTMLE treat. only',
+                                                'Aggr. CMLE LTMLE treat. only',
+                                                'CMLE LTMLE',
+                                                'Aggr. CMLE LTMLE')
+
+modified_bootstrap_CIs_coeffs_UB <- rbind(colQuantiles(coeffs_boot[rownames(coeffs_boot) == "MLE LTMLE",], probs = 0.975),
+                                          colQuantiles(coeffs_boot[rownames(coeffs_boot) == "CMLE LTMLE treat. only",], probs = 0.975),
+                                          colQuantiles(coeffs_boot[rownames(coeffs_boot) == "Aggr. CMLE LTMLE treat. only",], probs = 0.975),
+                                          colQuantiles(coeffs_boot[rownames(coeffs_boot) == "CMLE LTMLE",], probs = 0.975),
+                                          colQuantiles(coeffs_boot[rownames(coeffs_boot) == "Aggr. CMLE LTMLE",], probs = 0.975))
+rownames(modified_bootstrap_CIs_coeffs_UB) <- c('MLE LTMLE',
+                                                'CMLE LTMLE treat. only',
+                                                'Aggr. CMLE LTMLE treat. only',
+                                                'CMLE LTMLE',
+                                                'Aggr. CMLE LTMLE')
+
+modified_bootstrap_CIs_EY_LB <- colQuantiles(modified_bootstrap_LTMLE$EY, probs = 0.025)
+modified_bootstrap_CIs_EY_UB <- colQuantiles(modified_bootstrap_LTMLE$EY, probs = 0.975)
+
+ATE_boot <- modified_bootstrap_LTMLE$EY[,1:5] - modified_bootstrap_LTMLE$EY[,6:10]
+colnames(ATE_boot) <- c('MLE LTMLE',
+                        'CMLE LTMLE treat. only',
+                        'Aggr. CMLE LTMLE treat. only',
+                        'CMLE LTMLE',
+                        'Aggr. CMLE LTMLE')
+
+modified_bootstrap_CIs_ATE_LB <- colQuantiles(ATE_boot, probs = 0.025)
+modified_bootstrap_CIs_ATE_UB <- colQuantiles(ATE_boot, probs = 0.975)
+
+EY_1 <- point_estimate_modifiedTMLE$counterfactual_means[1:5]
+EY_0 <- point_estimate_modifiedTMLE$counterfactual_means[6:10]
+ATE <- point_estimate_modifiedTMLE$counterfactual_means[1:5] - point_estimate_modifiedTMLE$counterfactual_means[6:10]
+
+est <- cbind(point_estimate_modifiedTMLE$MSM_estimates[,(ncol(point_estimate_modifiedTMLE$MSM_estimates)-2):ncol(point_estimate_modifiedTMLE$MSM_estimates)],EY_1, EY_0,ATE)
+lower <- cbind(modified_bootstrap_CIs_coeffs_LB[,(ncol(modified_bootstrap_CIs_coeffs_LB)-2):ncol(modified_bootstrap_CIs_coeffs_LB)],
+               modified_bootstrap_CIs_EY_LB[1:5], modified_bootstrap_CIs_EY_LB[6:10],
+               modified_bootstrap_CIs_ATE_LB)
+upper <- cbind(modified_bootstrap_CIs_coeffs_UB[,(ncol(modified_bootstrap_CIs_coeffs_UB)-2):ncol(modified_bootstrap_CIs_coeffs_UB)], 
+               modified_bootstrap_CIs_EY_UB[1:5], modified_bootstrap_CIs_EY_UB[6:10],
+               modified_bootstrap_CIs_ATE_UB)
+
+format_matrix <- function(est, lower, upper) {
+  m <- matrix("", nrow = nrow(est), ncol = ncol(est), 
+              dimnames = list(rownames(est), colnames(est)))
+  for (i in 1:nrow(est)) {
+    for (j in 1:ncol(est)) {
+      m[i, j] <- sprintf("%.2f (%.2f, %.2f)", est[i, j], lower[i, j], upper[i, j])
+    }
+  }
+  m
+}
+
+summary_table <- format_matrix(est, lower, upper)
+print(xtable(summary_table, caption = "Estimates and 95% CIs by modified LTMLE"))
+
+print('Modified bootstrap CI time \n')
+print((proc.time() - time)[[3]])
+################# NORMAL TMLE ######################################
+# Point estimate 
+point_estimate_TMLE <- MyLtmleMSM_hers(simdata)
+
+############################# Normal BOOTSTRAP TMLE #############################
+registerDoParallel(cores = 10)
+
+time <- proc.time()
+normal_bootstrap_LTMLE <- foreach(k = 1:bootstrap_iter, .combine = function(x, y) {
+  # combine list of results
+  list(
+    coeffs = rbind(x$coeffs, y$coeffs),
+    EY = rbind(x$EY, y$EY)
+  )
+}, .init = list(coeffs = NULL, EY = NULL)) %dopar% {
   
-  boot_design_data <- as.data.frame(boot_samples[[k]])[, colnames(simdata)]
+  boot_design_data <- as.data.frame(boot_samples[[k]])[,names(simdata)]
   boot_design_data$ID <- as.integer(factor(boot_design_data$ID))
-  bootstrap_tmle <- MyLtmleMSM(simdata = boot_design_data)
+  bootstrap_tmle <- MyLtmleMSM_hers(simdata = boot_design_data)
   
-  bootstrap_tmle$estimates
+  list(coeffs = bootstrap_tmle$MSM_estimates, EY = bootstrap_tmle$counterfactual_means)
 }
 
-normal_bootstrap_CIs <- cbind(rowQuantiles(normal_bootstrap_LTMLE, probs = 0.025), rowQuantiles(normal_bootstrap_LTMLE, probs = 0.975))
+coeffs_boot <- normal_bootstrap_LTMLE$coeffs
+
+normal_bootstrap_CIs_coeffs_LB <- rbind(colQuantiles(coeffs_boot[rownames(coeffs_boot) == "MLE LTMLE",], probs = 0.025),
+                                          colQuantiles(coeffs_boot[rownames(coeffs_boot) == "CMLE LTMLE treat. only",], probs = 0.025),
+                                          colQuantiles(coeffs_boot[rownames(coeffs_boot) == "Aggr. CMLE LTMLE treat. only",], probs = 0.025),
+                                          colQuantiles(coeffs_boot[rownames(coeffs_boot) == "CMLE LTMLE",], probs = 0.025),
+                                          colQuantiles(coeffs_boot[rownames(coeffs_boot) == "Aggr. CMLE LTMLE",], probs = 0.025))
+
+rownames(normal_bootstrap_CIs_coeffs_LB) <- c('MLE LTMLE',
+                                                'CMLE LTMLE treat. only',
+                                                'Aggr. CMLE LTMLE treat. only',
+                                                'CMLE LTMLE',
+                                                'Aggr. CMLE LTMLE')
+
+normal_bootstrap_CIs_coeffs_UB <- rbind(colQuantiles(coeffs_boot[rownames(coeffs_boot) == "MLE LTMLE",], probs = 0.975),
+                                          colQuantiles(coeffs_boot[rownames(coeffs_boot) == "CMLE LTMLE treat. only",], probs = 0.975),
+                                          colQuantiles(coeffs_boot[rownames(coeffs_boot) == "Aggr. CMLE LTMLE treat. only",], probs = 0.975),
+                                          colQuantiles(coeffs_boot[rownames(coeffs_boot) == "CMLE LTMLE",], probs = 0.975),
+                                          colQuantiles(coeffs_boot[rownames(coeffs_boot) == "Aggr. CMLE LTMLE",], probs = 0.975))
+rownames(normal_bootstrap_CIs_coeffs_UB) <- c('MLE LTMLE',
+                                                'CMLE LTMLE treat. only',
+                                                'Aggr. CMLE LTMLE treat. only',
+                                                'CMLE LTMLE',
+                                                'Aggr. CMLE LTMLE')
+
+normal_bootstrap_CIs_EY_LB <- colQuantiles(normal_bootstrap_LTMLE$EY, probs = 0.025)
+normal_bootstrap_CIs_EY_UB <- colQuantiles(normal_bootstrap_LTMLE$EY, probs = 0.975)
+
+ATE_boot <- normal_bootstrap_LTMLE$EY[,1:5] - normal_bootstrap_LTMLE$EY[,6:10]
+colnames(ATE_boot) <- c('MLE LTMLE',
+                        'CMLE LTMLE treat. only',
+                        'Aggr. CMLE LTMLE treat. only',
+                        'CMLE LTMLE',
+                        'Aggr. CMLE LTMLE')
+
+normal_bootstrap_CIs_ATE_LB <- colQuantiles(ATE_boot, probs = 0.025)
+normal_bootstrap_CIs_ATE_UB <- colQuantiles(ATE_boot, probs = 0.975)
+
+EY_1 <- point_estimate_TMLE$counterfactual_means[1:5]
+EY_0 <- point_estimate_TMLE$counterfactual_means[6:10]
+ATE <- point_estimate_TMLE$counterfactual_means[1:5] - point_estimate_TMLE$counterfactual_means[6:10]
+
+est <- cbind(point_estimate_TMLE$MSM_estimates[,(ncol(point_estimate_TMLE$MSM_estimates)-2):ncol(point_estimate_TMLE$MSM_estimates)],EY_1, EY_0,ATE)
+lower <- cbind(normal_bootstrap_CIs_coeffs_LB[,(ncol(normal_bootstrap_CIs_coeffs_LB)-2):ncol(normal_bootstrap_CIs_coeffs_LB)],
+               normal_bootstrap_CIs_EY_LB[1:5], normal_bootstrap_CIs_EY_LB[6:10],
+               normal_bootstrap_CIs_ATE_LB)
+upper <- cbind(normal_bootstrap_CIs_coeffs_UB[,(ncol(normal_bootstrap_CIs_coeffs_UB)-2):ncol(normal_bootstrap_CIs_coeffs_UB)], 
+               normal_bootstrap_CIs_EY_UB[1:5], normal_bootstrap_CIs_EY_UB[6:10],
+               normal_bootstrap_CIs_ATE_UB)
+
+format_matrix <- function(est, lower, upper) {
+  m <- matrix("", nrow = nrow(est), ncol = ncol(est), 
+              dimnames = list(rownames(est), colnames(est)))
+  for (i in 1:nrow(est)) {
+    for (j in 1:ncol(est)) {
+      m[i, j] <- sprintf("%.2f (%.2f, %.2f)", est[i, j], lower[i, j], upper[i, j])
+    }
+  }
+  m
+}
+
+summary_table <- format_matrix(est, lower, upper)
+print(xtable(summary_table, caption = "Estimates and 95% CIs by normal LTMLE"))
+print('Normal bootstrap CI time \n')
+print((proc.time() - time)[[3]])
+
+################# Cali Boot TMLE ######################################
+# Point estimate 
+point_estimate_cali_boot_TMLE <- MyLtmleMSM_cali_boot_hers(simdata)
+
+############################# Cali Boot BOOTSTRAP TMLE #############################
+registerDoParallel(cores = 10)
+time <- proc.time()
+normal_bootstrap_LTMLE <- foreach(k = 1:bootstrap_iter, .combine = function(x, y) {
+  # combine list of results
+  list(
+    coeffs = rbind(x$coeffs, y$coeffs),
+    EY = rbind(x$EY, y$EY)
+  )
+}, .init = list(coeffs = NULL, EY = NULL)) %dopar% {
+  
+  boot_design_data <- as.data.frame(boot_samples[[k]])[,c(names(simdata), "weight")]
+  boot_design_data$ID <- as.integer(factor(boot_design_data$ID))
+  bootstrap_tmle <- MyLtmleMSM_cali_boot_hers(simdata = boot_design_data,initial_Q_t = point_estimate_cali_boot_TMLE$Q_fits, refit_weights = FALSE)
+  
+  list(coeffs = bootstrap_tmle$MSM_estimates, EY = bootstrap_tmle$counterfactual_means)
+}
+
+coeffs_boot <- normal_bootstrap_LTMLE$coeffs
+
+normal_bootstrap_CIs_coeffs_LB <- rbind(colQuantiles(coeffs_boot[rownames(coeffs_boot) == "MLE LTMLE",], probs = 0.025),
+                                        colQuantiles(coeffs_boot[rownames(coeffs_boot) == "CMLE LTMLE treat. only",], probs = 0.025),
+                                        colQuantiles(coeffs_boot[rownames(coeffs_boot) == "Aggr. CMLE LTMLE treat. only",], probs = 0.025),
+                                        colQuantiles(coeffs_boot[rownames(coeffs_boot) == "CMLE LTMLE",], probs = 0.025),
+                                        colQuantiles(coeffs_boot[rownames(coeffs_boot) == "Aggr. CMLE LTMLE",], probs = 0.025))
+
+rownames(normal_bootstrap_CIs_coeffs_LB) <- c('MLE LTMLE',
+                                              'CMLE LTMLE treat. only',
+                                              'Aggr. CMLE LTMLE treat. only',
+                                              'CMLE LTMLE',
+                                              'Aggr. CMLE LTMLE')
+
+normal_bootstrap_CIs_coeffs_UB <- rbind(colQuantiles(coeffs_boot[rownames(coeffs_boot) == "MLE LTMLE",], probs = 0.975),
+                                        colQuantiles(coeffs_boot[rownames(coeffs_boot) == "CMLE LTMLE treat. only",], probs = 0.975),
+                                        colQuantiles(coeffs_boot[rownames(coeffs_boot) == "Aggr. CMLE LTMLE treat. only",], probs = 0.975),
+                                        colQuantiles(coeffs_boot[rownames(coeffs_boot) == "CMLE LTMLE",], probs = 0.975),
+                                        colQuantiles(coeffs_boot[rownames(coeffs_boot) == "Aggr. CMLE LTMLE",], probs = 0.975))
+rownames(normal_bootstrap_CIs_coeffs_UB) <- c('MLE LTMLE',
+                                              'CMLE LTMLE treat. only',
+                                              'Aggr. CMLE LTMLE treat. only',
+                                              'CMLE LTMLE',
+                                              'Aggr. CMLE LTMLE')
+
+normal_bootstrap_CIs_EY_LB <- colQuantiles(normal_bootstrap_LTMLE$EY, probs = 0.025)
+normal_bootstrap_CIs_EY_UB <- colQuantiles(normal_bootstrap_LTMLE$EY, probs = 0.975)
+
+ATE_boot <- normal_bootstrap_LTMLE$EY[,1:5] - normal_bootstrap_LTMLE$EY[,6:10]
+colnames(ATE_boot) <- c('MLE LTMLE',
+                        'CMLE LTMLE treat. only',
+                        'Aggr. CMLE LTMLE treat. only',
+                        'CMLE LTMLE',
+                        'Aggr. CMLE LTMLE')
+
+normal_bootstrap_CIs_ATE_LB <- colQuantiles(ATE_boot, probs = 0.025)
+normal_bootstrap_CIs_ATE_UB <- colQuantiles(ATE_boot, probs = 0.975)
+
+EY_1 <- point_estimate_cali_boot_TMLE$counterfactual_means[1:5]
+EY_0 <- point_estimate_cali_boot_TMLE$counterfactual_means[6:10]
+ATE <- point_estimate_cali_boot_TMLE$counterfactual_means[1:5] - point_estimate_cali_boot_TMLE$counterfactual_means[6:10]
+
+est <- cbind(point_estimate_cali_boot_TMLE$MSM_estimates[,(ncol(point_estimate_cali_boot_TMLE$MSM_estimates)-2):ncol(point_estimate_cali_boot_TMLE$MSM_estimates)],EY_1, EY_0,ATE)
+lower <- cbind(normal_bootstrap_CIs_coeffs_LB[,(ncol(normal_bootstrap_CIs_coeffs_LB)-2):ncol(normal_bootstrap_CIs_coeffs_LB)],
+               normal_bootstrap_CIs_EY_LB[1:5], normal_bootstrap_CIs_EY_LB[6:10],
+               normal_bootstrap_CIs_ATE_LB)
+upper <- cbind(normal_bootstrap_CIs_coeffs_UB[,(ncol(normal_bootstrap_CIs_coeffs_UB)-2):ncol(normal_bootstrap_CIs_coeffs_UB)], 
+               normal_bootstrap_CIs_EY_UB[1:5], normal_bootstrap_CIs_EY_UB[6:10],
+               normal_bootstrap_CIs_ATE_UB)
+
+format_matrix <- function(est, lower, upper) {
+  m <- matrix("", nrow = nrow(est), ncol = ncol(est), 
+              dimnames = list(rownames(est), colnames(est)))
+  for (i in 1:nrow(est)) {
+    for (j in 1:ncol(est)) {
+      m[i, j] <- sprintf("%.2f (%.2f, %.2f)", est[i, j], lower[i, j], upper[i, j])
+    }
+  }
+  m
+}
+
+summary_table <- format_matrix(est, lower, upper)
+print(xtable(summary_table, caption = "Estimates and 95% CIs by normal LTMLE with cali boot"))
+print('Cali bootstrap CI time \n')
+print((proc.time() - time)[[3]])
+
 
