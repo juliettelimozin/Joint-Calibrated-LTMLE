@@ -18,12 +18,12 @@ library(xtable)
 
 set.seed(160625)
 seeds <- floor(runif(1000)*10^8)
-conf = 0.2
+conf = 5
 treat_prev_0 = 0
-treat_prev_d1_1 = 1
-treat_prev_d0_1 = -1.25
-treat_prev_d1_2 =0.8
-treat_prev_d0_2 = -1.25
+treat_prev_d1_1 = 0.1
+treat_prev_d0_1 = -5
+treat_prev_d1_2 = -5
+treat_prev_d0_2 = -5.1
 
 l <- as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))
 sample_size = l
@@ -60,10 +60,10 @@ simulation <- foreach(i = 1:iters, .combine=combine_matrices, .init =  list(
   computation_time = NULL)) %dopar% {
     set.seed(seeds[i])
     simdata<-DATA_GEN(ns = sample_size, conf = conf,treat_prev_0 = treat_prev_0, 
-                               treat_prev_d1_1 = treat_prev_d1_1, 
-                               treat_prev_d0_1 = treat_prev_d0_1, 
-                               treat_prev_d1_2 =treat_prev_d1_2, 
-                               treat_prev_d0_2 = treat_prev_d0_2)
+                      treat_prev_d1_1 = treat_prev_d1_1, 
+                      treat_prev_d0_1 = treat_prev_d0_1, 
+                      treat_prev_d1_2 =treat_prev_d1_2, 
+                      treat_prev_d0_2 = treat_prev_d0_2)
     if(transformed){
       simdata$X1 <- simdata$TX1
       simdata$X2 <- simdata$TX2
@@ -77,7 +77,7 @@ simulation <- foreach(i = 1:iters, .combine=combine_matrices, .init =  list(
     
     simdata_with_weights <- point_estimate_modifiedTMLE$simdata
     ########## Bootstrap ############
-   
+    
     
     boot_samples <- vector("list", bootstrap_iter)
     for (b in 1:bootstrap_iter) {
@@ -146,4 +146,4 @@ simulation <- foreach(i = 1:iters, .combine=combine_matrices, .init =  list(
          computation_time = computation_time)
   }
 #sink()
-saveRDS(simulation, file = paste0('ci_coverage_simu_result_', as.character(l),'.rds'))
+saveRDS(simulation, file = paste0('ci_coverage_simu_strong_conf_result_', as.character(l),'.rds'))
