@@ -574,32 +574,65 @@ MyLtmleMSM_modified_hers <- function(simdata, initial_Q_t = NA, refit_weights = 
                                'Aggr. CMLE LTMLE')
   colnames(MSM_estimates) <- names(msm_transformed$coefficients)
   
-  fitting_data <- msm_fitting_data_transformed[msm_fitting_data_transformed$t == 4,]
+  fitting_data_strata0 <- msm_fitting_data_transformed[msm_fitting_data_transformed$strata_1 == 0 & msm_fitting_data_transformed$strata_2 == 0,]
+  fitting_data_strata1 <- msm_fitting_data_transformed[msm_fitting_data_transformed$strata_1 == 1,]
+  fitting_data_strata2 <- msm_fitting_data_transformed[msm_fitting_data_transformed$strata_2 == 1,]
   
-  EY_always_treated <- mean(predict.glm(msm_transformed, newdata = fitting_data[1:dim(wideSimdata)[1],], type = 'response'))
-  EY_always_treated_cali <- mean(predict.glm(msm_transformed_cali, newdata = fitting_data[1:dim(wideSimdata)[1],], type = 'response'))
-  EY_always_treated_cali_aggr <- mean(predict.glm(msm_transformed_cali_aggr, newdata = fitting_data[1:dim(wideSimdata)[1],], type = 'response'))
-  EY_always_treated_cali_treat_only <- mean(predict.glm(msm_transformed_cali_treat_only, newdata = fitting_data[1:dim(wideSimdata)[1],], type = 'response'))
-  EY_always_treated_cali_aggr_treat_only <- mean(predict.glm(msm_transformed_cali_aggr_treat_only, newdata = fitting_data[1:dim(wideSimdata)[1],], type = 'response'))
+  EY_always_treated_strata0 <- EY_always_treated_strata1 <- EY_always_treated_strata2<- EY_never_treated_strata0 <- EY_never_treated_strata1 <- EY_never_treated_strata2<-array(,dim = c(5,5))
   
-  EY_never_treated <- mean(predict.glm(msm_transformed, newdata = fitting_data[(dim(wideSimdata)[1]+1):(2*dim(wideSimdata)[1]),], type = 'response'))
-  EY_never_treated_cali <- mean(predict.glm(msm_transformed_cali, newdata = fitting_data[(dim(wideSimdata)[1]+1):(2*dim(wideSimdata)[1]),], type = 'response'))
-  EY_never_treated_cali_aggr <- mean(predict.glm(msm_transformed_cali_aggr, newdata = fitting_data[(dim(wideSimdata)[1]+1):(2*dim(wideSimdata)[1]),], type = 'response'))
-  EY_never_treated_cali_treat_only <- mean(predict.glm(msm_transformed_cali_treat_only, newdata = fitting_data[(dim(wideSimdata)[1]+1):(2*dim(wideSimdata)[1]),], type = 'response'))
-  EY_never_treated_cali_aggr_treat_only <- mean(predict.glm(msm_transformed_cali_aggr_treat_only, newdata = fitting_data[(dim(wideSimdata)[1]+1):(2*dim(wideSimdata)[1]),], type = 'response'))
+  rownames(EY_always_treated_strata0) <- rownames(EY_always_treated_strata1) <- rownames(EY_always_treated_strata2) <-  c('MLE LTMLE',
+                                                                                                                          'CMLE LTMLE treat. only',
+                                                                                                                          'Aggr. CMLE LTMLE treat. only',
+                                                                                                                          'CMLE LTMLE',
+                                                                                                                          'Aggr. CMLE LTMLE')
+  rownames(EY_never_treated_strata0) <- rownames(EY_never_treated_strata1) <- rownames(EY_never_treated_strata2) <- c('MLE LTMLE',
+                                                                                                                      'CMLE LTMLE treat. only',
+                                                                                                                      'Aggr. CMLE LTMLE treat. only',
+                                                                                                                      'CMLE LTMLE',
+                                                                                                                      'Aggr. CMLE LTMLE')
   
-  counterfactual_means <- c(EY_always_treated,EY_always_treated_cali_treat_only,EY_always_treated_cali_aggr_treat_only,EY_always_treated_cali,EY_always_treated_cali_aggr,
-                            EY_never_treated,EY_never_treated_cali_treat_only,EY_never_treated_cali_aggr_treat_only,EY_never_treated_cali,EY_never_treated_cali_aggr)
-  names(counterfactual_means) <- c('MLE LTMLE always treated',
-                                   'CMLE LTMLE treat. only always treated',
-                                   'Aggr. CMLE LTMLE treat. only always treated',
-                                   'CMLE LTMLE always treated',
-                                   'Aggr. CMLE LTMLE always treated',
-                                   'MLE LTMLE never treated',
-                                   'CMLE LTMLE treat. only never treated',
-                                   'Aggr. CMLE LTMLE treat. only never treated',
-                                   'CMLE LTMLE never treated',
-                                   'Aggr. CMLE LTMLE never treated')
+  EY_always_treated_strata0[1,] <- tapply(predict.glm(msm_transformed, newdata = fitting_data_strata0[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata0[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata0[4,] <- tapply(predict.glm(msm_transformed_cali, newdata = fitting_data_strata0[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata0[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata0[5,] <- tapply(predict.glm(msm_transformed_cali_aggr, newdata = fitting_data_strata0[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata0[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata0[2,] <- tapply(predict.glm(msm_transformed_cali_treat_only, newdata = fitting_data_strata0[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata0[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata0[3,] <- tapply(predict.glm(msm_transformed_cali_aggr_treat_only, newdata = fitting_data_strata0[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata0[fitting_data_strata0$cumA !=0,]$t, mean)
+  
+  EY_always_treated_strata1[1,] <- tapply(predict.glm(msm_transformed, newdata = fitting_data_strata1[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata1[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata1[4,] <- tapply(predict.glm(msm_transformed_cali, newdata = fitting_data_strata1[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata1[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata1[5,] <- tapply(predict.glm(msm_transformed_cali_aggr, newdata = fitting_data_strata1[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata1[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata1[2,] <- tapply(predict.glm(msm_transformed_cali_treat_only, newdata = fitting_data_strata1[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata1[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata1[3,] <- tapply(predict.glm(msm_transformed_cali_aggr_treat_only, newdata = fitting_data_strata1[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata1[fitting_data_strata0$cumA !=0,]$t, mean)
+  
+  EY_always_treated_strata2[1,] <- tapply(predict.glm(msm_transformed, newdata = fitting_data_strata2[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata2[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata2[4,] <- tapply(predict.glm(msm_transformed_cali, newdata = fitting_data_strata2[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata2[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata2[5,] <- tapply(predict.glm(msm_transformed_cali_aggr, newdata = fitting_data_strata2[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata2[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata2[2,] <- tapply(predict.glm(msm_transformed_cali_treat_only, newdata = fitting_data_strata2[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata2[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata2[3,] <- tapply(predict.glm(msm_transformed_cali_aggr_treat_only, newdata = fitting_data_strata2[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata2[fitting_data_strata0$cumA !=0,]$t, mean)
+  
+  EY_never_treated_strata0[1,] <- tapply(predict.glm(msm_transformed, newdata = fitting_data_strata0[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata0[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata0[4,] <- tapply(predict.glm(msm_transformed_cali, newdata = fitting_data_strata0[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata0[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata0[5,] <- tapply(predict.glm(msm_transformed_cali_aggr, newdata = fitting_data_strata0[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata0[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata0[2,] <- tapply(predict.glm(msm_transformed_cali_treat_only, newdata = fitting_data_strata0[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata0[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata0[3,] <- tapply(predict.glm(msm_transformed_cali_aggr_treat_only, newdata = fitting_data_strata0[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata0[fitting_data_strata0$cumA ==0,]$t, mean)
+  
+  EY_never_treated_strata1[1,] <- tapply(predict.glm(msm_transformed, newdata = fitting_data_strata1[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata1[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata1[4,] <- tapply(predict.glm(msm_transformed_cali, newdata = fitting_data_strata1[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata1[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata1[5,] <- tapply(predict.glm(msm_transformed_cali_aggr, newdata = fitting_data_strata1[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata1[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata1[2,] <- tapply(predict.glm(msm_transformed_cali_treat_only, newdata = fitting_data_strata1[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata1[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata1[3,] <- tapply(predict.glm(msm_transformed_cali_aggr_treat_only, newdata = fitting_data_strata1[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata1[fitting_data_strata0$cumA ==0,]$t, mean)
+  
+  EY_never_treated_strata2[1,] <- tapply(predict.glm(msm_transformed, newdata = fitting_data_strata2[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata2[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata2[4,] <- tapply(predict.glm(msm_transformed_cali, newdata = fitting_data_strata2[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata2[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata2[5,] <- tapply(predict.glm(msm_transformed_cali_aggr, newdata = fitting_data_strata2[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata2[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata2[2,] <- tapply(predict.glm(msm_transformed_cali_treat_only, newdata = fitting_data_strata2[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata2[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata2[3,] <- tapply(predict.glm(msm_transformed_cali_aggr_treat_only, newdata = fitting_data_strata2[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata2[fitting_data_strata0$cumA ==0,]$t, mean)
+  
+  counterfactual_means <- list(EY_always_treated_strata0 = EY_always_treated_strata0,
+                               EY_always_treated_strata1 = EY_always_treated_strata1,
+                               EY_always_treated_strata2 = EY_always_treated_strata2,
+                               EY_never_treated_strata0 = EY_never_treated_strata0,
+                               EY_never_treated_strata1 = EY_never_treated_strata1,
+                               EY_never_treated_strata2 = EY_never_treated_strata2)  
   if (!all(is.na(initial_Q_t))){
     Q_fits <- initial_Q_t
   }
@@ -1238,32 +1271,66 @@ MyLtmleMSM_hers <- function(simdata){
                                'Aggr. CMLE LTMLE')
   colnames(MSM_estimates) <- names(msm_transformed$coefficients)
   
-  fitting_data <- msm_fitting_data_transformed[msm_fitting_data_transformed$t == 4,]
+  fitting_data_strata0 <- msm_fitting_data_transformed[msm_fitting_data_transformed$strata_1 == 0 & msm_fitting_data_transformed$strata_2 == 0,]
+  fitting_data_strata1 <- msm_fitting_data_transformed[msm_fitting_data_transformed$strata_1 == 1,]
+  fitting_data_strata2 <- msm_fitting_data_transformed[msm_fitting_data_transformed$strata_2 == 1,]
   
-  EY_always_treated <- mean(predict.glm(msm_transformed, newdata = fitting_data[1:dim(wideSimdata)[1],], type = 'response'))
-  EY_always_treated_cali <- mean(predict.glm(msm_transformed_cali, newdata = fitting_data[1:dim(wideSimdata)[1],], type = 'response'))
-  EY_always_treated_cali_aggr <- mean(predict.glm(msm_transformed_cali_aggr, newdata = fitting_data[1:dim(wideSimdata)[1],], type = 'response'))
-  EY_always_treated_cali_treat_only <- mean(predict.glm(msm_transformed_cali_treat_only, newdata = fitting_data[1:dim(wideSimdata)[1],], type = 'response'))
-  EY_always_treated_cali_aggr_treat_only <- mean(predict.glm(msm_transformed_cali_aggr_treat_only, newdata = fitting_data[1:dim(wideSimdata)[1],], type = 'response'))
+  EY_always_treated_strata0 <- EY_always_treated_strata1 <- EY_always_treated_strata2<- EY_never_treated_strata0 <- EY_never_treated_strata1 <- EY_never_treated_strata2<-array(,dim = c(5,5))
   
-  EY_never_treated <- mean(predict.glm(msm_transformed, newdata = fitting_data[(dim(wideSimdata)[1]+1):(2*dim(wideSimdata)[1]),], type = 'response'))
-  EY_never_treated_cali <- mean(predict.glm(msm_transformed_cali, newdata = fitting_data[(dim(wideSimdata)[1]+1):(2*dim(wideSimdata)[1]),], type = 'response'))
-  EY_never_treated_cali_aggr <- mean(predict.glm(msm_transformed_cali_aggr, newdata = fitting_data[(dim(wideSimdata)[1]+1):(2*dim(wideSimdata)[1]),], type = 'response'))
-  EY_never_treated_cali_treat_only <- mean(predict.glm(msm_transformed_cali_treat_only, newdata = fitting_data[(dim(wideSimdata)[1]+1):(2*dim(wideSimdata)[1]),], type = 'response'))
-  EY_never_treated_cali_aggr_treat_only <- mean(predict.glm(msm_transformed_cali_aggr_treat_only, newdata = fitting_data[(dim(wideSimdata)[1]+1):(2*dim(wideSimdata)[1]),], type = 'response'))
+  rownames(EY_always_treated_strata0) <- rownames(EY_always_treated_strata1) <- rownames(EY_always_treated_strata2) <-  c('MLE LTMLE',
+                                                                                                                          'CMLE LTMLE treat. only',
+                                                                                                                          'Aggr. CMLE LTMLE treat. only',
+                                                                                                                          'CMLE LTMLE',
+                                                                                                                          'Aggr. CMLE LTMLE')
+  rownames(EY_never_treated_strata0) <- rownames(EY_never_treated_strata1) <- rownames(EY_never_treated_strata2) <- c('MLE LTMLE',
+                                                                                                                      'CMLE LTMLE treat. only',
+                                                                                                                      'Aggr. CMLE LTMLE treat. only',
+                                                                                                                      'CMLE LTMLE',
+                                                                                                                      'Aggr. CMLE LTMLE')
   
-  counterfactual_means <- c(EY_always_treated,EY_always_treated_cali_treat_only,EY_always_treated_cali_aggr_treat_only,EY_always_treated_cali,EY_always_treated_cali_aggr,
-                            EY_never_treated,EY_never_treated_cali_treat_only,EY_never_treated_cali_aggr_treat_only,EY_never_treated_cali,EY_never_treated_cali_aggr)
-  names(counterfactual_means) <- c('MLE LTMLE always treated',
-                                   'CMLE LTMLE treat. only always treated',
-                                   'Aggr. CMLE LTMLE treat. only always treated',
-                                   'CMLE LTMLE always treated',
-                                   'Aggr. CMLE LTMLE always treated',
-                                   'MLE LTMLE never treated',
-                                   'CMLE LTMLE treat. only never treated',
-                                   'Aggr. CMLE LTMLE treat. only never treated',
-                                   'CMLE LTMLE never treated',
-                                   'Aggr. CMLE LTMLE never treated')
+  EY_always_treated_strata0[1,] <- tapply(predict.glm(msm_transformed, newdata = fitting_data_strata0[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata0[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata0[4,] <- tapply(predict.glm(msm_transformed_cali, newdata = fitting_data_strata0[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata0[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata0[5,] <- tapply(predict.glm(msm_transformed_cali_aggr, newdata = fitting_data_strata0[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata0[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata0[2,] <- tapply(predict.glm(msm_transformed_cali_treat_only, newdata = fitting_data_strata0[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata0[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata0[3,] <- tapply(predict.glm(msm_transformed_cali_aggr_treat_only, newdata = fitting_data_strata0[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata0[fitting_data_strata0$cumA !=0,]$t, mean)
+  
+  EY_always_treated_strata1[1,] <- tapply(predict.glm(msm_transformed, newdata = fitting_data_strata1[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata1[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata1[4,] <- tapply(predict.glm(msm_transformed_cali, newdata = fitting_data_strata1[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata1[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata1[5,] <- tapply(predict.glm(msm_transformed_cali_aggr, newdata = fitting_data_strata1[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata1[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata1[2,] <- tapply(predict.glm(msm_transformed_cali_treat_only, newdata = fitting_data_strata1[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata1[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata1[3,] <- tapply(predict.glm(msm_transformed_cali_aggr_treat_only, newdata = fitting_data_strata1[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata1[fitting_data_strata0$cumA !=0,]$t, mean)
+  
+  EY_always_treated_strata2[1,] <- tapply(predict.glm(msm_transformed, newdata = fitting_data_strata2[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata2[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata2[4,] <- tapply(predict.glm(msm_transformed_cali, newdata = fitting_data_strata2[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata2[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata2[5,] <- tapply(predict.glm(msm_transformed_cali_aggr, newdata = fitting_data_strata2[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata2[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata2[2,] <- tapply(predict.glm(msm_transformed_cali_treat_only, newdata = fitting_data_strata2[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata2[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata2[3,] <- tapply(predict.glm(msm_transformed_cali_aggr_treat_only, newdata = fitting_data_strata2[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata2[fitting_data_strata0$cumA !=0,]$t, mean)
+  
+  EY_never_treated_strata0[1,] <- tapply(predict.glm(msm_transformed, newdata = fitting_data_strata0[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata0[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata0[4,] <- tapply(predict.glm(msm_transformed_cali, newdata = fitting_data_strata0[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata0[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata0[5,] <- tapply(predict.glm(msm_transformed_cali_aggr, newdata = fitting_data_strata0[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata0[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata0[2,] <- tapply(predict.glm(msm_transformed_cali_treat_only, newdata = fitting_data_strata0[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata0[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata0[3,] <- tapply(predict.glm(msm_transformed_cali_aggr_treat_only, newdata = fitting_data_strata0[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata0[fitting_data_strata0$cumA ==0,]$t, mean)
+  
+  EY_never_treated_strata1[1,] <- tapply(predict.glm(msm_transformed, newdata = fitting_data_strata1[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata1[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata1[4,] <- tapply(predict.glm(msm_transformed_cali, newdata = fitting_data_strata1[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata1[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata1[5,] <- tapply(predict.glm(msm_transformed_cali_aggr, newdata = fitting_data_strata1[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata1[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata1[2,] <- tapply(predict.glm(msm_transformed_cali_treat_only, newdata = fitting_data_strata1[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata1[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata1[3,] <- tapply(predict.glm(msm_transformed_cali_aggr_treat_only, newdata = fitting_data_strata1[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata1[fitting_data_strata0$cumA ==0,]$t, mean)
+  
+  EY_never_treated_strata2[1,] <- tapply(predict.glm(msm_transformed, newdata = fitting_data_strata2[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata2[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata2[4,] <- tapply(predict.glm(msm_transformed_cali, newdata = fitting_data_strata2[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata2[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata2[5,] <- tapply(predict.glm(msm_transformed_cali_aggr, newdata = fitting_data_strata2[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata2[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata2[2,] <- tapply(predict.glm(msm_transformed_cali_treat_only, newdata = fitting_data_strata2[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata2[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata2[3,] <- tapply(predict.glm(msm_transformed_cali_aggr_treat_only, newdata = fitting_data_strata2[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata2[fitting_data_strata0$cumA ==0,]$t, mean)
+  
+  counterfactual_means <- list(EY_always_treated_strata0 = EY_always_treated_strata0,
+                               EY_always_treated_strata1 = EY_always_treated_strata1,
+                               EY_always_treated_strata2 = EY_always_treated_strata2,
+                               EY_never_treated_strata0 = EY_never_treated_strata0,
+                               EY_never_treated_strata1 = EY_never_treated_strata1,
+                               EY_never_treated_strata2 = EY_never_treated_strata2)  
+  
   
   list(MSM_estimates = MSM_estimates,
        counterfactual_means = counterfactual_means)
@@ -1855,32 +1922,65 @@ MyLtmleMSM_cali_boot_hers <- function(simdata, initial_Q_t = NA, refit_weights =
                                'Aggr. CMLE LTMLE')
   colnames(MSM_estimates) <- names(msm_transformed$coefficients)
   
-  fitting_data <- msm_fitting_data_transformed[msm_fitting_data_transformed$t == 4,]
+  fitting_data_strata0 <- msm_fitting_data_transformed[msm_fitting_data_transformed$strata_1 == 0 & msm_fitting_data_transformed$strata_2 == 0,]
+  fitting_data_strata1 <- msm_fitting_data_transformed[msm_fitting_data_transformed$strata_1 == 1,]
+  fitting_data_strata2 <- msm_fitting_data_transformed[msm_fitting_data_transformed$strata_2 == 1,]
   
-  EY_always_treated <- mean(predict.glm(msm_transformed, newdata = fitting_data[1:dim(wideSimdata)[1],], type = 'response'))
-  EY_always_treated_cali <- mean(predict.glm(msm_transformed_cali, newdata = fitting_data[1:dim(wideSimdata)[1],], type = 'response'))
-  EY_always_treated_cali_aggr <- mean(predict.glm(msm_transformed_cali_aggr, newdata = fitting_data[1:dim(wideSimdata)[1],], type = 'response'))
-  EY_always_treated_cali_treat_only <- mean(predict.glm(msm_transformed_cali_treat_only, newdata = fitting_data[1:dim(wideSimdata)[1],], type = 'response'))
-  EY_always_treated_cali_aggr_treat_only <- mean(predict.glm(msm_transformed_cali_aggr_treat_only, newdata = fitting_data[1:dim(wideSimdata)[1],], type = 'response'))
+  EY_always_treated_strata0 <- EY_always_treated_strata1 <- EY_always_treated_strata2<- EY_never_treated_strata0 <- EY_never_treated_strata1 <- EY_never_treated_strata2<-array(,dim = c(5,5))
   
-  EY_never_treated <- mean(predict.glm(msm_transformed, newdata = fitting_data[(dim(wideSimdata)[1]+1):(2*dim(wideSimdata)[1]),], type = 'response'))
-  EY_never_treated_cali <- mean(predict.glm(msm_transformed_cali, newdata = fitting_data[(dim(wideSimdata)[1]+1):(2*dim(wideSimdata)[1]),], type = 'response'))
-  EY_never_treated_cali_aggr <- mean(predict.glm(msm_transformed_cali_aggr, newdata = fitting_data[(dim(wideSimdata)[1]+1):(2*dim(wideSimdata)[1]),], type = 'response'))
-  EY_never_treated_cali_treat_only <- mean(predict.glm(msm_transformed_cali_treat_only, newdata = fitting_data[(dim(wideSimdata)[1]+1):(2*dim(wideSimdata)[1]),], type = 'response'))
-  EY_never_treated_cali_aggr_treat_only <- mean(predict.glm(msm_transformed_cali_aggr_treat_only, newdata = fitting_data[(dim(wideSimdata)[1]+1):(2*dim(wideSimdata)[1]),], type = 'response'))
+  rownames(EY_always_treated_strata0) <- rownames(EY_always_treated_strata1) <- rownames(EY_always_treated_strata2) <-  c('MLE LTMLE',
+                                                                                                                          'CMLE LTMLE treat. only',
+                                                                                                                          'Aggr. CMLE LTMLE treat. only',
+                                                                                                                          'CMLE LTMLE',
+                                                                                                                          'Aggr. CMLE LTMLE')
+  rownames(EY_never_treated_strata0) <- rownames(EY_never_treated_strata1) <- rownames(EY_never_treated_strata2) <- c('MLE LTMLE',
+                                                                                                                      'CMLE LTMLE treat. only',
+                                                                                                                      'Aggr. CMLE LTMLE treat. only',
+                                                                                                                      'CMLE LTMLE',
+                                                                                                                      'Aggr. CMLE LTMLE')
   
-  counterfactual_means <- c(EY_always_treated,EY_always_treated_cali_treat_only,EY_always_treated_cali_aggr_treat_only,EY_always_treated_cali,EY_always_treated_cali_aggr,
-                            EY_never_treated,EY_never_treated_cali_treat_only,EY_never_treated_cali_aggr_treat_only,EY_never_treated_cali,EY_never_treated_cali_aggr)
-  names(counterfactual_means) <- c('MLE LTMLE always treated',
-                                   'CMLE LTMLE treat. only always treated',
-                                   'Aggr. CMLE LTMLE treat. only always treated',
-                                   'CMLE LTMLE always treated',
-                                   'Aggr. CMLE LTMLE always treated',
-                                   'MLE LTMLE never treated',
-                                   'CMLE LTMLE treat. only never treated',
-                                   'Aggr. CMLE LTMLE treat. only never treated',
-                                   'CMLE LTMLE never treated',
-                                   'Aggr. CMLE LTMLE never treated')
+  EY_always_treated_strata0[1,] <- tapply(predict.glm(msm_transformed, newdata = fitting_data_strata0[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata0[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata0[4,] <- tapply(predict.glm(msm_transformed_cali, newdata = fitting_data_strata0[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata0[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata0[5,] <- tapply(predict.glm(msm_transformed_cali_aggr, newdata = fitting_data_strata0[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata0[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata0[2,] <- tapply(predict.glm(msm_transformed_cali_treat_only, newdata = fitting_data_strata0[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata0[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata0[3,] <- tapply(predict.glm(msm_transformed_cali_aggr_treat_only, newdata = fitting_data_strata0[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata0[fitting_data_strata0$cumA !=0,]$t, mean)
+  
+  EY_always_treated_strata1[1,] <- tapply(predict.glm(msm_transformed, newdata = fitting_data_strata1[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata1[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata1[4,] <- tapply(predict.glm(msm_transformed_cali, newdata = fitting_data_strata1[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata1[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata1[5,] <- tapply(predict.glm(msm_transformed_cali_aggr, newdata = fitting_data_strata1[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata1[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata1[2,] <- tapply(predict.glm(msm_transformed_cali_treat_only, newdata = fitting_data_strata1[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata1[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata1[3,] <- tapply(predict.glm(msm_transformed_cali_aggr_treat_only, newdata = fitting_data_strata1[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata1[fitting_data_strata0$cumA !=0,]$t, mean)
+  
+  EY_always_treated_strata2[1,] <- tapply(predict.glm(msm_transformed, newdata = fitting_data_strata2[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata2[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata2[4,] <- tapply(predict.glm(msm_transformed_cali, newdata = fitting_data_strata2[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata2[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata2[5,] <- tapply(predict.glm(msm_transformed_cali_aggr, newdata = fitting_data_strata2[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata2[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata2[2,] <- tapply(predict.glm(msm_transformed_cali_treat_only, newdata = fitting_data_strata2[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata2[fitting_data_strata0$cumA !=0,]$t, mean)
+  EY_always_treated_strata2[3,] <- tapply(predict.glm(msm_transformed_cali_aggr_treat_only, newdata = fitting_data_strata2[fitting_data_strata0$cumA !=0,], type = 'response'), fitting_data_strata2[fitting_data_strata0$cumA !=0,]$t, mean)
+  
+  EY_never_treated_strata0[1,] <- tapply(predict.glm(msm_transformed, newdata = fitting_data_strata0[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata0[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata0[4,] <- tapply(predict.glm(msm_transformed_cali, newdata = fitting_data_strata0[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata0[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata0[5,] <- tapply(predict.glm(msm_transformed_cali_aggr, newdata = fitting_data_strata0[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata0[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata0[2,] <- tapply(predict.glm(msm_transformed_cali_treat_only, newdata = fitting_data_strata0[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata0[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata0[3,] <- tapply(predict.glm(msm_transformed_cali_aggr_treat_only, newdata = fitting_data_strata0[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata0[fitting_data_strata0$cumA ==0,]$t, mean)
+  
+  EY_never_treated_strata1[1,] <- tapply(predict.glm(msm_transformed, newdata = fitting_data_strata1[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata1[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata1[4,] <- tapply(predict.glm(msm_transformed_cali, newdata = fitting_data_strata1[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata1[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata1[5,] <- tapply(predict.glm(msm_transformed_cali_aggr, newdata = fitting_data_strata1[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata1[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata1[2,] <- tapply(predict.glm(msm_transformed_cali_treat_only, newdata = fitting_data_strata1[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata1[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata1[3,] <- tapply(predict.glm(msm_transformed_cali_aggr_treat_only, newdata = fitting_data_strata1[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata1[fitting_data_strata0$cumA ==0,]$t, mean)
+  
+  EY_never_treated_strata2[1,] <- tapply(predict.glm(msm_transformed, newdata = fitting_data_strata2[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata2[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata2[4,] <- tapply(predict.glm(msm_transformed_cali, newdata = fitting_data_strata2[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata2[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata2[5,] <- tapply(predict.glm(msm_transformed_cali_aggr, newdata = fitting_data_strata2[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata2[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata2[2,] <- tapply(predict.glm(msm_transformed_cali_treat_only, newdata = fitting_data_strata2[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata2[fitting_data_strata0$cumA ==0,]$t, mean)
+  EY_never_treated_strata2[3,] <- tapply(predict.glm(msm_transformed_cali_aggr_treat_only, newdata = fitting_data_strata2[fitting_data_strata0$cumA ==0,], type = 'response'), fitting_data_strata2[fitting_data_strata0$cumA ==0,]$t, mean)
+  
+  counterfactual_means <- list(EY_always_treated_strata0 = EY_always_treated_strata0,
+                               EY_always_treated_strata1 = EY_always_treated_strata1,
+                               EY_always_treated_strata2 = EY_always_treated_strata2,
+                               EY_never_treated_strata0 = EY_never_treated_strata0,
+                               EY_never_treated_strata1 = EY_never_treated_strata1,
+                               EY_never_treated_strata2 = EY_never_treated_strata2)  
   if (!all(is.na(initial_Q_t))){
     Q_fits <- initial_Q_t
   }
