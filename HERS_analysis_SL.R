@@ -233,4 +233,7 @@ summary_table <- format_matrix(est[c(1,4),], lower[c(1,4),], upper[c(1,4),])
 print(xtable(summary_table, caption = "Estimates and 95% CIs by normal LTMLE with cali boot"))
 print('Cali bootstrap CI time \n')
 
-save.image(file = 'HERS.RData')
+rm(HERS)
+rm(simdata)
+rm(simdata_with_weights)
+save.image(file = 'HERS_SL.RData')
