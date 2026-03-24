@@ -26,6 +26,7 @@ simdata <- HERS
 
 simdata$C <- simdata$C + simdata$Y
 simdata$t <- simdata$visit - 8
+simdata$SITE1 <- as.integer(simdata$SITE1)
 simdata$SITE2 <- as.integer(simdata$SITE2)
 simdata$SITE3 <- as.integer(simdata$SITE3)
 simdata$WHITE <- as.integer(simdata$WHITE)
@@ -50,7 +51,7 @@ simdata <- simdata %>%
   dplyr::select(
     ID, t, A, Ap, App, CAp, CD4, CD4_1, CD4_2, sqrtCD4, sqrtCD4_1, sqrtCD4_2,
     viral, viral_1, viral_2, HIVsym, HIVsym_1, HIVsym_2,
-    SITE2, SITE3, WHITE, OTHER, Y, C
+    SITE1, SITE2, SITE3, WHITE, OTHER, Y, C
   )
 simdata$eligible <- as.numeric(simdata$CAp == 0 & simdata$t == 0)
 simdata$CA <- ave(simdata$A, simdata$ID, FUN = cumsum)
@@ -97,14 +98,14 @@ simdata <- simdata %>%
 table1 <- covariate_table_A(
   data = simdata[simdata$t == 0, ],
   A = "A",
-  covariates = c("viral_1", "HIVsym_1", "SITE3", "SITE2", "D", "WHITE", "OTHER", "CD4_1"),
-  factor_vars = c("HIVsym_1", "SITE3", "SITE2", "D", "WHITE", "OTHER")
+  covariates = c("viral_1", "HIVsym_1", "SITE1", "SITE2","SITE3", "D", "WHITE", "OTHER", "CD4_1"),
+  factor_vars = c("HIVsym_1", "SITE1", "SITE2","SITE3", "D", "WHITE", "OTHER")
 )
 
 table2 <- covariate_summary(
   data        = simdata[simdata$t == 0, ],
-  covariates  = c("viral_1", "HIVsym_1", "SITE3", "SITE2", "D", "WHITE", "OTHER", "CD4_1"),
-  factor_vars = c("HIVsym_1", "SITE3", "SITE2", "D", "WHITE", "OTHER")
+  covariates  = c("viral_1", "HIVsym_1", "SITE1", "SITE2","SITE3", "D", "WHITE", "OTHER", "CD4_1"),
+  factor_vars = c("HIVsym_1", "SITE1", "SITE2","SITE3", "D", "WHITE", "OTHER")
 )
 
 table_var <- merge(table1, table2, by = c("variable", "level"))
@@ -155,7 +156,7 @@ cobalt_table_treated <- rbind(always_treated_baseline, whole_population_baseline
 cobalt_table_control <- rbind(never_treated_baseline, whole_population_baseline)
 
 print("################# ALWAYS TREATED ####################")
-cobalt_treat <- bal.tab(cobalt_table_treated[, c("viral_1", "viral_2", "sqrtCD4_1", "sqrtCD4_2", "HIVsym_1", "SITE3", "SITE2", "WHITE", "OTHER")],
+cobalt_treat <- bal.tab(cobalt_table_treated[, c("viral_1", "viral_2", "sqrtCD4_1", "sqrtCD4_2", "HIVsym_1", "SITE1", "SITE2","SITE3", "WHITE", "OTHER")],
   treat = cobalt_table_treated$S,
   data = cobalt_table_treated,
   un = TRUE,
@@ -164,7 +165,7 @@ cobalt_treat <- bal.tab(cobalt_table_treated[, c("viral_1", "viral_2", "sqrtCD4_
 )
 print(cobalt_treat)
 print("################# NEVER TREATED ####################")
-cobalt_control <- bal.tab(cobalt_table_control[, c("viral_1", "viral_2", "sqrtCD4_1", "sqrtCD4_2", "HIVsym_1", "SITE3", "SITE2", "WHITE", "OTHER")],
+cobalt_control <- bal.tab(cobalt_table_control[, c("viral_1", "viral_2", "sqrtCD4_1", "sqrtCD4_2", "HIVsym_1", "SITE1", "SITE2","SITE3", "WHITE", "OTHER")],
   treat = cobalt_table_control$S,
   data = cobalt_table_control,
   un = TRUE,
@@ -182,7 +183,7 @@ control_plot <- love.plot(cobalt_control
                           ) +
   labs(title = "Never-treated")
 
-# bal.plot(cobalt_table_control[, c("viral_1", "viral_2", "sqrtCD4_1", "sqrtCD4_2", "HIVsym_1", "SITE3", "SITE2", "WHITE", "OTHER")],
+# bal.plot(cobalt_table_control[, c("viral_1", "viral_2", "sqrtCD4_1", "sqrtCD4_2", "HIVsym_1", "SITE1", "SITE2","SITE3", "WHITE", "OTHER")],
 #          var.name = "sqrtCD4_1",
 #          treat = cobalt_table_control$S,
 #          data = cobalt_table_control,
@@ -198,6 +199,140 @@ ggarrange(
 )
 dev.off()
 
+
+################# Balance plots, t = 1 #######################################
+always_treated_baseline <- simdata_with_weights[simdata_with_weights$A == 1 & simdata_with_weights$Ap == 1 & simdata_with_weights$t == 1, ] %>%
+  dplyr::mutate(
+    S = 1,
+    IPW = weights,
+    Calibrated = Cweights
+  )
+
+never_treated_baseline <- simdata_with_weights[simdata_with_weights$A == 0 & simdata_with_weights$Ap == 0& simdata_with_weights$t == 1, ] %>%
+  dplyr::mutate(
+    S = 1,
+    IPW = weights,
+    Calibrated = Cweights
+  )
+
+whole_population_baseline <- simdata_with_weights[simdata_with_weights$t <= 1, ] %>%
+  dplyr::mutate(
+    IPW = lag(weights),
+    Calibrated = lag(Cweights),
+    S = 0
+  )
+
+cobalt_table_treated <- rbind(always_treated_baseline, whole_population_baseline %>% dplyr::filter(Ap == 1 & t == 1))
+cobalt_table_control <- rbind(never_treated_baseline, whole_population_baseline %>% dplyr::filter(Ap == 0 & t == 1))
+
+print("################# ALWAYS TREATED ####################")
+cobalt_treat <- bal.tab(cobalt_table_treated[, c("viral_1", "viral_2", "sqrtCD4_1", "sqrtCD4_2", "HIVsym_1")],
+                        treat = cobalt_table_treated$S,
+                        data = cobalt_table_treated,
+                        weights = c("IPW", "Calibrated"),
+                        binary = "std"
+)
+print(cobalt_treat)
+print("################# NEVER TREATED ####################")
+cobalt_control <- bal.tab(cobalt_table_control[, c("viral_1", "viral_2", "sqrtCD4_1", "sqrtCD4_2", "HIVsym_1")],
+                          treat = cobalt_table_control$S,
+                          data = cobalt_table_control,
+                          weights = c("IPW", "Calibrated"),
+                          binary = "std"
+)
+print(cobalt_control)
+
+treat_plot <- love.plot(cobalt_treat
+                        ,thresholds = c(m = .1)
+) +
+  labs(title = "Always-treated")
+control_plot <- love.plot(cobalt_control
+                          ,thresholds = c(m = .1)
+) +
+  labs(title = "Never-treated")
+
+# bal.plot(cobalt_table_control[, c("viral_1", "viral_2", "sqrtCD4_1", "sqrtCD4_2", "HIVsym_1", "SITE1", "SITE2","SITE3", "WHITE", "OTHER")],
+#          var.name = "sqrtCD4_1",
+#          treat = cobalt_table_control$S,
+#          data = cobalt_table_control,
+#          un = TRUE,
+#          weights = c("IPW", "Calibrated"),
+#          which = 'both',
+#          type = 'histogram')
+
+png("HERS_balance_plots_t1.png", width = 8, height = 4, units = "in", res = 300)
+ggarrange(
+  plotlist = list(treat_plot, control_plot), nrow = 1, ncol = 2, common.legend = T,
+  legend = "bottom"
+)
+dev.off()
+
+################# Balance plots, t = 2 #######################################
+always_treated_baseline <- simdata_with_weights[simdata_with_weights$A == 1 & simdata_with_weights$Ap == 1 & simdata_with_weights$App == 1 & simdata_with_weights$t == 2, ] %>%
+  dplyr::mutate(
+    S = 1,
+    IPW = weights,
+    Calibrated = Cweights
+  )
+
+never_treated_baseline <- simdata_with_weights[simdata_with_weights$A == 0 & simdata_with_weights$Ap == 0 & simdata_with_weights$App == 0& simdata_with_weights$t == 2, ] %>%
+  dplyr::mutate(
+    S = 1,
+    IPW = weights,
+    Calibrated = Cweights
+  )
+
+whole_population_baseline <- simdata_with_weights[simdata_with_weights$t <= 2, ] %>%
+  dplyr::mutate(
+    IPW = lag(weights),
+    Calibrated = lag(Cweights),
+    S = 0
+  )
+
+cobalt_table_treated <- rbind(always_treated_baseline, whole_population_baseline %>% dplyr::filter(Ap == 1 & App == 1 & t == 2))
+cobalt_table_control <- rbind(never_treated_baseline, whole_population_baseline %>% dplyr::filter(Ap == 0 & App == 0 & t == 2))
+
+print("################# ALWAYS TREATED ####################")
+cobalt_treat <- bal.tab(cobalt_table_treated[, c("viral_1", "viral_2", "sqrtCD4_1", "sqrtCD4_2", "HIVsym_1")],
+                        treat = cobalt_table_treated$S,
+                        data = cobalt_table_treated,
+                        weights = c("IPW", "Calibrated"),
+                        binary = "std"
+)
+print(cobalt_treat)
+print("################# NEVER TREATED ####################")
+cobalt_control <- bal.tab(cobalt_table_control[, c("viral_1", "viral_2", "sqrtCD4_1", "sqrtCD4_2", "HIVsym_1")],
+                          treat = cobalt_table_control$S,
+                          data = cobalt_table_control,
+                          weights = c("IPW", "Calibrated"),
+                          binary = "std"
+)
+print(cobalt_control)
+
+treat_plot <- love.plot(cobalt_treat
+                        ,thresholds = c(m = .1)
+) +
+  labs(title = "Always-treated")
+control_plot <- love.plot(cobalt_control
+                          ,thresholds = c(m = .1)
+) +
+  labs(title = "Never-treated")
+
+# bal.plot(cobalt_table_control[, c("viral_1", "viral_2", "sqrtCD4_1", "sqrtCD4_2", "HIVsym_1", "SITE1", "SITE2","SITE3", "WHITE", "OTHER")],
+#          var.name = "sqrtCD4_1",
+#          treat = cobalt_table_control$S,
+#          data = cobalt_table_control,
+#          un = TRUE,
+#          weights = c("IPW", "Calibrated"),
+#          which = 'both',
+#          type = 'histogram')
+
+png("HERS_balance_plots_t2.png", width = 8, height = 4, units = "in", res = 300)
+ggarrange(
+  plotlist = list(treat_plot, control_plot), nrow = 1, ncol = 2, common.legend = T,
+  legend = "bottom"
+)
+dev.off()
 ########## Bootstrap ############
 bootstrap_iter <- 500
 boot_samples <- vector("list", bootstrap_iter)
@@ -212,7 +347,7 @@ for (b in 1:bootstrap_iter) {
 }
 
 ############################# Cali Boot BOOTSTRAP TMLE #############################
-registerDoParallel(cores = 10)
+registerDoParallel(cores = 15)
 time <- proc.time()
 cali_bootstrap_modLTMLE <- foreach(k = 1:bootstrap_iter, .combine = function(x, y) {
   # combine list of results
@@ -352,23 +487,30 @@ print((proc.time() - time)[[3]])
 
 
 ############################# Normal BOOTSTRAP TMLE #############################
-registerDoParallel(cores = 10)
-
 time <- proc.time()
 normal_bootstrap_LTMLE <- foreach(k = 1:bootstrap_iter, .combine = function(x, y) {
   # combine list of results
   list(
-    coeffs = rbind(x$coeffs, y$coeffs)
+    coeffs = rbind(x$coeffs, y$coeffs),
+    ATE_strata0 = rbind(x$ATE_strata0, y$ATE_strata0),
+    ATE_strata1 = rbind(x$ATE_strata1, y$ATE_strata1),
+    ATE_strata2 = rbind(x$ATE_strata2, y$ATE_strata2)
   )
-}, .init = list(coeffs = NULL)) %dopar% {
+}, .init = list(coeffs = NULL, ATE_strata0 = NULL, ATE_strata1 = NULL, ATE_strata2 = NULL)) %dopar% {
   boot_design_data <- as.data.frame(boot_samples[[k]])[, names(simdata)]
   boot_design_data$ID <- as.integer(factor(boot_design_data$ID))
   bootstrap_tmle <- MyLtmleMSM_hers(simdata = boot_design_data)
 
-  list(coeffs = bootstrap_tmle$MSM_estimates)
+  list(coeffs = bootstrap_tmle$MSM_estimates,
+       ATE_strata0 = bootstrap_tmle$counterfactual_means$EY_always_treated_strata0 - bootstrap_tmle$counterfactual_means$EY_never_treated_strata0,
+       ATE_strata1 = bootstrap_tmle$counterfactual_means$EY_always_treated_strata1 - bootstrap_tmle$counterfactual_means$EY_never_treated_strata1,
+       ATE_strata2 = bootstrap_tmle$counterfactual_means$EY_always_treated_strata2 - bootstrap_tmle$counterfactual_means$EY_never_treated_strata2)
 }
 
 coeffs_boot <- normal_bootstrap_LTMLE$coeffs
+ATE_strata0_boot <- normal_bootstrap_LTMLE$ATE_strata0
+ATE_strata1_boot <- normal_bootstrap_LTMLE$ATE_strata1
+ATE_strata2_boot <- normal_bootstrap_LTMLE$ATE_strata2
 
 normal_bootstrap_CIs_coeffs_LB <- rbind(
   colQuantiles(coeffs_boot[rownames(coeffs_boot) == "MLE LTMLE", ], probs = 0.025),
@@ -378,14 +520,6 @@ normal_bootstrap_CIs_coeffs_LB <- rbind(
   colQuantiles(coeffs_boot[rownames(coeffs_boot) == "Aggr. CMLE LTMLE", ], probs = 0.025)
 )
 
-rownames(normal_bootstrap_CIs_coeffs_LB) <- c(
-  "MLE LTMLE",
-  "CMLE LTMLE treat. only",
-  "Aggr. CMLE LTMLE treat. only",
-  "CMLE LTMLE",
-  "Aggr. CMLE LTMLE"
-)
-
 normal_bootstrap_CIs_coeffs_UB <- rbind(
   colQuantiles(coeffs_boot[rownames(coeffs_boot) == "MLE LTMLE", ], probs = 0.975),
   colQuantiles(coeffs_boot[rownames(coeffs_boot) == "CMLE LTMLE treat. only", ], probs = 0.975),
@@ -393,14 +527,68 @@ normal_bootstrap_CIs_coeffs_UB <- rbind(
   colQuantiles(coeffs_boot[rownames(coeffs_boot) == "CMLE LTMLE", ], probs = 0.975),
   colQuantiles(coeffs_boot[rownames(coeffs_boot) == "Aggr. CMLE LTMLE", ], probs = 0.975)
 )
-rownames(normal_bootstrap_CIs_coeffs_UB) <- c(
-  "MLE LTMLE",
-  "CMLE LTMLE treat. only",
-  "Aggr. CMLE LTMLE treat. only",
-  "CMLE LTMLE",
-  "Aggr. CMLE LTMLE"
+
+normal_bootstrap_CIs_ATE_strata0_LB <- rbind(
+  colQuantiles(ATE_strata0_boot[rownames(ATE_strata0_boot) == "MLE LTMLE", ], probs = 0.025),
+  colQuantiles(ATE_strata0_boot[rownames(ATE_strata0_boot) == "CMLE LTMLE treat. only", ], probs = 0.025),
+  colQuantiles(ATE_strata0_boot[rownames(ATE_strata0_boot) == "Aggr. CMLE LTMLE treat. only", ], probs = 0.025),
+  colQuantiles(ATE_strata0_boot[rownames(ATE_strata0_boot) == "CMLE LTMLE", ], probs = 0.025),
+  colQuantiles(ATE_strata0_boot[rownames(ATE_strata0_boot) == "Aggr. CMLE LTMLE", ], probs = 0.025)
 )
 
+
+normal_bootstrap_CIs_ATE_strata0_UB <- rbind(
+  colQuantiles(ATE_strata0_boot[rownames(ATE_strata0_boot) == "MLE LTMLE", ], probs = 0.975),
+  colQuantiles(ATE_strata0_boot[rownames(ATE_strata0_boot) == "CMLE LTMLE treat. only", ], probs = 0.975),
+  colQuantiles(ATE_strata0_boot[rownames(ATE_strata0_boot) == "Aggr. CMLE LTMLE treat. only", ], probs = 0.975),
+  colQuantiles(ATE_strata0_boot[rownames(ATE_strata0_boot) == "CMLE LTMLE", ], probs = 0.975),
+  colQuantiles(ATE_strata0_boot[rownames(ATE_strata0_boot) == "Aggr. CMLE LTMLE", ], probs = 0.975)
+)
+
+normal_bootstrap_CIs_ATE_strata1_LB <- rbind(
+  colQuantiles(ATE_strata1_boot[rownames(ATE_strata1_boot) == "MLE LTMLE", ], probs = 0.025),
+  colQuantiles(ATE_strata1_boot[rownames(ATE_strata1_boot) == "CMLE LTMLE treat. only", ], probs = 0.025),
+  colQuantiles(ATE_strata1_boot[rownames(ATE_strata1_boot) == "Aggr. CMLE LTMLE treat. only", ], probs = 0.025),
+  colQuantiles(ATE_strata1_boot[rownames(ATE_strata1_boot) == "CMLE LTMLE", ], probs = 0.025),
+  colQuantiles(ATE_strata1_boot[rownames(ATE_strata1_boot) == "Aggr. CMLE LTMLE", ], probs = 0.025)
+)
+
+
+normal_bootstrap_CIs_ATE_strata1_UB <- rbind(
+  colQuantiles(ATE_strata1_boot[rownames(ATE_strata1_boot) == "MLE LTMLE", ], probs = 0.975),
+  colQuantiles(ATE_strata1_boot[rownames(ATE_strata1_boot) == "CMLE LTMLE treat. only", ], probs = 0.975),
+  colQuantiles(ATE_strata1_boot[rownames(ATE_strata1_boot) == "Aggr. CMLE LTMLE treat. only", ], probs = 0.975),
+  colQuantiles(ATE_strata1_boot[rownames(ATE_strata1_boot) == "CMLE LTMLE", ], probs = 0.975),
+  colQuantiles(ATE_strata1_boot[rownames(ATE_strata1_boot) == "Aggr. CMLE LTMLE", ], probs = 0.975)
+)
+
+normal_bootstrap_CIs_ATE_strata2_LB <- rbind(
+  colQuantiles(ATE_strata2_boot[rownames(ATE_strata2_boot) == "MLE LTMLE", ], probs = 0.025),
+  colQuantiles(ATE_strata2_boot[rownames(ATE_strata2_boot) == "CMLE LTMLE treat. only", ], probs = 0.025),
+  colQuantiles(ATE_strata2_boot[rownames(ATE_strata2_boot) == "Aggr. CMLE LTMLE treat. only", ], probs = 0.025),
+  colQuantiles(ATE_strata2_boot[rownames(ATE_strata2_boot) == "CMLE LTMLE", ], probs = 0.025),
+  colQuantiles(ATE_strata2_boot[rownames(ATE_strata2_boot) == "Aggr. CMLE LTMLE", ], probs = 0.025)
+)
+
+
+normal_bootstrap_CIs_ATE_strata2_UB <- rbind(
+  colQuantiles(ATE_strata2_boot[rownames(ATE_strata2_boot) == "MLE LTMLE", ], probs = 0.975),
+  colQuantiles(ATE_strata2_boot[rownames(ATE_strata2_boot) == "CMLE LTMLE treat. only", ], probs = 0.975),
+  colQuantiles(ATE_strata2_boot[rownames(ATE_strata2_boot) == "Aggr. CMLE LTMLE treat. only", ], probs = 0.975),
+  colQuantiles(ATE_strata2_boot[rownames(ATE_strata2_boot) == "CMLE LTMLE", ], probs = 0.975),
+  colQuantiles(ATE_strata2_boot[rownames(ATE_strata2_boot) == "Aggr. CMLE LTMLE", ], probs = 0.975)
+)
+
+rownames(normal_bootstrap_CIs_coeffs_LB) <- rownames(normal_bootstrap_CIs_coeffs_UB) <-
+  rownames(normal_bootstrap_CIs_ATE_strata0_LB) <- rownames(normal_bootstrap_CIs_ATE_strata0_UB) <-
+  rownames(normal_bootstrap_CIs_ATE_strata1_LB) <- rownames(normal_bootstrap_CIs_ATE_strata1_UB) <-
+  rownames(normal_bootstrap_CIs_ATE_strata2_LB) <- rownames(normal_bootstrap_CIs_ATE_strata2_UB) <- c(
+    "MLE LTMLE",
+    "CMLE LTMLE treat. only",
+    "Aggr. CMLE LTMLE treat. only",
+    "CMLE LTMLE",
+    "Aggr. CMLE LTMLE"
+  )
 est <- point_estimate_TMLE$MSM_estimates[, (ncol(point_estimate_TMLE$MSM_estimates) - 2):ncol(point_estimate_TMLE$MSM_estimates)]
 lower <- normal_bootstrap_CIs_coeffs_LB[, (ncol(normal_bootstrap_CIs_coeffs_LB) - 2):ncol(normal_bootstrap_CIs_coeffs_LB)]
 upper <- normal_bootstrap_CIs_coeffs_UB[, (ncol(normal_bootstrap_CIs_coeffs_UB) - 2):ncol(normal_bootstrap_CIs_coeffs_UB)]
@@ -426,7 +614,6 @@ print((proc.time() - time)[[3]])
 
 ################## PLOTS ##########################
 
-point_estimate_TMLE$counterfactual_means
 outcome_plots <- list()
 
 outcome_plots[[1]] <- ggplot() +
@@ -515,6 +702,29 @@ CI_CMLE_ATE_long <- pivot_longer(
 )
 CI_CMLE_ATE <- pivot_wider(CI_CMLE_ATE_long, names_from = Stat, values_from = Value)
 
+
+load("/home/juliette/Calibrated-weights-sequential-trial-emulation/HERS_SL.RData")
+CI_CMLE_SL_ATE <- data.frame(
+  Visit = 8:12, ATE_strata0 = point_estimate_TMLE$counterfactual_means$EY_always_treated_strata0[4, ] - point_estimate_TMLE$counterfactual_means$EY_never_treated_strata0[4, ],
+  ATE_strata1 = point_estimate_TMLE$counterfactual_means$EY_always_treated_strata1[4, ] - point_estimate_TMLE$counterfactual_means$EY_never_treated_strata1[4, ],
+  ATE_strata2 = point_estimate_TMLE$counterfactual_means$EY_always_treated_strata2[4, ] - point_estimate_TMLE$counterfactual_means$EY_never_treated_strata2[4, ],
+  LB_strata0 = cali_bootstrap_mod_CIs_ATE_strata0_LB[4, ],
+  UB_strata0 = cali_bootstrap_mod_CIs_ATE_strata0_UB[4, ],
+  LB_strata1 = cali_bootstrap_mod_CIs_ATE_strata1_LB[4, ],
+  UB_strata1 = cali_bootstrap_mod_CIs_ATE_strata1_UB[4, ],
+  LB_strata2 = cali_bootstrap_mod_CIs_ATE_strata2_LB[4, ],
+  UB_strata2 = cali_bootstrap_mod_CIs_ATE_strata2_UB[4, ]
+)
+
+CI_CMLE_SL_ATE_long <- pivot_longer(
+  data = CI_CMLE_SL_ATE, cols = -Visit,
+  names_to = c("Stat", "Strata"),
+  names_pattern = "(.*)_(strata\\d+)",
+  values_to = "Value"
+)
+CI_CMLE_SL_ATE <- pivot_wider(CI_CMLE_SL_ATE_long, names_from = Stat, values_from = Value)
+
+
 ATE_plots <- list()
 ATE_plots[[1]] <- ggplot(CI_MLE_ATE, aes(x = Visit, colour = Strata)) +
   geom_point(aes(y = ATE), position = position_dodge(width = 0.2)) +
@@ -527,8 +737,8 @@ ATE_plots[[1]] <- ggplot(CI_MLE_ATE, aes(x = Visit, colour = Strata)) +
     legend.text = element_text(size = 14),
     title = element_text(size = 12)
   ) +
-  ylim(-150, 350) +
-  labs(title = "MLE", x = "Visit", y = "ATE by strata")
+  ylim(-400, 300) +
+  labs(title = "MLE", x = "Visit",y = "Per-protocol effect by strata")
 
 ATE_plots[[2]] <- ggplot(CI_CMLE_ATE, aes(x = Visit, colour = Strata)) +
   geom_point(aes(y = ATE), position = position_dodge(width = 0.2)) +
@@ -539,178 +749,30 @@ ATE_plots[[2]] <- ggplot(CI_CMLE_ATE, aes(x = Visit, colour = Strata)) +
   ), labels = c("0", "1", "2")) +
   theme(
     legend.text = element_text(size = 14),
-    title = element_text(size = 12)
+    title = element_text(size = 12),
+    axis.title.y = element_blank()
   ) +
-  ylim(-150, 350) +
-  labs(title = "CMLE", x = "Visit", y = "ATE by strata")
+  ylim(-400, 300) +
+  labs(title = "CMLE", x = "Visit")
+
+ATE_plots[[3]] <- ggplot(CI_CMLE_SL_ATE, aes(x = Visit, colour = Strata)) +
+  geom_point(aes(y = ATE), position = position_dodge(width = 0.2)) +
+  geom_errorbar(aes(ymin = LB, ymax = UB), width = 0.2, position = position_dodge(width = 0.2)) +
+  scale_color_manual(name = "Stratum", values = c(
+    "strata0" = "red", "strata1" = "blue",
+    "strata2" = "orange"
+  ), labels = c("0", "1", "2")) +
+  theme(
+    legend.text = element_text(size = 14),
+    title = element_text(size = 12),
+    axis.title.y = element_blank()
+  ) +
+  ylim(-400, 300) +
+  labs(title = "CMLE-SL", x = "Visit")
 
 png("HERS_ATE_plots.png", width = 10, height = 5, units = "in", res = 300)
 ggarrange(
-  plotlist = ATE_plots, nrow = 1, ncol = 2, common.legend = T,
+  plotlist = ATE_plots, nrow = 1, ncol = 3, common.legend = T,
   legend = "bottom"
-)
+) 
 dev.off()
-
-############################# MODIFIED BOOTSTRAP TMLE #############################
-#
-# registerDoParallel(cores = 10)
-#
-# time <- proc.time()
-#
-# modified_bootstrap_LTMLE <- foreach(k = 1:bootstrap_iter, .combine = function(x, y) {
-#   # combine list of results
-#   list(
-#     coeffs = rbind(x$coeffs, y$coeffs)
-#   )
-# }, .init = list(coeffs = NULL)) %dopar% {
-#
-#   boot_design_data <- boot_samples[[k]]
-#
-#   bootstrap_tmle <- MyLtmleMSM_modified_hers(simdata = boot_design_data,
-#                                              initial_Q_t = point_estimate_modifiedTMLE$Q_fits,
-#                                              refit_weights = FALSE,
-#                                              treat_models_n = point_estimate_modifiedTMLE$treat_models_n,
-#                                              censor_models_n = point_estimate_modifiedTMLE$censor_models_n)
-#
-#   list(coeffs = bootstrap_tmle$MSM_estimates)
-# }
-#
-#
-# coeffs_boot <- modified_bootstrap_LTMLE$coeffs
-#
-# modified_bootstrap_CIs_coeffs_LB <- rbind(colQuantiles(coeffs_boot[rownames(coeffs_boot) == "MLE LTMLE",], probs = 0.025),
-#                                           colQuantiles(coeffs_boot[rownames(coeffs_boot) == "CMLE LTMLE treat. only",], probs = 0.025),
-#                                           colQuantiles(coeffs_boot[rownames(coeffs_boot) == "Aggr. CMLE LTMLE treat. only",], probs = 0.025),
-#                                           colQuantiles(coeffs_boot[rownames(coeffs_boot) == "CMLE LTMLE",], probs = 0.025),
-#                                           colQuantiles(coeffs_boot[rownames(coeffs_boot) == "Aggr. CMLE LTMLE",], probs = 0.025))
-#
-# rownames(modified_bootstrap_CIs_coeffs_LB) <- c('MLE LTMLE',
-#                                                 'CMLE LTMLE treat. only',
-#                                                 'Aggr. CMLE LTMLE treat. only',
-#                                                 'CMLE LTMLE',
-#                                                 'Aggr. CMLE LTMLE')
-#
-# modified_bootstrap_CIs_coeffs_UB <- rbind(colQuantiles(coeffs_boot[rownames(coeffs_boot) == "MLE LTMLE",], probs = 0.975),
-#                                           colQuantiles(coeffs_boot[rownames(coeffs_boot) == "CMLE LTMLE treat. only",], probs = 0.975),
-#                                           colQuantiles(coeffs_boot[rownames(coeffs_boot) == "Aggr. CMLE LTMLE treat. only",], probs = 0.975),
-#                                           colQuantiles(coeffs_boot[rownames(coeffs_boot) == "CMLE LTMLE",], probs = 0.975),
-#                                           colQuantiles(coeffs_boot[rownames(coeffs_boot) == "Aggr. CMLE LTMLE",], probs = 0.975))
-# rownames(modified_bootstrap_CIs_coeffs_UB) <- c('MLE LTMLE',
-#                                                 'CMLE LTMLE treat. only',
-#                                                 'Aggr. CMLE LTMLE treat. only',
-#                                                 'CMLE LTMLE',
-#                                                 'Aggr. CMLE LTMLE')
-#
-#
-# est <- point_estimate_modifiedTMLE$MSM_estimates[,(ncol(point_estimate_modifiedTMLE$MSM_estimates)-2):ncol(point_estimate_modifiedTMLE$MSM_estimates)]
-# lower <- modified_bootstrap_CIs_coeffs_LB[,(ncol(modified_bootstrap_CIs_coeffs_LB)-2):ncol(modified_bootstrap_CIs_coeffs_LB)]
-# upper <- modified_bootstrap_CIs_coeffs_UB[,(ncol(modified_bootstrap_CIs_coeffs_UB)-2):ncol(modified_bootstrap_CIs_coeffs_UB)]
-#
-# format_matrix <- function(est, lower, upper) {
-#   m <- matrix("", nrow = nrow(est), ncol = ncol(est),
-#               dimnames = list(rownames(est), colnames(est)))
-#   for (i in 1:nrow(est)) {
-#     for (j in 1:ncol(est)) {
-#       m[i, j] <- sprintf("%.2f (%.2f, %.2f)", est[i, j], lower[i, j], upper[i, j])
-#     }
-#   }
-#   m
-# }
-#
-# summary_table <- format_matrix(est, lower, upper)
-# print(xtable(summary_table, caption = "Estimates and 95% CIs by modified LTMLE"))
-#
-# print('Modified bootstrap CI time \n')
-# print((proc.time() - time)[[3]])
-# 
-# balance_data <- simdata_with_weights %>%
-#   group_by(ID) %>%
-#   mutate(
-#     lag_weights = lag(weights),
-#     lag_Cweights = lag(Cweights)
-#   ) %>%
-#   ungroup()
-# 
-# balance_data$RA_1 <- 1
-# balance_data[balance_data$t == 0 & !(balance_data$CA == 1), ]$RA_1 <- 0
-# balance_data[balance_data$t == 1 & !(balance_data$CA == 2), ]$RA_1 <- 0
-# balance_data[balance_data$t == 2 & !(balance_data$CA == 3), ]$RA_1 <- 0
-# balance_data[balance_data$t == 3 & !(balance_data$CA == 4), ]$RA_1 <- 0
-# balance_data[balance_data$t == 4 & !(balance_data$CA == 5), ]$RA_1 <- 0
-# 
-# balance_data$RA_0 <- 1
-# balance_data[balance_data$t == 0 & !(balance_data$CA == 0), ]$RA_0 <- 0
-# balance_data[balance_data$t == 1 & !(balance_data$CA == 0), ]$RA_0 <- 0
-# balance_data[balance_data$t == 2 & !(balance_data$CA == 0), ]$RA_0 <- 0
-# balance_data[balance_data$t == 3 & !(balance_data$CA == 0), ]$RA_0 <- 0
-# balance_data[balance_data$t == 4 & !(balance_data$CA == 0), ]$RA_0 <- 0
-# 
-# balance_data <- balance_data %>%
-#   group_by(ID) %>%
-#   mutate(
-#     lag_RA_1 = lag(RA_1),
-#     lag_RA_0 = lag(RA_0)
-#   ) %>%
-#   ungroup()
-# 
-# for (k in 1:4) {
-#   always_treated <- balance_data[balance_data$RA_1 == 1 & balance_data$t == k, ] %>%
-#     dplyr::mutate(
-#       S = 1,
-#       IPW = weights,
-#       Calibrated = Cweights
-#     )
-#   
-#   never_treated <- balance_data[balance_data$RA_0 == 1 & balance_data$t == k, ] %>%
-#     dplyr::mutate(
-#       S = 1,
-#       IPW = weights,
-#       Calibrated = Cweights
-#     )
-#   
-#   whole_population_treated <- balance_data[balance_data$lag_RA_1 == 1 & balance_data$t == k, ] %>%
-#     dplyr::mutate(
-#       IPW = 1,
-#       Calibrated = 1,
-#       S = 0
-#     )
-#   whole_population_control <- balance_data[balance_data$lag_RA_0 == 1 & balance_data$t == k, ] %>%
-#     dplyr::mutate(
-#       IPW = 1,
-#       Calibrated = 1,
-#       S = 0
-#     )
-#   
-#   cobalt_table_treated <- rbind(always_treated, whole_population_treated)
-#   cobalt_table_control <- rbind(never_treated, whole_population_control)
-#   
-#   print("################# ALWAYS TREATED ####################")
-#   cobalt_treat <- bal.tab(cobalt_table_treated[, c("viral_1", "viral_2", "sqrtCD4_1", "sqrtCD4_2", "HIVsym_1")],
-#                           treat = cobalt_table_treated$S,
-#                           data = cobalt_table_treated,
-#                           un = TRUE,
-#                           weights = c("IPW", "Calibrated")
-#   )
-#   print(cobalt_treat)
-#   print("################# NEVER TREATED ####################")
-#   cobalt_control <- bal.tab(cobalt_table_control[, c("viral_1", "viral_2", "sqrtCD4_1", "sqrtCD4_2", "HIVsym_1")],
-#                             treat = cobalt_table_control$S,
-#                             data = cobalt_table_control,
-#                             un = TRUE,
-#                             weights = c("IPW", "Calibrated")
-#   )
-#   print(cobalt_control)
-#   
-#   treat_plot <- love.plot(cobalt_treat) +
-#     labs(title = "Always-treated")
-#   control_plot <- love.plot(cobalt_control) +
-#     labs(title = "Never-treated")
-#   
-#   
-#   png(paste0("HERS_balance_plots_visit_", k, ".png"), width = 8, height = 4, units = "in", res = 300)
-#   ggarrange(
-#     plotlist = list(treat_plot, control_plot), nrow = 1, ncol = 2, common.legend = T,
-#     legend = "bottom"
-#   )
-#   dev.off()
-# }

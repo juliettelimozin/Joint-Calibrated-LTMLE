@@ -143,11 +143,11 @@ h_function <- function(data, treat_models_n, censor_models_n) {
 }
 
 initial_weight_calculation <- function(simdata) {
-  treat_model_A_0 <- glm(A ~ sqrtCD4_1 + sqrtCD4_2 + viral_1 + viral_2 + HIVsym_1 + SITE2 + SITE3 + WHITE + OTHER, data = simdata[simdata$t == 0, ], family = "binomial")
-  treat_model_A_1 <- glm(A ~ Ap + sqrtCD4_1 + sqrtCD4_2 + viral_1 + viral_2 + HIVsym_1 + SITE2 + SITE3 + WHITE + OTHER, data = simdata[simdata$t == 1, ], family = "binomial")
-  treat_model_A_2 <- glm(A ~ Ap + sqrtCD4_1 + sqrtCD4_2 + viral_1 + viral_2 + HIVsym_1 + SITE2 + SITE3 + WHITE + OTHER, data = simdata[simdata$t == 2, ], family = "binomial")
-  treat_model_A_3 <- glm(A ~ Ap + sqrtCD4_1 + sqrtCD4_2 + viral_1 + viral_2 + HIVsym_1 + SITE2 + SITE3 + WHITE + OTHER, data = simdata[simdata$t == 3, ], family = "binomial")
-  treat_model_A_4 <- glm(A ~ Ap + sqrtCD4_1 + sqrtCD4_2 + viral_1 + viral_2 + HIVsym_1 + SITE2 + SITE3 + WHITE + OTHER, data = simdata[simdata$t == 4, ], family = "binomial")
+  treat_model_A_0 <- glm(A ~ sqrtCD4_1 + sqrtCD4_2 + viral_1 + viral_2 + HIVsym_1 + SITE1 + SITE2 + SITE3 + WHITE + OTHER, data = simdata[simdata$t == 0, ], family = "binomial")
+  treat_model_A_1 <- glm(A ~ Ap + sqrtCD4_1 + sqrtCD4_2 + viral_1 + viral_2 + HIVsym_1 + SITE1 + SITE2 + SITE3 + WHITE + OTHER, data = simdata[simdata$t == 1, ], family = "binomial")
+  treat_model_A_2 <- glm(A ~ Ap + sqrtCD4_1 + sqrtCD4_2 + viral_1 + viral_2 + HIVsym_1 + SITE1 + SITE2 + SITE3 + WHITE + OTHER, data = simdata[simdata$t == 2, ], family = "binomial")
+  treat_model_A_3 <- glm(A ~ Ap + sqrtCD4_1 + sqrtCD4_2 + viral_1 + viral_2 + HIVsym_1 + SITE1 + SITE2 + SITE3 + WHITE + OTHER, data = simdata[simdata$t == 3, ], family = "binomial")
+  treat_model_A_4 <- glm(A ~ Ap + sqrtCD4_1 + sqrtCD4_2 + viral_1 + viral_2 + HIVsym_1 + SITE1 + SITE2 + SITE3 + WHITE + OTHER, data = simdata[simdata$t == 4, ], family = "binomial")
 
   treat_model_A_0_num <- glm(A ~ D, data = simdata[simdata$t == 0, ], family = "binomial")
   treat_model_A_1_num <- glm(A ~ Ap + D, data = simdata[simdata$t == 1, ], family = "binomial")
@@ -158,10 +158,10 @@ initial_weight_calculation <- function(simdata) {
   treat_models_d <- list(treat_model_A_0, treat_model_A_1, treat_model_A_2, treat_model_A_3, treat_model_A_4)
   treat_models_n <- list(treat_model_A_0_num, treat_model_A_1_num, treat_model_A_2_num, treat_model_A_3_num, treat_model_A_4_num)
 
-  censor_model_0 <- glm(C ~ sqrtCD4_1 + sqrtCD4 + viral + viral_1 + HIVsym + HIVsym_1 + SITE2 + SITE3 + WHITE + OTHER, data = simdata[simdata$t == 0, ], family = "binomial")
-  censor_model_1 <- glm(C ~ sqrtCD4_1 + sqrtCD4 + viral + viral_1 + HIVsym + HIVsym_1 + SITE2 + SITE3 + WHITE + OTHER, data = simdata[simdata$t == 1, ], family = "binomial")
-  censor_model_2 <- glm(C ~ sqrtCD4_1 + sqrtCD4 + viral + viral_1 + HIVsym + HIVsym_1 + SITE2 + SITE3 + WHITE + OTHER, data = simdata[simdata$t == 2, ], family = "binomial")
-  censor_model_3 <- glm(C ~ sqrtCD4_1 + sqrtCD4 + viral + viral_1 + HIVsym + HIVsym_1 + SITE2 + SITE3 + WHITE + OTHER, data = simdata[simdata$t == 3, ], family = "binomial")
+  censor_model_0 <- glm(C ~ sqrtCD4_1 + sqrtCD4 + viral + viral_1 + HIVsym + HIVsym_1 + SITE1 + SITE2 + SITE3 + WHITE + OTHER, data = simdata[simdata$t == 0, ], family = "binomial")
+  censor_model_1 <- glm(C ~ sqrtCD4_1 + sqrtCD4 + viral + viral_1 + HIVsym + HIVsym_1 + SITE1 + SITE2 + SITE3 + WHITE + OTHER, data = simdata[simdata$t == 1, ], family = "binomial")
+  censor_model_2 <- glm(C ~ sqrtCD4_1 + sqrtCD4 + viral + viral_1 + HIVsym + HIVsym_1 + SITE1 + SITE2 + SITE3 + WHITE + OTHER, data = simdata[simdata$t == 2, ], family = "binomial")
+  censor_model_3 <- glm(C ~ sqrtCD4_1 + sqrtCD4 + viral + viral_1 + HIVsym + HIVsym_1 + SITE1 + SITE2 + SITE3 + WHITE + OTHER, data = simdata[simdata$t == 3, ], family = "binomial")
 
   censor_model_0_num <- glm(C ~ D, data = simdata[simdata$t == 0, ], family = "binomial")
   censor_model_1_num <- glm(C ~ D, data = simdata[simdata$t == 1, ], family = "binomial")
@@ -177,6 +177,7 @@ initial_weight_calculation <- function(simdata) {
   simdata$lagviral_1 <- simdata$viral_2
   simdata$lagHIVsym <- simdata$HIVsym_1
   simdata$lagHIVsym_1 <- simdata$HIVsym_2
+  simdata$lagSITE1 <- simdata$SITE1
   simdata$lagSITE2 <- simdata$SITE2
   simdata$lagSITE3 <- simdata$SITE3
   simdata$lagWHITE <- simdata$WHITE
@@ -209,6 +210,7 @@ initial_weight_calculation <- function(simdata) {
           viral_1 = simdata[simdata$t == m, ]$lagviral_1,
           HIVsym = simdata[simdata$t == m, ]$lagHIVsym,
           HIVsym_1 = simdata[simdata$t == m, ]$lagHIVsym_1,
+          SITE1 = simdata[simdata$t == m, ]$SITE1,
           SITE2 = simdata[simdata$t == m, ]$SITE2,
           SITE3 = simdata[simdata$t == m, ]$SITE3,
           WHITE = simdata[simdata$t == m, ]$WHITE,
@@ -236,6 +238,7 @@ weight_calibration <- function(simdata) {
   simdata$lagviral_1 <- simdata$viral_2
   simdata$lagHIVsym <- simdata$HIVsym_1
   simdata$lagHIVsym_1 <- simdata$HIVsym_2
+  simdata$lagSITE1 <- simdata$SITE1
   simdata$lagSITE2 <- simdata$SITE2
   simdata$lagSITE3 <- simdata$SITE3
   simdata$lagWHITE <- simdata$WHITE
@@ -258,6 +261,7 @@ weight_calibration <- function(simdata) {
   simdata$tviral_2 <- simdata$t * simdata$viral_2
   simdata$tHIVsym <- simdata$t * simdata$HIVsym
   simdata$tHIVsym_1 <- simdata$t * simdata$HIVsym_1
+  simdata$tSITE1 <- simdata$t * simdata$SITE1
   simdata$tSITE2 <- simdata$t * simdata$SITE2
   simdata$tSITE3 <- simdata$t * simdata$SITE3
   simdata$tWHITE <- simdata$t * simdata$WHITE
@@ -265,39 +269,39 @@ weight_calibration <- function(simdata) {
 
 
   calibrate_always_treated <- calibration_by_time_from_baseline(simdata,
-    var = c("sqrtCD4_1", "sqrtCD4_2", "viral_1", "viral_2", "HIVsym_1", "SITE2", "SITE3", "WHITE", "OTHER"),
+    var = c("sqrtCD4_1", "sqrtCD4_2", "viral_1", "viral_2", "HIVsym_1", "SITE1", "SITE2", "SITE3", "WHITE", "OTHER"),
     censor = TRUE,
-    c_var = c("sqrtCD4_1", "sqrtCD4", "viral", "viral_1", "HIVsym", "HIVsym_1", "SITE2", "SITE3", "WHITE", "OTHER"),
+    c_var = c("sqrtCD4_1", "sqrtCD4", "viral", "viral_1", "HIVsym", "HIVsym_1", "SITE1", "SITE2", "SITE3", "WHITE", "OTHER"),
     weights_var = "weight"
   )
   calibrate_always_treated_aggr <- aggregated_calibration_from_baseline(simdata,
     var = c(
-      "sqrtCD4_1", "sqrtCD4_2", "viral_1", "viral_2", "HIVsym_1", "SITE2", "SITE3", "WHITE", "OTHER",
-      "tsqrtCD4_1", "tsqrtCD4_2", "tviral_1", "tviral_2", "tHIVsym_1", "tSITE2", "tSITE3", "tWHITE", "tOTHER"
+      "sqrtCD4_1", "sqrtCD4_2", "viral_1", "viral_2", "HIVsym_1", "SITE1", "SITE2", "SITE3", "WHITE", "OTHER",
+      "tsqrtCD4_1", "tsqrtCD4_2", "tviral_1", "tviral_2", "tHIVsym_1", "tSITE1", "tSITE2", "tSITE3", "tWHITE", "tOTHER"
     ),
     censor = TRUE,
     c_var = c(
-      "sqrtCD4_1", "sqrtCD4", "viral", "viral_1", "HIVsym", "HIVsym_1", "SITE2", "SITE3", "WHITE", "OTHER",
-      "tsqrtCD4_1", "tsqrtCD4", "tviral", "tviral_1", "tHIVsym", "tHIVsym_1", "tSITE2", "tSITE3", "tWHITE", "tOTHER"
+      "sqrtCD4_1", "sqrtCD4", "viral", "viral_1", "HIVsym", "HIVsym_1", "SITE1", "SITE2", "SITE3", "WHITE", "OTHER",
+      "tsqrtCD4_1", "tsqrtCD4", "tviral", "tviral_1", "tHIVsym", "tHIVsym_1", "tSITE1", "tSITE2", "tSITE3", "tWHITE", "tOTHER"
     ),
     weights_var = "weight"
   )
 
   calibrate_always_treated_treat_only <- calibration_by_time_from_baseline(simdata,
-    var = c("sqrtCD4_1", "sqrtCD4_2", "viral_1", "viral_2", "HIVsym_1", "SITE2", "SITE3", "WHITE", "OTHER"),
+    var = c("sqrtCD4_1", "sqrtCD4_2", "viral_1", "viral_2", "HIVsym_1", "SITE1", "SITE2", "SITE3", "WHITE", "OTHER"),
     censor = FALSE,
-    c_var = c("sqrtCD4_1", "sqrtCD4", "viral", "viral_1", "HIVsym", "HIVsym_1", "SITE2", "SITE3", "WHITE", "OTHER"),
+    c_var = c("sqrtCD4_1", "sqrtCD4", "viral", "viral_1", "HIVsym", "HIVsym_1", "SITE1", "SITE2", "SITE3", "WHITE", "OTHER"),
     weights_var = "weight"
   )
   calibrate_always_treated_aggr_treat_only <- aggregated_calibration_from_baseline(simdata,
     var = c(
-      "sqrtCD4_1", "sqrtCD4_2", "viral_1", "viral_2", "HIVsym_1", "SITE2", "SITE3", "WHITE", "OTHER",
-      "tsqrtCD4_1", "tsqrtCD4_2", "tviral_1", "tviral_2", "tHIVsym_1", "tSITE2", "tSITE3", "tWHITE", "tOTHER"
+      "sqrtCD4_1", "sqrtCD4_2", "viral_1", "viral_2", "HIVsym_1", "SITE1", "SITE2", "SITE3", "WHITE", "OTHER",
+      "tsqrtCD4_1", "tsqrtCD4_2", "tviral_1", "tviral_2", "tHIVsym_1", "tSITE1", "tSITE2", "tSITE3", "tWHITE", "tOTHER"
     ),
     censor = FALSE,
     c_var = c(
-      "sqrtCD4_1", "sqrtCD4", "viral", "viral_1", "HIVsym", "HIVsym_1", "SITE2", "SITE3", "WHITE", "OTHER",
-      "tsqrtCD4_1", "tsqrtCD4", "tviral", "tviral_1", "tHIVsym", "tHIVsym_1", "tSITE2", "tSITE3", "tWHITE", "tOTHER"
+      "sqrtCD4_1", "sqrtCD4", "viral", "viral_1", "HIVsym", "HIVsym_1", "SITE1", "SITE2", "SITE3", "WHITE", "OTHER",
+      "tsqrtCD4_1", "tsqrtCD4", "tviral", "tviral_1", "tHIVsym", "tHIVsym_1", "tSITE1", "tSITE2", "tSITE3", "tWHITE", "tOTHER"
     ),
     weights_var = "weight"
   )
@@ -317,39 +321,39 @@ weight_calibration <- function(simdata) {
   simdata[simdata$t == 4 & !(simdata$CA == 0), ]$RA <- 0
 
   calibrate_never_treated <- calibration_by_time_from_baseline(simdata,
-    var = c("sqrtCD4_1", "sqrtCD4_2", "viral_1", "viral_2", "HIVsym_1", "SITE2", "SITE3", "WHITE", "OTHER"),
+    var = c("sqrtCD4_1", "sqrtCD4_2", "viral_1", "viral_2", "HIVsym_1", "SITE1", "SITE2", "SITE3", "WHITE", "OTHER"),
     censor = TRUE,
-    c_var = c("sqrtCD4_1", "sqrtCD4", "viral", "viral_1", "HIVsym", "HIVsym_1", "SITE2", "SITE3", "WHITE", "OTHER"),
+    c_var = c("sqrtCD4_1", "sqrtCD4", "viral", "viral_1", "HIVsym", "HIVsym_1", "SITE1", "SITE2", "SITE3", "WHITE", "OTHER"),
     weights_var = "Cweights"
   )
   calibrate_never_treated_aggr <- aggregated_calibration_from_baseline(simdata,
     var = c(
-      "sqrtCD4_1", "sqrtCD4_2", "viral_1", "viral_2", "HIVsym_1", "SITE2", "SITE3", "WHITE", "OTHER",
-      "tsqrtCD4_1", "tsqrtCD4_2", "tviral_1", "tviral_2", "tHIVsym_1", "tSITE2", "tSITE3", "tWHITE", "tOTHER"
+      "sqrtCD4_1", "sqrtCD4_2", "viral_1", "viral_2", "HIVsym_1", "SITE1", "SITE2", "SITE3", "WHITE", "OTHER",
+      "tsqrtCD4_1", "tsqrtCD4_2", "tviral_1", "tviral_2", "tHIVsym_1", "tSITE1", "tSITE2", "tSITE3", "tWHITE", "tOTHER"
     ),
     censor = TRUE,
     c_var = c(
-      "sqrtCD4_1", "sqrtCD4", "viral", "viral_1", "HIVsym", "HIVsym_1", "SITE2", "SITE3", "WHITE", "OTHER",
-      "tsqrtCD4_1", "tsqrtCD4", "tviral", "tviral_1", "tHIVsym", "tHIVsym_1", "tSITE2", "tSITE3", "tWHITE", "tOTHER"
+      "sqrtCD4_1", "sqrtCD4", "viral", "viral_1", "HIVsym", "HIVsym_1", "SITE1", "SITE2", "SITE3", "WHITE", "OTHER",
+      "tsqrtCD4_1", "tsqrtCD4", "tviral", "tviral_1", "tHIVsym", "tHIVsym_1", "tSITE1", "tSITE2", "tSITE3", "tWHITE", "tOTHER"
     ),
     weights_var = "Cweights_aggr"
   )
 
   calibrate_never_treated_treat_only <- calibration_by_time_from_baseline(simdata,
-    var = c("sqrtCD4_1", "sqrtCD4_2", "viral_1", "viral_2", "HIVsym_1", "SITE2", "SITE3", "WHITE", "OTHER"),
+    var = c("sqrtCD4_1", "sqrtCD4_2", "viral_1", "viral_2", "HIVsym_1", "SITE1", "SITE2", "SITE3", "WHITE", "OTHER"),
     censor = FALSE,
-    c_var = c("sqrtCD4_1", "sqrtCD4", "viral", "viral_1", "HIVsym", "HIVsym_1", "SITE2", "SITE3", "WHITE", "OTHER"),
+    c_var = c("sqrtCD4_1", "sqrtCD4", "viral", "viral_1", "HIVsym", "HIVsym_1", "SITE1", "SITE2", "SITE3", "WHITE", "OTHER"),
     weights_var = "Cweights_treat_only"
   )
   calibrate_never_treated_aggr_treat_only <- aggregated_calibration_from_baseline(simdata,
     var = c(
-      "sqrtCD4_1", "sqrtCD4_2", "viral_1", "viral_2", "HIVsym_1", "SITE2", "SITE3", "WHITE", "OTHER",
-      "tsqrtCD4_1", "tsqrtCD4_2", "tviral_1", "tviral_2", "tHIVsym_1", "tSITE2", "tSITE3", "tWHITE", "tOTHER"
+      "sqrtCD4_1", "sqrtCD4_2", "viral_1", "viral_2", "HIVsym_1", "SITE1", "SITE2", "SITE3", "WHITE", "OTHER",
+      "tsqrtCD4_1", "tsqrtCD4_2", "tviral_1", "tviral_2", "tHIVsym_1", "tSITE1", "tSITE2", "tSITE3", "tWHITE", "tOTHER"
     ),
     censor = FALSE,
     c_var = c(
-      "sqrtCD4_1", "sqrtCD4", "viral", "viral_1", "HIVsym", "HIVsym_1", "SITE2", "SITE3", "WHITE", "OTHER",
-      "tsqrtCD4_1", "tsqrtCD4", "tviral", "tviral_1", "tHIVsym", "tHIVsym_1", "tSITE2", "tSITE3", "tWHITE", "tOTHER"
+      "sqrtCD4_1", "sqrtCD4", "viral", "viral_1", "HIVsym", "HIVsym_1", "SITE1", "SITE2", "SITE3", "WHITE", "OTHER",
+      "tsqrtCD4_1", "tsqrtCD4", "tviral", "tviral_1", "tHIVsym", "tHIVsym_1", "tSITE1", "tSITE2", "tSITE3", "tWHITE", "tOTHER"
     ),
     weights_var = "Cweights_aggr_treat_only"
   )
@@ -532,7 +536,7 @@ MyLtmleMSM_modified_hers <- function(simdata, initial_Q_t = NA, refit_weights = 
   wideSimdata <- data.table::dcast(setDT(simdata), ID ~ t,
     value.var = c(
       "A", "Ap", "App", "CD4_1", "sqrtCD4_1", "sqrtCD4_2", "viral", "viral_1", "viral_2", "HIVsym", "HIVsym_1", "HIVsym_2",
-      "SITE2", "SITE3", "WHITE", "OTHER", "CA", "CD4", "D", "weights", "Cweights", "Cweights_aggr",
+      "SITE1", "SITE2", "SITE3", "WHITE", "OTHER", "CA", "CD4", "D", "weights", "Cweights", "Cweights_aggr",
       "Cweights_treat_only", "Cweights_aggr_treat_only"
     )
   )
@@ -579,7 +583,7 @@ MyLtmleMSM_modified_hers <- function(simdata, initial_Q_t = NA, refit_weights = 
           "+ sqrtCD4_1_", j, " + sqrtCD4_2_", j,
           " + viral_", j, " + viral_1_", j, " + viral_2_", j,
           " + HIVsym_", j, " + HIVsym_1_", j, " + HIVsym_2_", j,
-          " + SITE2_", j, " + SITE3_", j, " + WHITE_", j, " + OTHER_", j
+          " + SITE1_", j," + SITE2_", j, " + SITE3_", j, " + WHITE_", j, " + OTHER_", j
         )
 
         predict_data <- data.frame(c(rep(1, dim(wideSimdata)[1]), rep(0, dim(wideSimdata)[1])), c(rep(1, dim(wideSimdata)[1]), rep(0, dim(wideSimdata)[1])), c(rep(1, dim(wideSimdata)[1]), rep(0, dim(wideSimdata)[1])))
@@ -616,6 +620,7 @@ MyLtmleMSM_modified_hers <- function(simdata, initial_Q_t = NA, refit_weights = 
           HIVsym_j = rep(wideSimdata[[paste0("HIVsym_", j)]], 2),
           HIVsym_1_j = rep(wideSimdata[[paste0("HIVsym_1_", j)]], 2),
           HIVsym_2_j = rep(wideSimdata[[paste0("HIVsym_2_", j)]], 2),
+          SITE1_j = rep(wideSimdata[[paste0("SITE1_", j)]], 2),
           SITE2_j = rep(wideSimdata[[paste0("SITE2_", j)]], 2),
           SITE3_j = rep(wideSimdata[[paste0("SITE3_", j)]], 2),
           WHITE_j = rep(wideSimdata[[paste0("WHITE_", j)]], 2),
@@ -639,7 +644,7 @@ MyLtmleMSM_modified_hers <- function(simdata, initial_Q_t = NA, refit_weights = 
             "sqrtCD4_1_j + sqrtCD4_2_j +",
             "viral_j + viral_1_j + viral_2_j +",
             "HIVsym_j + HIVsym_1_j + HIVsym_2_j +",
-            "SITE2_j + SITE3_j + WHITE_j + OTHER_j"
+            "SITE1_j + SITE2_j + SITE3_j + WHITE_j + OTHER_j"
           )
 
           Qform_d1 <- glm(data = fitting_data[1:dim(wideSimdata)[1], ], formula = as.formula(formula_string))
@@ -861,7 +866,7 @@ MyLtmleMSM_hers <- function(simdata) {
   wideSimdata <- data.table::dcast(setDT(simdata), ID ~ t,
     value.var = c(
       "A", "Ap", "App", "CD4_1", "sqrtCD4_1", "sqrtCD4_2", "viral", "viral_1", "viral_2", "HIVsym", "HIVsym_1", "HIVsym_2",
-      "SITE2", "SITE3", "WHITE", "OTHER", "CA", "CD4", "D", "weights", "Cweights", "Cweights_aggr",
+      "SITE1", "SITE2", "SITE3", "WHITE", "OTHER", "CA", "CD4", "D", "weights", "Cweights", "Cweights_aggr",
       "Cweights_treat_only", "Cweights_aggr_treat_only"
     )
   )
@@ -924,7 +929,7 @@ MyLtmleMSM_hers <- function(simdata) {
           "+ sqrtCD4_1_", j, " + sqrtCD4_2_", j,
           " + viral_", j, " + viral_1_", j, " + viral_2_", j,
           " + HIVsym_", j, " + HIVsym_1_", j, " + HIVsym_2_", j,
-          " + SITE2_", j, " + SITE3_", j, " + WHITE_", j, " + OTHER_", j
+          " + SITE1_", j," + SITE2_", j, " + SITE3_", j, " + WHITE_", j, " + OTHER_", j
         )
 
         predict_data <- data.frame(c(rep(1, dim(wideSimdata)[1]), rep(0, dim(wideSimdata)[1])), c(rep(1, dim(wideSimdata)[1]), rep(0, dim(wideSimdata)[1])), c(rep(1, dim(wideSimdata)[1]), rep(0, dim(wideSimdata)[1])))
@@ -1027,6 +1032,7 @@ MyLtmleMSM_hers <- function(simdata) {
           HIVsym_j = rep(wideSimdata[[paste0("HIVsym_", j)]], 2),
           HIVsym_1_j = rep(wideSimdata[[paste0("HIVsym_1_", j)]], 2),
           HIVsym_2_j = rep(wideSimdata[[paste0("HIVsym_2_", j)]], 2),
+          SITE1_j = rep(wideSimdata[[paste0("SITE1_", j)]], 2),
           SITE2_j = rep(wideSimdata[[paste0("SITE2_", j)]], 2),
           SITE3_j = rep(wideSimdata[[paste0("SITE3_", j)]], 2),
           WHITE_j = rep(wideSimdata[[paste0("WHITE_", j)]], 2),
@@ -1048,28 +1054,28 @@ MyLtmleMSM_hers <- function(simdata) {
                    sqrtCD4_1_j + sqrtCD4_2_j +
                    viral_j + viral_1_j + viral_2_j +
                    HIVsym_j + HIVsym_1_j + HIVsym_2_j +
-                   SITE2_j + SITE3_j + WHITE_j + OTHER_j"
+                   SITE1_j + SITE2_j + SITE3_j + WHITE_j + OTHER_j"
         formula_string_cali <- "Qk_j1star_cali ~  A_j + Ap_j + App_j +
                    sqrtCD4_1_j + sqrtCD4_2_j +
                    viral_j + viral_1_j + viral_2_j +
                    HIVsym_j + HIVsym_1_j + HIVsym_2_j +
-                   SITE2_j + SITE3_j + WHITE_j + OTHER_j"
+                   SITE1_j + SITE2_j + SITE3_j + WHITE_j + OTHER_j"
         formula_string_cali_aggr <- "Qk_j1star_cali_aggr ~  A_j + Ap_j + App_j +
                    sqrtCD4_1_j + sqrtCD4_2_j +
                    viral_j + viral_1_j + viral_2_j +
                    HIVsym_j + HIVsym_1_j + HIVsym_2_j +
-                   SITE2_j + SITE3_j + WHITE_j + OTHER_j"
+                   SITE1_j + SITE2_j + SITE3_j + WHITE_j + OTHER_j"
 
         formula_string_cali_treat_only <- "Qk_j1star_cali_treat_only ~  A_j + Ap_j + App_j +
                    sqrtCD4_1_j + sqrtCD4_2_j +
                    viral_j + viral_1_j + viral_2_j +
                    HIVsym_j + HIVsym_1_j + HIVsym_2_j +
-                   SITE2_j + SITE3_j + WHITE_j + OTHER_j"
+                   SITE1_j + SITE2_j + SITE3_j + WHITE_j + OTHER_j"
         formula_string_cali_aggr_treat_only <- "Qk_j1star_cali_aggr_treat_only ~  A_j + Ap_j + App_j +
                    sqrtCD4_1_j + sqrtCD4_2_j +
                    viral_j + viral_1_j + viral_2_j +
                    HIVsym_j + HIVsym_1_j + HIVsym_2_j +
-                   SITE2_j + SITE3_j + WHITE_j + OTHER_j"
+                   SITE1_j + SITE2_j + SITE3_j + WHITE_j + OTHER_j"
 
         Qform_d1 <- glm(data = fitting_data[1:dim(wideSimdata)[1], ], 
                         formula = as.formula(formula_string),
@@ -1274,7 +1280,7 @@ MyLtmleMSM_cali_boot_hers <- function(simdata, initial_Q_t = NA, refit_weights =
   wideSimdata <- data.table::dcast(setDT(simdata), ID ~ t,
     value.var = c(
       "A", "Ap", "App", "CD4_1", "sqrtCD4_1", "sqrtCD4_2", "viral", "viral_1", "viral_2", "HIVsym", "HIVsym_1", "HIVsym_2",
-      "SITE2", "SITE3", "WHITE", "OTHER", "CA", "CD4", "D", "weights", "Cweights", "Cweights_aggr",
+      "SITE1", "SITE2", "SITE3", "WHITE", "OTHER", "CA", "CD4", "D", "weights", "Cweights", "Cweights_aggr",
       "Cweights_treat_only", "Cweights_aggr_treat_only"
     )
   )
@@ -1321,7 +1327,7 @@ MyLtmleMSM_cali_boot_hers <- function(simdata, initial_Q_t = NA, refit_weights =
           "+ sqrtCD4_1_", j, " + sqrtCD4_2_", j,
           " + viral_", j, " + viral_1_", j, " + viral_2_", j,
           " + HIVsym_", j, " + HIVsym_1_", j, " + HIVsym_2_", j,
-          " + SITE2_", j, " + SITE3_", j, " + WHITE_", j, " + OTHER_", j
+          " + SITE1_", j," + SITE2_", j, " + SITE3_", j, " + WHITE_", j, " + OTHER_", j
         )
 
         predict_data <- data.frame(c(rep(1, dim(wideSimdata)[1]), rep(0, dim(wideSimdata)[1])), c(rep(1, dim(wideSimdata)[1]), rep(0, dim(wideSimdata)[1])), c(rep(1, dim(wideSimdata)[1]), rep(0, dim(wideSimdata)[1])))
@@ -1360,6 +1366,7 @@ MyLtmleMSM_cali_boot_hers <- function(simdata, initial_Q_t = NA, refit_weights =
           HIVsym_j = rep(wideSimdata[[paste0("HIVsym_", j)]], 2),
           HIVsym_1_j = rep(wideSimdata[[paste0("HIVsym_1_", j)]], 2),
           HIVsym_2_j = rep(wideSimdata[[paste0("HIVsym_2_", j)]], 2),
+          SITE1_j = rep(wideSimdata[[paste0("SITE1_", j)]], 2),
           SITE2_j = rep(wideSimdata[[paste0("SITE2_", j)]], 2),
           SITE3_j = rep(wideSimdata[[paste0("SITE3_", j)]], 2),
           WHITE_j = rep(wideSimdata[[paste0("WHITE_", j)]], 2),
@@ -1383,7 +1390,7 @@ MyLtmleMSM_cali_boot_hers <- function(simdata, initial_Q_t = NA, refit_weights =
             "sqrtCD4_1_j + sqrtCD4_2_j +",
             "viral_j + viral_1_j + viral_2_j +",
             "HIVsym_j + HIVsym_1_j + HIVsym_2_j +",
-            "SITE2_j + SITE3_j + WHITE_j + OTHER_j"
+            "SITE1_j + SITE2_j + SITE3_j + WHITE_j + OTHER_j"
           )
 
           Qform_d1 <- glm(data = fitting_data[1:dim(wideSimdata)[1], ], 

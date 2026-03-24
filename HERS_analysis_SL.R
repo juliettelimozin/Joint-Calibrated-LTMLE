@@ -26,6 +26,7 @@ simdata <- HERS
 
 simdata$C <- simdata$C + simdata$Y
 simdata$t <- simdata$visit - 8
+simdata$SITE1 <- as.integer(simdata$SITE1)
 simdata$SITE2 <- as.integer(simdata$SITE2)
 simdata$SITE3 <- as.integer(simdata$SITE3)
 simdata$WHITE <- as.integer(simdata$WHITE)
@@ -52,7 +53,7 @@ simdata[,'ID'] <- simdata$id
 simdata <- simdata %>% 
   dplyr::select(ID, t, A, Ap, App,CAp, CD4, CD4_1,CD4_2,sqrtCD4, sqrtCD4_1,sqrtCD4_2,
                 viral,viral_1,viral_2,HIVsym,HIVsym_1,HIVsym_2,
-                SITE2, SITE3, WHITE, OTHER, Y, C)
+                SITE1, SITE2, SITE3, WHITE, OTHER, Y, C)
 simdata$eligible <- as.numeric(simdata$CAp == 0 & simdata$t == 0)
 simdata$CA <-ave(simdata$A,simdata$ID,FUN=cumsum)
 simdata <- as.data.frame(simdata)
