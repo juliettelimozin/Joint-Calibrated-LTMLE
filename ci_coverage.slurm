@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -J CI_simu_strong_conf
+#SBATCH -J CI_simu_weak_conf
 #SBATCH -p icelake
 #SBATCH --time=10:0:0
 #SBATCH -A mrc-bsu2-sl2-cpu
@@ -14,4 +14,4 @@ module load rhel8/default-icl
 
 module load R/4.3.1-icelake
 
-Rscript ci_coverage_simu_modified_bootstrap_strong_conf.R
+Rscript mle_ci_comp_time_weak_conf.R
