@@ -5,4 +5,5 @@
 .Rproj
 Calibrated-weights-sequential-trial-emulation.Rproj
 HERS.Rdata
-HERS_SL.RData
+HERS_analysis/HERS_SL.RData
+Archive/
